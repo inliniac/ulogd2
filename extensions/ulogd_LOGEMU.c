@@ -1,4 +1,4 @@
-/* ulogd_LOGEMU.c, Version $Revision: 1.12 $
+/* ulogd_LOGEMU.c, Version $Revision: 1.13 $
  *
  * ulogd output target for syslog logging emulation
  *
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_LOGEMU.c,v 1.12 2003/01/13 13:36:26 laforge Exp $
+ * $Id: ulogd_LOGEMU.c,v 1.13 2003/08/23 11:47:09 laforge Exp $
  *
  */
 
@@ -118,7 +118,7 @@ int _output_logemu(ulog_iret_t *res)
 	char *tmp;
 	time_t now;
 
-	now = (time_t) GET_VALUE(1).ui32;
+	now = (time_t) GET_VALUE(0).ui32;
 	timestr = ctime(&now) + 4;
 
 	/* truncate time */
