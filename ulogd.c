@@ -1,4 +1,4 @@
-/* ulogd, Version $Revision: 1.4 $
+/* ulogd, Version $Revision: 1.5 $
  *
  * first try of a logging daemon for my netfilter ULOG target
  * for the linux 2.4 netfilter subsystem.
@@ -7,7 +7,7 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.c,v 1.4 2000/08/09 16:26:34 root Exp $
+ * $Id: ulogd.c,v 1.5 2000/08/11 09:56:48 laforge Exp $
  */
 
 #include <stdio.h>
@@ -224,13 +224,13 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 
+#ifndef DEBUG
 	if (!fork())
 	{ 
 
-		/*
 		fclose(stdout);
 		fclose(stderr);
-		*/
+#endif
 
 		/* endless loop receiving packets and handling them over to
 		 * handle_packet */
@@ -246,8 +246,10 @@ int main(int argc, char* argv[])
 		ipulog_destroy_handle(h);
 		free(buf);
 		fclose(logfile);
+#ifndef DEBUG
 	} else
 	{
 		exit(0);
 	}
+#endif
 }

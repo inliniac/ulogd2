@@ -5,7 +5,7 @@
  * (C) 2000 by Harald Welte <laforge@sunbeam.franken.de>
  * This software is released under the terms of GNU GPL
  *
- * $Id: ulogd_OPRINT.c,v 1.1 2000/08/02 08:51:15 laforge Exp laforge $
+ * $Id: ulogd_OPRINT.c,v 1.1 2000/08/02 12:16:00 laforge Exp $
  *
  */
 
@@ -42,6 +42,7 @@ int _output_print(ulog_iret_t *res)
 			case ULOGD_RET_STRING:
 				fprintf(of, "%s\n", (char *) ret->value.ptr);
 				break;
+			case ULOGD_RET_BOOL:
 			case ULOGD_RET_INT8:
 				fprintf(of, "%d\n", ret->value.i8);
 				break;
@@ -89,11 +90,15 @@ void _base_reg_op(void)
 
 void _init(void)
 {
+#ifdef DEBUG
+	of = stdout;
+#else
 	of = fopen(ULOGD_OPRINT_FILE, "a");
 	if (!of) {
 		ulogd_error("ulogd_OPRINT: can't open PKTLOG: %s\n", strerror(errno));
 		exit(2);
 	}		
+#endif
 		
 	_base_reg_op();
 }

@@ -1,11 +1,11 @@
-/* ulogd_MAC.c, Version $Revision: 1.1 $
+/* ulogd_MAC.c, Version $Revision: 1.2 $
  *
  * ulogd logging interpreter for MAC addresses, TIME, etc.
  *
  * (C) 2000 by Harald Welte <laforge@sunbeam.franken.de>
  * This software is released under the terms of GNU GPL
  *
- * $Id: ulogd_BASE.c,v 1.1 2000/08/02 08:51:15 laforge Exp laforge $
+ * $Id: ulogd_BASE.c,v 1.2 2000/08/02 12:15:44 laforge Exp $
  *
  */
 
@@ -16,6 +16,7 @@
 #include <linux/in.h>
 #include <linux/tcp.h>
 #include <linux/icmp.h>
+#include <linux/udp.h>
 
 ulog_iret_t *_interp_mac(ulog_packet_msg_t *pkt)
 {
@@ -108,7 +109,8 @@ ulog_iret_t *_interp_iphdr(ulog_packet_msg_t *pkt)
 ulog_iret_t *_interp_tcphdr(ulog_packet_msg_t *pkt)
 {
 	struct iphdr *iph = (struct iphdr *) pkt->payload;
-	struct tcphdr *tcph = (struct tcphdr *) (iph + iph->ihl);
+	void *protoh = (u_int32_t *)iph + iph->ihl;
+	struct tcphdr *tcph = (struct tcphdr *) protoh;
 	ulog_iret_t *ret, *ret2;
 
 	if (iph->protocol != IPPROTO_TCP)
@@ -117,14 +119,67 @@ ulog_iret_t *_interp_tcphdr(ulog_packet_msg_t *pkt)
 	ret = alloc_ret(ULOGD_RET_UINT16, "tcp.hdr.sport");
 	ret->value.ui16 = ntohs(tcph->source);
 
-	ret->next = ret2 = alloc_ret(ULOGD_RET_UINT16, "tcp.hdr.sport");
-	ret->value.ui16 = ntohs(tcph->dest);
+	ret->next = ret2 = alloc_ret(ULOGD_RET_UINT16, "tcp.hdr.dport");
+	ret2->value.ui16 = ntohs(tcph->dest);
 
 	ret2 = ret2->next = alloc_ret(ULOGD_RET_UINT32, "tcp.hdr.seq");
-	ret->value.ui32 = ntohl(tcph->seq);
+	ret2->value.ui32 = ntohl(tcph->seq);
 	
 	ret2 = ret2->next = alloc_ret(ULOGD_RET_UINT32, "tcp.hdr.ack_seq");
-	ret->value.ui32 = ntohl(tcph->ack_seq);
+	ret2->value.ui32 = ntohl(tcph->ack_seq);
+
+	ret2 = ret2->next = alloc_ret(ULOGD_RET_UINT16, "tcp.hdr.window");
+	ret2->value.ui16 = ntohs(tcph->window);
+
+	if (tcph->urg) {
+		ret2 = ret2->next = alloc_ret(ULOGD_RET_BOOL, "tcp.hdr.urg");
+		ret2->value.b = 1;
+		
+		ret2 = ret2->next = alloc_ret(ULOGD_RET_UINT16, "tcp.hdr.urgp");
+		ret2->value.ui16 = ntohs(tcph->urg_ptr);
+	}
+	if (tcph->ack) {
+		ret2 = ret2->next = alloc_ret(ULOGD_RET_BOOL, "tcp.hdr.ack");
+		ret2->value.b = 1;
+	}
+	if (tcph->psh) {
+		ret2 = ret2->next = alloc_ret(ULOGD_RET_BOOL, "tcp.hdr.psh");
+		ret2->value.b = 1;
+	}
+	if (tcph->rst) {
+		ret2 = ret2->next = alloc_ret(ULOGD_RET_BOOL, "tcp.hdr.rst");
+		ret2->value.b = 1;
+	}
+	if (tcph->syn) {
+		ret2 = ret2->next = alloc_ret(ULOGD_RET_BOOL, "tcp.hdr.syn");
+		ret2->value.b = 1;
+	}
+	if (tcph->fin) {
+		ret2 = ret2->next = alloc_ret(ULOGD_RET_BOOL, "tcp.hdr.fin");
+		ret2->value.b = 1;
+	}
+	
+	return ret;
+}
+
+ulog_iret_t *_interp_udp(ulog_packet_msg_t *pkt)
+{
+	struct iphdr *iph = (struct iphdr *) pkt->payload;
+	void *protoh = (u_int32_t *)iph + iph->ihl;
+	struct udphdr *udph = protoh;
+	ulog_iret_t *ret, *ret2;
+
+	if (iph->protocol != IPPROTO_UDP)
+		return NULL;
+
+	ret = alloc_ret(ULOGD_RET_UINT16, "udp.hdr.sport");
+	ret->value.ui16 = ntohs(udph->source);
+
+	ret2 = ret->next = alloc_ret(ULOGD_RET_UINT16, "udp.hdr.dport");
+	ret2->value.ui16 = ntohs(udph->dest);
+
+	ret2 = ret2->next = alloc_ret(ULOGD_RET_UINT16, "udp.hdr.len");
+	ret2->value.ui16 = ntohs(udph->len);
 	
 	return ret;
 }
@@ -132,7 +187,8 @@ ulog_iret_t *_interp_tcphdr(ulog_packet_msg_t *pkt)
 ulog_iret_t *_interp_icmp(ulog_packet_msg_t *pkt)
 {
 	struct iphdr *iph = (struct iphdr *) pkt->payload;
-	struct icmphdr *icmph = (struct icmphdr *) (iph + iph->ihl);
+	void *protoh = (u_int32_t *) (iph + iph->ihl);
+	struct icmphdr *icmph = protoh;
 	ulog_iret_t *ret, *ret2;
 
 	if (iph->protocol != IPPROTO_ICMP)
@@ -155,6 +211,7 @@ static ulog_interpreter_t base_ip[] = {
 	{ NULL, "ip.hdr", &_interp_iphdr },
 	{ NULL, "tcp.hdr", &_interp_tcphdr },
 	{ NULL, "icmp.hdr", &_interp_icmp },
+	{ NULL, "udp.hdr", &_interp_udp },
 	{ NULL, "", NULL }, 
 };
 void _base_reg_ip(void)

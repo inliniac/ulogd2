@@ -1,14 +1,14 @@
 # Path of libipulog (from iptables)
 LIBIPULOG=../libipulog
+INCIPULOG=-I../libipulog/include
 
 # Names of the plugins to be compiled
 ULOGD_SL:=BASE OPRINT
 
-
 #  Normally You should not need to change anything below
 #
 CC = gcc
-CFLAGS = -I. -I$(LIBIPULOG)/include -g -Wall
+CFLAGS = -I. -g -Wall $(INCIPULOG)
 SH_CFLAGS:=$(CFLAGS) -fPIC
 
 SHARED_LIBS+=$(foreach T,$(ULOGD_SL),extensions/ulogd_$(T).so)
@@ -21,7 +21,7 @@ $(SHARED_LIBS): %.so: %_sh.o
 %_sh.o: %.c
 	gcc $(SH_CFLAGS) -o $@ -c $<
 
-ulogd: ulogd.c ../libipulog/libipulog.a ulogd.h
+ulogd: ulogd.c $(LIBIPULOG) ulogd.h
 	$(CC) $(CFLAGS) -rdynamic -ldl -i ulogd.c $(LIBIPULOG)/libipulog.a -o ulogd
 
 clean:

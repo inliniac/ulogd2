@@ -1,7 +1,7 @@
 ===> CONECEPT
 
 I want to write a flexible, almost universal logging daemon for my netfilter 
-ULOG target. These are my thoughts about how the architecture which is most capable of doing that:
+ULOG target. It is not optimized in any way, the goal is to keep as simple as possible. These are my thoughts about how the architecture which is most capable of doing that:
 
 1. Interpreter lugins
 

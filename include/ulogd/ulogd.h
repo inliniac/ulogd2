@@ -1,6 +1,6 @@
 #ifndef _ULOGD_H
 #define _ULOGD_H
-/* ulogd, Version $Revision: 1.2 $
+/* ulogd, Version $Revision: 1.3 $
  *
  * first try of a logging daemon for my netfilter ULOG target
  * for the linux 2.4 netfilter subsystem.
@@ -9,7 +9,7 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.h,v 1.2 2000/08/02 12:16:42 laforge Exp laforge $
+ * $Id: ulogd.h,v 1.3 2000/08/02 12:20:55 laforge Exp $
  */
 
 #include <libipulog/libipulog.h>
@@ -30,12 +30,16 @@
 #define ULOGD_RET_UINT32	0x0013
 #define ULOGD_RET_UINT64	0x0014
 
-#define ULOGD_RET_STRING	0x8020
+#define ULOGD_RET_BOOL		0x0050
 
 #define ULOGD_RET_IPADDR	0x0100
 
 /* types with lenght field*/
+#define ULOGD_RET_STRING	0x8020
+#define ULODG_RET_RAW		0x8030
+
 #define ULOGD_RET_OTHER		0xffff
+
 
 #define ULOGD_MAX_KEYLEN 32
 
@@ -48,6 +52,7 @@ typedef struct ulog_iret {
 	u_int16_t type;
 	char key[ULOGD_MAX_KEYLEN];
 	union {
+		u_int8_t	b;
 		u_int8_t	ui8;
 		u_int16_t	ui16;
 		u_int32_t	ui32;
