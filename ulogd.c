@@ -1,6 +1,6 @@
-/* ulogd, Version $Revision: 1.29 $
+/* ulogd, Version $Revision: 1.30 $
  *
- * $Id: ulogd.c,v 1.29 2002/12/09 14:42:43 laforge Exp $
+ * $Id: ulogd.c,v 1.30 2002/12/09 15:03:51 laforge Exp $
  *
  * userspace logging daemon for the netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd.c,v 1.29 2002/12/09 14:42:43 laforge Exp $
+ * $Id: ulogd.c,v 1.30 2002/12/09 15:03:51 laforge Exp $
  *
  * Modifications:
  * 	14 Jun 2001 Martin Josefsson <gandalf@wlug.westbo.se>
@@ -78,6 +78,7 @@ static struct ipulog_handle *libulog_h;	/* our libipulog handle */
 static unsigned char* libulog_buf;	/* the receive buffer */
 static FILE *logfile = NULL;		/* logfile pointer */
 static int loglevel = 1;		/* current loglevel */
+static char *ulogd_configfile = ULOGD_CONFIGFILE;
 
 /* linked list for all registered interpreters */
 static ulog_interpreter_t *ulogd_interpreters;
@@ -487,7 +488,7 @@ static int parse_conffile(int final)
 		case -ERROPEN:
 			ulogd_log(ULOGD_ERROR,
 				"unable to open configfile: %s\n",
-				ULOGD_CONFIGFILE);
+				ulogd_configfile);
 			break;
 		case -ERRMAND:
 			ulogd_log(ULOGD_ERROR,
@@ -572,12 +573,21 @@ static void sighup_handler(int signal)
 static void print_usage(void)
 {
 	/* FIXME */
+	printf("ulogd Version %s\n", ULOGD_VERSION);
+	printf("Copyright (C) 2000-2002 Harald Welte "
+	       "<laforge@gnumonks.org>\n\n");
+	printf("Paramters:\n");
+	printf("\t-h --help\tThis help page\n");
+	printf("\t-V --version\tPrint version information\n");
+	printf("\t-d --daemon\tDaemonize (fork into background)\n");
+	printf("\t-c --configfile\tUse alternative Configfile\n");
 }
 
 static struct option opts[] = {
 	{ "version", 0, NULL, 'V' },
 	{ "daemon", 0, NULL, 'd' },
 	{ "help", 0, NULL, 'h' },
+	{ "configfile", 1, NULL, 'c'},
 	{ 0 }
 };
 
@@ -588,7 +598,7 @@ int main(int argc, char* argv[])
 	int daemonize = 0;
 	ulog_packet_msg_t *upkt;
 
-	while ((argch = getopt_long(argc, argv, "Vdh::", opts, NULL)) != -1) {
+	while ((argch = getopt_long(argc, argv, "c:dh::V", opts, NULL)) != -1) {
 		switch (argch) {
 		default:
 		case '?':
@@ -613,10 +623,13 @@ int main(int argc, char* argv[])
 			       "<laforge@gnumonks.org>\n");
 			exit(0);
 			break;
+		case 'c':
+			ulogd_configfile = optarg;
+			break;
 		}
 	}
 
-	if (init_conffile(ULOGD_CONFIGFILE)) {
+	if (init_conffile(ulogd_configfile)) {
 		ulogd_log(ULOGD_FATAL, "parse_conffile error\n");
 		exit(1);
 	}
