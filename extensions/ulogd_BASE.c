@@ -1,4 +1,4 @@
-/* ulogd_MAC.c, Version $Revision: 1.10 $
+/* ulogd_MAC.c, Version $Revision: 1.11 $
  *
  * ulogd interpreter plugin for 
  * 	o MAC addresses
@@ -26,7 +26,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  
- * $Id: ulogd_BASE.c,v 1.10 2001/09/01 11:51:54 laforge Exp $
+ * $Id: ulogd_BASE.c,v 1.11 2002/04/27 19:45:27 laforge Exp $
  *
  */
 
@@ -42,12 +42,16 @@
 /***********************************************************************
  * 			Raw header
  ***********************************************************************/
-static ulog_iret_t mac_rets[1] = {
+static ulog_iret_t raw_rets[] = {
 	{ NULL, NULL, 0, ULOGD_RET_STRING, ULOGD_RETF_FREE, "raw.mac", 
 	  { ptr: NULL } },
+	{ NULL, NULL, 0, ULOGD_RET_RAW, ULOGD_RETF_NONE, "raw.pkt",
+	  { ptr: NULL } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT32, ULOGD_RETF_NONE, "raw.pktlen",
+	  { ui32: 0 } },
 };
 
-static ulog_iret_t *_interp_mac(struct ulog_interpreter *ip, 
+static ulog_iret_t *_interp_raw(struct ulog_interpreter *ip, 
 				ulog_packet_msg_t *pkt)
 {
 	unsigned char *p;
@@ -69,10 +73,15 @@ static ulog_iret_t *_interp_mac(struct ulog_interpreter *ip,
 			sprintf(buf, "%s%02x%c", oldbuf, *p, i==pkt->mac_len-1 ? ' ':':');
 		ret[0].value.ptr = buf;
 		ret[0].flags |= ULOGD_RETF_VALID;
-		return ret;
-
 	}
-	return NULL;
+
+	/* include pointer to raw ipv4 packet */
+	ret[1].value.ptr = pkt->payload;
+	ret[1].flags |= ULOGD_RETF_VALID;
+	ret[2].value.ui32 = pkt->data_len;
+	ret[2].flags |= ULOGD_RETF_VALID;
+
+	return ret;
 }
 
 /***********************************************************************
@@ -375,7 +384,7 @@ static ulog_iret_t *_interp_ahesp(struct ulog_interpreter *ip,
 
 
 static ulog_interpreter_t base_ip[] = {
-	{ NULL, "raw", 0, &_interp_mac, 1, &mac_rets },
+	{ NULL, "raw", 0, &_interp_raw, 3, &raw_rets },
 	{ NULL, "oob", 0, &_interp_oob, 6, &oob_rets },
 	{ NULL, "ip", 0, &_interp_iphdr, 10, &iphdr_rets },
 	{ NULL, "tcp", 0, &_interp_tcphdr, 12, &tcphdr_rets },
