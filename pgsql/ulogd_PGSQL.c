@@ -1,4 +1,4 @@
-/* ulogd_PGSQL.c, Version $Revision: 1.7 $
+/* ulogd_PGSQL.c, Version $Revision: 1.8 $
  *
  * ulogd output plugin for logging to a PGSQL database
  *
@@ -70,7 +70,8 @@ static int _pgsql_output(ulog_iret_t *result)
 {
 	struct _field *f;
 	ulog_iret_t *res;
-                PGresult   *pgres;
+	PGresult   *pgres;
+	char *tmpstr;		/* need this for --log-ip-as-string */
 
 	stmt_ins = stmt_val;
 

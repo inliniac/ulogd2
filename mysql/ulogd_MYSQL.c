@@ -1,4 +1,4 @@
-/* ulogd_MYSQL.c, Version $Revision: 1.14 $
+/* ulogd_MYSQL.c, Version $Revision: 1.15 $
  *
  * ulogd output plugin for logging to a MySQL database
  *
@@ -17,7 +17,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  * 
- * $Id: ulogd_MYSQL.c,v 1.14 2003/09/28 15:19:26 laforge Exp $
+ * $Id: ulogd_MYSQL.c,v 1.15 2003/09/29 11:02:40 laforge Exp $
  *
  * 15 May 2001, Alex Janssen <alex@ynfonatic.de>:
  *      Added a compability option for older MySQL-servers, which
@@ -90,6 +90,7 @@ static int _mysql_output(ulog_iret_t *result)
 {
 	struct _field *f;
 	ulog_iret_t *res;
+	char *tmpstr;		/* need this for --log-ip-as-string */
 
 	stmt_ins = stmt_val;
 
