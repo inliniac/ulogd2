@@ -1,4 +1,4 @@
-/* ulogd_MAC.c, Version $Revision: 1.19 $
+/* ulogd_MAC.c, Version $Revision: 1.20 $
  *
  * ulogd interpreter plugin for 
  * 	o MAC addresses
@@ -26,7 +26,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  
- * $Id: ulogd_BASE.c,v 1.19 2003/08/23 13:02:11 laforge Exp $
+ * $Id: ulogd_BASE.c,v 1.20 2003/08/23 17:46:45 laforge Exp $
  *
  */
 
@@ -203,6 +203,10 @@ static ulog_iret_t tcphdr_rets[] = {
 		{ ui32: 0 } },
 	{ NULL, NULL, 0, ULOGD_RET_UINT32, ULOGD_RETF_NONE, "tcp.ackseq", 
 		{ ui32: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT8, ULOGD_RETF_NONE, "tcp.offset",
+		{ ui8: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT8, ULOGD_RETF_NONE, "tcp.reserved",
+		{ ui8: 0 } },
 	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "tcp.window",
 		{ ui16:	0 } },
 	{ NULL, NULL, 0, ULOGD_RET_BOOL, ULOGD_RETF_NONE, "tcp.urg", 
@@ -219,6 +223,12 @@ static ulog_iret_t tcphdr_rets[] = {
 		{ b: 0 } },
 	{ NULL, NULL, 0, ULOGD_RET_BOOL, ULOGD_RETF_NONE, "tcp.fin", 
 		{ b: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_BOOL, ULOGD_RETF_NONE, "tcp.res1",
+		{ b: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_BOOL, ULOGD_RETF_NONE, "tcp.res2",
+		{ b: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "tcp.csum",
+		{ ui16: 0 } },
 };
 
 static ulog_iret_t *_interp_tcphdr(struct ulog_interpreter *ip, 
@@ -240,25 +250,35 @@ static ulog_iret_t *_interp_tcphdr(struct ulog_interpreter *ip,
 	ret[2].flags |= ULOGD_RETF_VALID;
 	ret[3].value.ui32 = ntohl(tcph->ack_seq);
 	ret[3].flags |= ULOGD_RETF_VALID;
-	ret[4].value.ui16 = ntohs(tcph->window);
+	ret[4].value.ui8 = ntohs(tcph->doff);
 	ret[4].flags |= ULOGD_RETF_VALID;
-
-	ret[5].value.b = tcph->urg;
+	ret[5].value.ui8 = ntohs(tcph->res1);
 	ret[5].flags |= ULOGD_RETF_VALID;
-	if (tcph->urg) {
-		ret[6].value.ui16 = ntohs(tcph->urg_ptr);
-		ret[6].flags |= ULOGD_RETF_VALID;
-	}
-	ret[7].value.b = tcph->ack;
+	ret[6].value.ui16 = ntohs(tcph->window);
+	ret[6].flags |= ULOGD_RETF_VALID;
+
+	ret[7].value.b = tcph->urg;
 	ret[7].flags |= ULOGD_RETF_VALID;
-	ret[8].value.b = tcph->psh;
-	ret[8].flags |= ULOGD_RETF_VALID;
-	ret[9].value.b = tcph->rst;
+	if (tcph->urg) {
+		ret[8].value.ui16 = ntohs(tcph->urg_ptr);
+		ret[8].flags |= ULOGD_RETF_VALID;
+	}
+	ret[9].value.b = tcph->ack;
 	ret[9].flags |= ULOGD_RETF_VALID;
-	ret[10].value.b = tcph->syn;
+	ret[10].value.b = tcph->psh;
 	ret[10].flags |= ULOGD_RETF_VALID;
-	ret[11].value.b = tcph->fin;
+	ret[11].value.b = tcph->rst;
 	ret[11].flags |= ULOGD_RETF_VALID;
+	ret[12].value.b = tcph->syn;
+	ret[12].flags |= ULOGD_RETF_VALID;
+	ret[13].value.b = tcph->fin;
+	ret[13].flags |= ULOGD_RETF_VALID;
+	ret[14].value.b = tcph->res1;
+	ret[14].flags |= ULOGD_RETF_VALID;
+	ret[15].value.b = tcph->res2;
+	ret[15].flags |= ULOGD_RETF_VALID;
+	ret[16].value.ui16 = ntohs(tcph->check);
+	ret[16].value.ui16 = ULOGD_RETF_VALID;
 	
 	return ret;
 }
@@ -272,6 +292,8 @@ static ulog_iret_t udphdr_rets[] = {
 	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "udp.dport", 
 		{ ui16: 0 } },
 	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "udp.len", 
+		{ ui16: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "udp.csum",
 		{ ui16: 0 } },
 };
 
@@ -292,6 +314,8 @@ static ulog_iret_t *_interp_udp(struct ulog_interpreter *ip,
 	ret[1].flags |= ULOGD_RETF_VALID;
 	ret[2].value.ui16 = ntohs(udph->len);
 	ret[2].flags |= ULOGD_RETF_VALID;
+	ret[3].value.ui16 = ntohs(udph->check);
+	ret[3].flags |= ULOGD_RETF_VALID;
 	
 	return ret;
 }
@@ -312,6 +336,8 @@ static ulog_iret_t icmphdr_rets[] = {
 	{ NULL, NULL, 0, ULOGD_RET_IPADDR, ULOGD_RETF_NONE, "icmp.gateway", 
 		{ ui32: 0 } },
 	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "icmp.fragmtu", 
+		{ ui16: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "icmp.csum",
 		{ ui16: 0 } },
 };
 
@@ -351,6 +377,9 @@ static ulog_iret_t *_interp_icmp(struct ulog_interpreter *ip,
 			}
 			break;
 	}
+	ret[6].value.ui16 = icmph->checksum;
+	ret[6].flags |= ULOGD_RETF_VALID;
+
 	return ret;
 }
 
