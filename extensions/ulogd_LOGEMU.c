@@ -1,4 +1,4 @@
-/* ulogd_LOGEMU.c, Version $Revision: 1.2 $
+/* ulogd_LOGEMU.c, Version $Revision: 1.3 $
  *
  * ulogd output target for syslog logging emulation
  *
@@ -8,13 +8,16 @@
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  * This software is released under the terms of GNU GPL
  *
- * $Id: ulogd_LOGEMU.c,v 1.2 2000/11/20 11:43:22 laforge Exp $
+ * $Id: ulogd_LOGEMU.c,v 1.3 2001/02/04 13:39:31 laforge Exp $
  *
  */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
+#include <time.h>
+#include <sys/time.h>
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
 #include "ulogd.h"
@@ -31,6 +34,8 @@
         ((unsigned char *)&addr)[3]
 
 static FILE *of = NULL;
+
+static char hostname[255];
 
 struct intr_id {
 	char* name;
@@ -79,8 +84,29 @@ static struct intr_id intr_ids[INTR_IDS] = {
 
 int _output_logemu(ulog_iret_t *res)
 {
-	fprintf(of, "%sIN=%s OUT=%s ", 
-		(char *) GET_VALUE(0).ptr, 
+	char *timestr;
+	char *tmp;
+	time_t now;
+
+	/* get time */
+	time(&now);
+	timestr = ctime(&now) + 4;
+
+	/* truncate time */
+	if (tmp = strchr(timestr, '\n'))
+		*tmp = '\0';
+
+	/* truncate hostname */
+	if (tmp = strchr(hostname, '.'))
+		*tmp = '\0';
+
+	/* print time and hostname */
+	fprintf(of, "%.15s %s", timestr, hostname);
+
+	if (*(char *) GET_VALUE(0).ptr)
+		fprintf(of, " %s", (char *) GET_VALUE(0).ptr);
+
+	fprintf(of," IN=%s OUT=%s ", 
 		(char *) GET_VALUE(1).ptr, 
 		(char *) GET_VALUE(2).ptr);
 
@@ -220,11 +246,18 @@ static void _logemu_reg_op(void)
 static config_entry_t syslogf_ce = { NULL, "syslogfile", CONFIG_TYPE_STRING, 
 				  CONFIG_OPT_NONE, 0,
 				  { string: ULOGD_LOGEMU_DEFAULT } };
+
 void _init(void)
 {
 	/* FIXME: error handling */
 	config_register_key(&syslogf_ce);
 	config_parse_file(0);
+
+	if (gethostname(hostname, sizeof(hostname)) < 0) {
+		ulogd_log(ULOGD_FATAL, "can't gethostname(): %s\n",
+			  strerror(errno));
+		exit(2);
+	}
 
 #ifdef DEBUG_LOGEMU
 	of = stdout;
