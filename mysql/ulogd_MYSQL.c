@@ -65,25 +65,39 @@ static char *stmt_val;
 static char *stmt_ins;
 
 /* our configuration directives */
-static config_entry_t db_ce = { NULL, "db", CONFIG_TYPE_STRING,
-				CONFIG_OPT_MANDATORY, 0,
-				{ } };
+static config_entry_t db_ce = { 
+	.key = "db", 
+	.type = CONFIG_TYPE_STRING,
+	.options = CONFIG_OPT_MANDATORY,
+};
 
-static config_entry_t host_ce = { &db_ce, "host", CONFIG_TYPE_STRING,
-				CONFIG_OPT_MANDATORY, 0,
-				{ } };
+static config_entry_t host_ce = { 
+	.next = &db_ce, 
+	.key = "host", 
+	.type = CONFIG_TYPE_STRING,
+	.options = CONFIG_OPT_MANDATORY,
+};
 
-static config_entry_t user_ce = { &host_ce, "user", CONFIG_TYPE_STRING,
-				CONFIG_OPT_MANDATORY, 0,
-				{ } };
+static config_entry_t user_ce = { 
+	.next = &host_ce, 
+	.key = "user", 
+	.type = CONFIG_TYPE_STRING,
+	.options = CONFIG_OPT_MANDATORY,
+};
 
-static config_entry_t pass_ce = { &user_ce, "pass", CONFIG_TYPE_STRING,
-				CONFIG_OPT_MANDATORY, 0,
-				{ } };
+static config_entry_t pass_ce = { 
+	.next = &user_ce, 
+	.key = "pass", 
+	.type = CONFIG_TYPE_STRING,
+	.options = CONFIG_OPT_MANDATORY,
+};
 
-static config_entry_t table_ce = { &pass_ce, "table", CONFIG_TYPE_STRING,
-				CONFIG_OPT_MANDATORY, 0,
-				{ } };
+static config_entry_t table_ce = { 
+	.next = &pass_ce, 
+	.key = "table", 
+	.type = CONFIG_TYPE_STRING,
+	.options = CONFIG_OPT_MANDATORY,
+};
 
 /* our main output function, called by ulogd */
 static int mysql_output(ulog_iret_t *result)
