@@ -4,6 +4,8 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 sysconfdir=@sysconfdir@
 
+ULOGD_CONFIGFILE=@sysconfdir@/ulogd.conf
+
 ULOGD_LIB_PATH=@libdir@/ulogd
 
 CC=@CC@
