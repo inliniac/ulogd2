@@ -26,5 +26,5 @@ distclean:
 	rm -f Makefile
 
 install: all
-	@INSTALL@ -m 755 -d $(ULOGD_LIB_PATH)
-	@INSTALL@ -m 755 *.so $(ULOGD_LIB_PATH)
+	@INSTALL@ -m 755 -d $(DESTDIR)$(ULOGD_LIB_PATH)
+	@INSTALL@ -m 755 *.so $(DESTDIR)$(ULOGD_LIB_PATH)
