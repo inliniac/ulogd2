@@ -1,12 +1,12 @@
 <!doctype linuxdoc system>
 
-<!-- $Id$ -->
+<!-- $Id: ulogd.sgml,v 1.1 2000/11/20 11:43:22 laforge Exp $ -->
 
 <article>
 
 <title>ULOGD - the Userspace Logging Daemon</title>
 <author>Harald Welte &lt;laforge@gnumonks.org&gt</author>
-<date>Revision $Revision$, $Date$</date>
+<date>Revision $Revision: 1.1 $, $Date: 2000/11/20 11:43:22 $</date>
 
 <abstract>
 This is the documentation for <tt>ulogd</tt>, the Userspace logging daemon.
@@ -96,9 +96,9 @@ in the userspace directory of netfilter CVS.
 Download the ulogd package from <URL URL="http://www.gnumonks.org/ftp/pub/netfilter"> and
 untar it. 
 <p>
-Run './configure' and 'make install'.
+If you want to build ulogd with MySQL support, type './configure --with-mysql'. You may also have to specify the path of the mysql libraries using '--with-mysql=path'. To build ulogd without MySQL support, just use './configure'.
 <p>
-Copy the configuration file 'ulogd.conf' to /etc
+To compile and install the program, call 'make install'.
 
 <sect2>Using a precompiled package
 <p>
