@@ -17,7 +17,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  * 
- * $Id: ulogd_MYSQL.c,v 1.15 2003/09/29 11:02:40 laforge Exp $
+ * $Id$
  *
  * 15 May 2001, Alex Janssen <alex@ynfonatic.de>:
  *      Added a compability option for older MySQL-servers, which
@@ -86,7 +86,7 @@ static config_entry_t table_ce = { &pass_ce, "table", CONFIG_TYPE_STRING,
 				{ } };
 
 /* our main output function, called by ulogd */
-static int _mysql_output(ulog_iret_t *result)
+static int mysql_output(ulog_iret_t *result)
 {
 	struct _field *f;
 	ulog_iret_t *res;
@@ -199,7 +199,7 @@ static int _mysql_output(ulog_iret_t *result)
 #define MYSQL_VALSIZE	100
 
 /* create the static part of our insert statement */
-static int _mysql_createstmt(void)
+static int mysql_createstmt(void)
 {
 	struct _field *f;
 	unsigned int size;
@@ -251,7 +251,7 @@ static int _mysql_createstmt(void)
 }
 
 /* find out which columns the table has */
-static int _mysql_get_columns(const char *table)
+static int mysql_get_columns(const char *table)
 {
 	MYSQL_RES *result;
 	MYSQL_FIELD *field;
@@ -300,7 +300,7 @@ static int _mysql_get_columns(const char *table)
 }
 
 /* make connection and select database */
-static int _mysql_open_db(char *server, char *user, char *pass, char *db)
+static int mysql_open_db(char *server, char *user, char *pass, char *db)
 {
 	dbh = mysql_init(NULL);
 	if (!dbh)
@@ -312,25 +312,40 @@ static int _mysql_open_db(char *server, char *user, char *pass, char *db)
 	return 0;
 }
 
-static ulog_output_t _mysql_plugin = { NULL, "mysql", &_mysql_output, NULL };
-
-void _init(void) 
+static int mysql_init(void)
 {
 	/* have the opts parsed */
 	config_parse_file("MYSQL", &table_ce);
 
-	if (_mysql_open_db(host_ce.u.string, user_ce.u.string, 
+	if (mysql_open_db(host_ce.u.string, user_ce.u.string, 
 			   pass_ce.u.string, db_ce.u.string)) {
 		ulogd_log(ULOGD_ERROR, "can't establish database connection\n");
-		return;
+		return -1;
 	}
 
 	/* read the fieldnames to know which values to insert */
-	if (_mysql_get_columns(table_ce.u.string)) {
+	if (mysql_get_columns(table_ce.u.string)) {
 		ulogd_log(ULOGD_ERROR, "unable to get mysql columns\n");
-		return;
+		return -1;
 	}
-	_mysql_createstmt();
-	register_output(&_mysql_plugin);
+	mysql_createstmt();
 
+	return 0;
+}
+
+static void mysql_fini(void)
+{
+	mysql_close(dbh);
+}
+
+static ulog_output_t mysql_plugin = { 
+	.name = "mysql", 
+	.output = &mysql_output, 
+	.init = &mysql_init,
+	.fini = &mysql_fini,
+};
+
+void _init(void) 
+{
+	register_output(&mysql_plugin);
 }

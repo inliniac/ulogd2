@@ -32,6 +32,9 @@
  *
  * 	09 Sep 2003 Magnus Boden <sarek@ozaba.cx>
  * 		- added support for more flexible multi-section conffile
+ *
+ * 	20 Apr 2004 Nicolas Pougetoux <nicolas.pougetoux@edelweb.fr>
+ * 		- added suppurt for seteuid()
  */
 
 #define ULOGD_VERSION	"1.20"
@@ -48,6 +51,8 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <getopt.h>
+#include <pwd.h>
+#include <grp.h>
 #include <libipulog/libipulog.h>
 #include <ulogd/conffile.h>
 #include <ulogd/ulogd.h>
@@ -581,13 +586,15 @@ static void print_usage(void)
 {
 	/* FIXME */
 	printf("ulogd Version %s\n", ULOGD_VERSION);
-	printf("Copyright (C) 2000-2003 Harald Welte "
-	       "<laforge@gnumonks.org>\n\n");
-	printf("Paramters:\n");
+	printf("Copyright (C) 2000-2004 Harald Welte "
+	       "<laforge@gnumonks.org>\n");
+	printf("This is free software with ABSOLUTELY NO WARRANTY.\n\n");
+	printf("Parameters:\n");
 	printf("\t-h --help\tThis help page\n");
 	printf("\t-V --version\tPrint version information\n");
 	printf("\t-d --daemon\tDaemonize (fork into background)\n");
 	printf("\t-c --configfile\tUse alternative Configfile\n");
+	printf("\t-u --uid\tChange UID/GID\n");
 }
 
 static struct option opts[] = {
@@ -595,6 +602,7 @@ static struct option opts[] = {
 	{ "daemon", 0, NULL, 'd' },
 	{ "help", 0, NULL, 'h' },
 	{ "configfile", 1, NULL, 'c'},
+	{ "uid", 1, NULL, 'u' },
 	{ 0 }
 };
 
@@ -603,9 +611,15 @@ int main(int argc, char* argv[])
 	int len;
 	int argch;
 	int daemonize = 0;
+	int change_uid = 0;
+	char *user = NULL;
+	struct passwd *pw;
+	uid_t uid = 0;
+	gid_t gid = 0;
 	ulog_packet_msg_t *upkt;
 
-	while ((argch = getopt_long(argc, argv, "c:dh::V", opts, NULL)) != -1) {
+
+	while ((argch = getopt_long(argc, argv, "c:dh::Vu:", opts, NULL)) != -1) {
 		switch (argch) {
 		default:
 		case '?':
@@ -633,6 +647,18 @@ int main(int argc, char* argv[])
 		case 'c':
 			ulogd_configfile = optarg;
 			break;
+		case 'u':
+			change_uid = 1;
+			user = strdup(optarg);
+			pw = getpwnam(user);
+			if (!pw) {
+				printf("Unknown user %s.\n", user);
+				free(user);
+				exit(1);
+			}
+			uid = pw->pw_uid;
+			gid = pw->pw_gid;
+			break;
 		}
 	}
 
@@ -647,14 +673,6 @@ int main(int argc, char* argv[])
 		ulogd_log(ULOGD_FATAL, "parse_conffile\n");
 		exit(1);
 	}
-
-	logfile_open(logf_ce.u.string);
-
-#ifdef DEBUG
-	/* dump key and interpreter hash */
-	interh_dump();
-	keyh_dump();
-#endif
 
 	/* allocate a receive buffer */
 	libulog_buf = (unsigned char *) malloc(bufsiz_ce.u.value);
@@ -677,6 +695,43 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 
+
+	if (change_uid) {
+		ulogd_log(ULOGD_NOTICE, "Changing UID / GID\n");
+		if (setgid(gid)) {
+			ulogd_log(ULOGD_FATAL, "can't set GID\n");
+			ipulog_perror(NULL);
+			exit(1);
+		}
+		if (setegid(gid)) {
+			ulogd_log(ULOGD_FATAL, "can't sett effective GID\n");
+			ipulog_perror(NULL);
+			exit(1);
+		}
+		if (initgroups(user, gid)) {
+			ulogd_log(ULOGD_FATAL, "can't set user secondary GID\n");
+			ipulog_perror(NULL);
+			exit(1);
+		}
+		if (setuid(uid)) {
+			ulogd_log(ULOGD_FATAL, "can't set UID\n");
+			ipulog_perror(NULL);
+			exit(1);
+		}
+		if (seteuid(uid)) {
+			ulogd_log(ULOGD_FATAL, "can't set effective UID\n");
+			ipulog_perror(NULL);
+			exit(1);
+		}
+	}
+
+	logfile_open(logf_ce.u.string);
+
+#ifdef DEBUG
+	/* dump key and interpreter hash */
+	interh_dump();
+	keyh_dump();
+#endif
 	if (daemonize){
 		if (fork()) {
 			exit(0);

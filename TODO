@@ -31,6 +31,7 @@ X pcap output plugin (to use ethereal/tcpdump/... for the logs)
   used by any of the running output plugins
 - issues with ulogd_BASE and partially copied packets (--ulog-cprange)
 - problem wrt. ulogd_BASE and fragments
+- implement extension SIGHUP handlers (including config re-parse)
 
 conffile:
 - rewrite parser. This stuff is a real mess. Anybody interested?

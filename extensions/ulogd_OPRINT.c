@@ -17,7 +17,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_OPRINT.c,v 1.9 2002/12/09 14:42:43 laforge Exp $
+ * $Id$
  *
  */
 
@@ -45,7 +45,7 @@
 
 static FILE *of = NULL;
 
-int _output_print(ulog_iret_t *res)
+static int _output_print(ulog_iret_t *res)
 {
 	ulog_iret_t *ret;
 	
@@ -83,7 +83,7 @@ static config_entry_t outf_ce = { NULL, "file", CONFIG_TYPE_STRING,
 				  CONFIG_OPT_NONE, 0,
 				  { string: ULOGD_OPRINT_DEFAULT } };
 
-void sighup_handler_print(int signal)
+static void sighup_handler_print(int signal)
 {
 
 	switch (signal) {
@@ -102,22 +102,7 @@ void sighup_handler_print(int signal)
 	}
 }
 
-static ulog_output_t base_op[] = {
-	{ NULL, "oprint", &_output_print, &sighup_handler_print },
-	{ NULL, "", NULL, NULL },
-};
-
-
-static void _base_reg_op(void)
-{
-	ulog_output_t *op = base_op;
-	ulog_output_t *p;
-
-	for (p = op; p->output; p++)
-		register_output(p);
-}
-
-void _init(void)
+static int oprint_init(void)
 {
 #ifdef DEBUG
 	of = stdout;
@@ -131,6 +116,26 @@ void _init(void)
 		exit(2);
 	}		
 #endif
-		
-	_base_reg_op();
+	return 0;
+}
+
+static void oprint_fini(void)
+{
+	if (of != stdout)
+		fclose(of);
+
+	return;
+}
+
+static ulog_output_t oprint_op = {
+	.name = "oprint", 
+	.output = &_output_print, 
+	.signal = &sighup_handler_print,
+	.init = &oprint_init,
+	.fini = &oprint_fini,
+};
+
+void _init(void)
+{
+	register_output(&oprint_op);
 }

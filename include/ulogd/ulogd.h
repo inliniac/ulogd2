@@ -9,7 +9,7 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.h,v 1.16 2002/06/13 12:55:59 laforge Exp $
+ * $Id$
  */
 
 #include <libipulog/libipulog.h>
@@ -107,6 +107,10 @@ typedef struct ulog_output {
 	struct ulog_output *next;
 	/* name of this ouput plugin */
 	char name[ULOGD_MAX_KEYLEN];
+	/* callback for initialization */
+	int (*init)(void);
+	/* callback for de-initialization */
+	void (*fini)(void);
 	/* callback function */
 	int (*output)(ulog_iret_t *ret);
 	/* callback function for signals (SIGHUP, ..) */

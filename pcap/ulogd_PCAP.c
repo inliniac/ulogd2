@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_PCAP.c,v 1.7 2003/10/16 12:56:59 laforge Exp $
+ * $Id$
  *
  */
 
@@ -77,7 +77,7 @@ static struct intr_id intr_ids[INTR_IDS] = {
 #define GET_VALUE(x)	ulogd_keyh[intr_ids[x].id].interp->result[ulogd_keyh[intr_ids[x].id].offset].value
 #define GET_FLAGS(x)	ulogd_keyh[intr_ids[x].id].interp->result[ulogd_keyh[intr_ids[x].id].offset].flags
 
-int _output_pcap(ulog_iret_t *res)
+static int pcap_output(ulog_iret_t *res)
 {
 	struct pcap_pkthdr pchdr;
 
@@ -182,7 +182,7 @@ void append_create_outfile(void) {
 	}
 }
 
-void sighup_handler_pcap(int signal)
+static void pcap_signal_handler(int signal)
 {
 	switch (signal) {
 	case SIGHUP:
@@ -194,24 +194,8 @@ void sighup_handler_pcap(int signal)
 		break;
 	}
 }
-		
 
-static ulog_output_t logemu_op[] = {
-	{ NULL, "pcap", &_output_pcap, &sighup_handler_pcap },
-	{ NULL, "", NULL, NULL },
-};
-
-/* register output plugin with ulogd */
-static void _logemu_reg_op(void)
-{
-	ulog_output_t *op = logemu_op;
-	ulog_output_t *p;
-
-	for (p = op; p->output; p++)
-		register_output(p);
-}
-
-void _init(void)
+static int pcap_init(void)
 {
 	/* FIXME: error handling */
 	config_parse_file("PCAP", &pcapsync_ce);
@@ -221,9 +205,28 @@ void _init(void)
 #else
 	append_create_outfile();
 #endif
+	return 0;
+}
+
+static void pcap_fini(void)
+{
+	if (of)
+		fclose(of);
+}
+
+static ulog_output_t pcap_op = {
+	.name = "pcap", 
+	.init = &pcap_init,
+	.fini = &pcap_fini,
+	.output = &pcap_output,
+	.signal = &pcap_signal_handler,
+};
+
+void _init(void)
+{
 	if (get_ids()) {
 		ulogd_log(ULOGD_ERROR, "can't resolve all keyhash id's\n");
 	}
 
-	_logemu_reg_op();
+	register_output(&pcap_op);
 }

@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_LOGEMU.c,v 1.15 2003/09/28 15:19:26 laforge Exp $
+ * $Id$
  *
  */
 
@@ -57,7 +57,7 @@ static config_entry_t syslsync_ce = { &syslogf_ce, "sync",
 
 static FILE *of = NULL;
 
-int _output_logemu(ulog_iret_t *res)
+static int _output_logemu(ulog_iret_t *res)
 {
 	static char buf[4096];
 
@@ -71,7 +71,7 @@ int _output_logemu(ulog_iret_t *res)
 	return 0;
 }
 
-void sighup_handler_logemu(int signal)
+static void signal_handler_logemu(int signal)
 {
 	switch (signal) {
 	case SIGHUP:
@@ -90,14 +90,7 @@ void sighup_handler_logemu(int signal)
 }
 		
 
-static ulog_output_t logemu_op =
-	{ NULL, "syslogemu", &_output_logemu, &sighup_handler_logemu };
-
-void _init(void)
-{
-	/* FIXME: error handling */
-	config_parse_file("LOGEMU", &syslsync_ce);
-
+static int init_logemu(void) {
 #ifdef DEBUG_LOGEMU
 	of = stdout;
 #else
@@ -111,6 +104,27 @@ void _init(void)
 	if (printpkt_init()) {
 		ulogd_log(ULOGD_ERROR, "can't resolve all keyhash id's\n");
 	}
+
+	return 1;
+}
+
+static void fini_logemu(void) {
+	if (of != stdout)
+		fclose(of);
+}
+
+static ulog_output_t logemu_op = { 
+	.name = "syslogemu",
+	.init = &init_logemu,
+	.fini = &fini_logemu,
+	.output = &_output_logemu, 
+	.signal = &signal_handler_logemu,
+};
+
+void _init(void)
+{
+	/* FIXME: error handling */
+	config_parse_file("LOGEMU", &syslsync_ce);
 
 	register_output(&logemu_op);
 }

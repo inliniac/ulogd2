@@ -66,7 +66,7 @@ static config_entry_t table_ce = { &pass_ce, "table", CONFIG_TYPE_STRING,
 				{ } };
 
 /* our main output function, called by ulogd */
-static int _pgsql_output(ulog_iret_t *result)
+static int pgsql_output(ulog_iret_t *result)
 {
 	struct _field *f;
 	ulog_iret_t *res;
@@ -167,7 +167,7 @@ static int _pgsql_output(ulog_iret_t *result)
 #define PGSQL_VALSIZE	100
 
 /* create the static part of our insert statement */
-static int _pgsql_createstmt(void)
+static int pgsql_createstmt(void)
 {
 	struct _field *f;
 	unsigned int size;
@@ -219,7 +219,7 @@ static int _pgsql_createstmt(void)
 }
 
 /* find out which columns the table has */
-static int _pgsql_get_columns(const char *table)
+static int pgsql_get_columns(const char *table)
 {
 	PGresult *result;
 	char buf[ULOGD_MAX_KEYLEN];
@@ -287,7 +287,7 @@ int exit_nicely(PGconn *conn)
 }
 
 /* make connection and select database */
-static int _pgsql_open_db(char *server, char *user, char *pass, char *db)
+static int pgsql_open_db(char *server, char *user, char *pass, char *db)
 {
                char connstr[80];
                char * sql;
@@ -313,26 +313,38 @@ static int _pgsql_open_db(char *server, char *user, char *pass, char *db)
         return 0;
 }
 
-
-static ulog_output_t _pgsql_plugin = { NULL, "pgsql", &_pgsql_output, NULL };
-
-void _init(void)
+static int pgsql_init(void)
 {
 	/* have the opts parsed */
 	config_parse_file("PGSQL", &table_ca);
 
-	if (_pgsql_open_db(host_ce.u.string, user_ce.u.string,
+	if (pgsql_open_db(host_ce.u.string, user_ce.u.string,
 			   pass_ce.u.string, db_ce.u.string)) {
 		ulogd_log(ULOGD_ERROR, "can't establish database connection\n");
 		return;
 	}
 
 	/* read the fieldnames to know which values to insert */
-	if (_pgsql_get_columns(table_ce.u.string)) {
+	if (pgsql_get_columns(table_ce.u.string)) {
 		ulogd_log(ULOGD_ERROR, "unable to get pgsql columns\n");
 		return;
 	}
-	_pgsql_createstmt();
-	register_output(&_pgsql_plugin);
+	pgsql_createstmt();
+}
 
+static void pgsql_fini(void)
+{
+	PQfinish(dbh);
+}
+
+static ulog_output_t pgsql_plugin = { 
+	.name = "pgsql", 
+	.output = &pgsql_output,
+	.init = &pgsql_init,
+	.fini = &pgsql_fini,
+};
+
+void _init(void)
+{
+	register_output(&pgsql_plugin);
 }

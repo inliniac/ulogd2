@@ -57,7 +57,7 @@ static config_entry_t level_ce = {
 
 static int syslog_level, syslog_facility;
 
-int _output_syslog(ulog_iret_t *res)
+static int _output_syslog(ulog_iret_t *res)
 {
 	static char buf[4096];
 	
@@ -67,11 +67,8 @@ int _output_syslog(ulog_iret_t *res)
 	return 0;
 }
 		
-static ulog_output_t syslog_op = { NULL, "syslog", &_output_syslog, NULL };
-
-void _init(void)
+static int syslog_init(void)
 {
-
 	/* FIXME: error handling */
 	config_parse_file("SYSLOG", &level_ce);
 
@@ -125,6 +122,26 @@ void _init(void)
 		exit(2);
 	}
 
+	openlog("ulogd", LOG_NDELAY|LOG_PID, syslog_facility);
+
+	return 0;
+}
+
+static void syslog_fini(void)
+{
+	closelog();
+}
+
+static ulog_output_t syslog_op = { 
+	.name = "syslog", 
+	.init = &syslog_init,
+	.fini = &syslog_fini,
+	.output &_output_syslog
+};
+
+
+void _init(void)
+{
 	if (printpkt_init())
 		ulogd_log(ULOGD_ERROR, "can't resolve all keyhash id's\n");
 
