@@ -428,41 +428,6 @@ static void clean_results(ulog_iret_t *ret)
 	}
 }
 
-/* call all registered interpreters and hand the results over to 
- * propagate_results */
-static void handle_packet(ulog_packet_msg_t *pkt)
-{
-	ulog_iret_t *ret;
-        ulog_iret_t *allret = NULL;
-	ulog_interpreter_t *ip;
-
-	unsigned int i,j;
-
-	/* If there are no interpreters registered yet,
-	 * ignore this packet */
-	if (!ulogd_interh_ids) {
-		ulogd_log(ULOGD_NOTICE, 
-			  "packet received, but no interpreters found\n");
-		return;
-	}
-
-	for (i = 1; i <= ulogd_interh_ids; i++) {
-		ip = ulogd_interh[i];
-		/* call interpreter */
-		if ((ret = ((ip)->interp)(ip, pkt))) {
-			/* create references for result linked-list */
-			for (j = 0; j < ip->key_num; j++) {
-				if (IS_VALID(ip->result[j])) {
-					ip->result[j].cur_next = allret;
-					allret = &ip->result[j];
-				}
-			}
-		}
-	}
-	propagate_results(allret);
-	clean_results(ulogd_interpreters->result);
-}
-
 /* plugin loader to dlopen() a plugins */
 static int load_plugin(char *file)
 {
@@ -765,25 +730,6 @@ int main(int argc, char* argv[])
 
 	ulogd_log(ULOGD_NOTICE, 
 		  "initialization finished, entering main loop\n");
-
-	/* endless loop receiving packets and handling them over to
-	 * handle_packet */
-	while ((len = ipulog_read(libulog_h, libulog_buf, 
-				 bufsiz_ce.u.value, 1))) {
-
-		if (len <= 0) {
-			/* this is not supposed to happen */
-			ulogd_log(ULOGD_ERROR, "ipulog_read == %d! "
-				  "ipulog_errno == %d, errno = %d\n",
-				  len, ipulog_errno, errno);
-		} else {
-			while ((upkt = ipulog_get_packet(libulog_h,
-					       libulog_buf, len))) {
-				DEBUGP("==> packet received\n");
-				handle_packet(upkt);
-			}
-		}
-	}
 
 	/* hackish, but result is the same */
 	sigterm_handler(SIGTERM);	
