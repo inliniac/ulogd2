@@ -1,6 +1,6 @@
-/* ulogd, Version $Revision: 1.26 $
+/* ulogd, Version $Revision: 1.27 $
  *
- * $Id: ulogd.c,v 1.26 2002/07/30 07:04:12 laforge Exp $
+ * $Id: ulogd.c,v 1.27 2002/07/30 07:15:54 laforge Exp $
  *
  * userspace logging daemon for the netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd.c,v 1.26 2002/07/30 07:04:12 laforge Exp $
+ * $Id: ulogd.c,v 1.27 2002/07/30 07:15:54 laforge Exp $
  *
  * Modifications:
  * 	14 Jun 2001 Martin Josefsson <gandalf@wlug.westbo.se>
@@ -259,7 +259,7 @@ ulog_iret_t *keyh_getres(unsigned int id)
 
 /***********************************************************************
  * INTERPRETER MANAGEMENT 
- ***********************************************************************
+ ***********************************************************************/
 
 /* try to lookup a registered interpreter for a given name */
 static ulog_interpreter_t *find_interpreter(const char *name)
@@ -464,6 +464,7 @@ static int logfile_open(const char *name)
 			exit(2);
 		}
 	}
+	ulogd_log(ULOGD_INFO, "ulogd Version %s starting\n", ULOGD_VERSION);
 	return 0;
 }
 
@@ -669,7 +670,8 @@ int main(int argc, char* argv[])
 
 	/* endless loop receiving packets and handling them over to
 	 * handle_packet */
-	while (len = ipulog_read(libulog_h, libulog_buf, MYBUFSIZ, 1)) {
+	while (len = ipulog_read(libulog_h, libulog_buf, 
+				 bufsiz_ce.u.value, 1)) {
 
 		if (len <= 0) {
 			/* this is not supposed to happen */
