@@ -1,5 +1,5 @@
 /* 
- * libipulog.c, Version $Revision$
+ * libipulog.c, $Revision$
  *
  * netfilter ULOG userspace library.
  *
@@ -16,7 +16,16 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <net/if.h>
 #include <libipulog/libipulog.h>
+
+struct ipulog_handle
+{
+	int fd;
+	u_int8_t blocking;
+	struct sockaddr_nl local;
+	struct sockaddr_nl peer;
+};
 
 /* internal */
 
@@ -111,7 +120,7 @@ u_int32_t ipulog_group2gmask(u_int32_t group)
 		ipulog_errno = IPULOG_ERR_INVGR;
 		return 0;
 	}
-	return (1 << group - 1);
+	return (1 << (group - 1));
 }
 
 /* create a ipulog handle for the reception of packets sent to gmask */
@@ -156,22 +165,21 @@ struct ipulog_handle *ipulog_create_handle(unsigned int gmask)
 } 
 
 /* destroy a ipulog handle */
-int ipulog_destroy_handle(struct ipulog_handle *h)
+void ipulog_destroy_handle(struct ipulog_handle *h)
 {
-	if (h)
-	{
-		close(h->fd);
-		free(h);
-	}
+	close(h->fd);
+	free(h);
 }
 
+#if 0
 int ipulog_set_mode()
 {
 }
+#endif
 
 /* do a BLOCKING read on an ipulog handle */
-ssize_t ipulog_read(const struct ipulog_handle *h, unsigned char *buf,
-		size_t len, int timeout)
+ssize_t ipulog_read(struct ipulog_handle *h, unsigned char *buf,
+		    size_t len, int timeout)
 {
 	return ipulog_netlink_recvfrom(h, buf, len);
 }
