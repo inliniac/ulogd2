@@ -1,5 +1,5 @@
 /* 
- * libipulog.c, $Revision: 1.2 $
+ * libipulog.c, $Revision: 1.3 $
  *
  * netfilter ULOG userspace library.
  *
@@ -9,7 +9,7 @@
  * This library is still under development, so be aware of sudden interface
  * changes
  *
- * $Id: libipulog.c,v 1.2 2000/07/31 14:52:46 laforge Exp $
+ * $Id: libipulog.c,v 1.3 2000/08/11 09:56:45 laforge Exp $
  */
 
 #include <stdlib.h>
@@ -146,7 +146,7 @@ struct ipulog_handle *ipulog_create_handle(unsigned int gmask)
 	}
 	memset(&h->local, 0, sizeof(struct sockaddr_nl));
 	h->local.nl_family = AF_NETLINK;
-	h->local.nl_pid = 0;
+	h->local.nl_pid = getpid();
 	h->local.nl_groups = gmask;
 	status = bind(h->fd, (struct sockaddr *)&h->local, sizeof(h->local));
 	if (status == -1)
