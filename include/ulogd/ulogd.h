@@ -1,6 +1,6 @@
 #ifndef _ULOGD_H
 #define _ULOGD_H
-/* ulogd, Version $Revision: 1.14 $
+/* ulogd, Version $Revision: 1.15 $
  *
  * userspace logging daemon for netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -9,7 +9,7 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.h,v 1.14 2001/06/14 19:25:25 laforge Exp $
+ * $Id: ulogd.h,v 1.15 2001/06/17 20:08:30 laforge Exp $
  */
 
 #include <libipulog/libipulog.h>
@@ -38,13 +38,13 @@
 
 /* types with length field */
 #define ULOGD_RET_STRING	0x8020
-#define ULODG_RET_RAW		0x8030
+#define ULOGD_RET_RAW		0x8030
 
 
 /* FLAGS */
 #define ULOGD_RETF_NONE		0x0000
-#define ULOGD_RETF_VALID	0x0001
-#define ULOGD_RETF_FREE		0x0002
+#define ULOGD_RETF_VALID	0x0001	/* contains a valid result */
+#define ULOGD_RETF_FREE		0x0002	/* ptr needs to be free()d */
 
 
 /* maximum length of ulogd key */
