@@ -19,7 +19,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_LOGEMU.c,v 1.15 2003/09/28 15:19:26 laforge Exp $
+ * $Id$
  *
  */
 
@@ -40,14 +40,20 @@
 #define SYSLOG_LEVEL_DEFAULT "LOG_NOTICE"
 #endif
 
-static config_entry_t facility_ce = { NULL, "facility", CONFIG_TYPE_STRING, 
-				  CONFIG_OPT_NONE, 0,
-				  { string: SYSLOG_FACILITY_DEFAULT } };
+static config_entry_t facility_ce = { 
+	.key = "facility", 
+	.type = CONFIG_TYPE_STRING, 
+	.options = CONFIG_OPT_NONE, 
+	.u = { .string = SYSLOG_FACILITY_DEFAULT } 
+};
 
-static config_entry_t level_ce = { &facility_ce, "level", 
-				      CONFIG_TYPE_INT, CONFIG_OPT_NONE, 0,
-				      { value: SYSLOG_LEVEL_DEFAULT }
-				     };
+static config_entry_t level_ce = { 
+	.next = &facility_ce, 
+	.key = "level", 
+	.type = CONFIG_TYPE_INT,
+	.options = CONFIG_OPT_NONE, 
+	.u = { .string = SYSLOG_LEVEL_DEFAULT }
+};
 
 static int syslog_level, syslog_facility;
 
