@@ -45,7 +45,9 @@ distclean: clean
 
 install: all
 	@for d in $(SUBDIRS); do if ! make -C $$d $@; then exit 1; fi; done
+	@[ -d $(DESTDIR)@sbindir@ ] || mkdir -p $(DESTDIR)@sbindir@
 	@INSTALL@ -D -m 755 ulogd $(DESTDIR)@sbindir@/ulogd
+	@[ -d $(DESTDIR)@sysconfdir@ ] || mkdir -p $(DESTDIR)@sysconfdir@
 	@INSTALL@ -D -m 600 ulogd.conf $(DESTDIR)@sysconfdir@/ulogd.conf
 	
 doc:
