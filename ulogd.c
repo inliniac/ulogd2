@@ -1,4 +1,4 @@
-/* ulogd, Version $Revision: 1.7 $
+/* ulogd, Version $Revision: 1.8 $
  *
  * first try of a logging daemon for my netfilter ULOG target
  * for the linux 2.4 netfilter subsystem.
@@ -7,12 +7,14 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.c,v 1.7 2000/09/09 18:35:26 laforge Exp $
+ * $Id: ulogd.c,v 1.8 2000/09/09 21:55:46 laforge Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
+#include <time.h>
 #include <dlfcn.h>
 #include <sys/types.h>
 #include <dirent.h>
@@ -138,13 +140,20 @@ void free_ret(ulog_iret_t *ret)
 	}
 }
 
-void ulogd_log(int level, const char *message)
+void ulogd_log(int level, const char *format, ...)
 {
 	char *timestr;
+	va_list ap;
+	time_t tm;
 
-	timestr = ctime(time());
-	fprintf(logfile, "%s <%1.1d> %s\n", timestr, level, message);
+	va_start(ap, format);
 
+	tm = time(NULL);
+	timestr = ctime(&tm);
+	fprintf(logfile, "%s <%1.1d>", timestr, level);
+	
+	vfprintf(logfile, format, ap);
+	va_end(ap);
 }
 /* this should pass the result(s) to one or more registered output plugins,
  * but is currently only printing them out */

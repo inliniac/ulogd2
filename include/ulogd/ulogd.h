@@ -78,11 +78,20 @@ typedef struct ulog_output {
 	int* (*output)(ulog_iret_t *ret);
 } ulog_output_t;
 
-/* public interface */
+/***********************************************************************
+ * PUBLIC INTERFACE 
+ ***********************************************************************/
+
+/* register a new interpreter plugin */
 void register_interpreter(ulog_interpreter_t *me);
+
+/* register a new output target */
 void register_output(ulog_output_t *me);
+
+/* allocate a new ulog_iret_t */
 ulog_iret_t *alloc_ret(const u_int16_t type, const char*);
 
 /* write a message to the daemons' logfile */
-void ulogd_log(int level, const char *message);
+void ulogd_log(int level, const char *message, ...);
+
 #endif
