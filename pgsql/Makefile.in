@@ -14,7 +14,7 @@ all: $(SHARED_LIBS)
 distrib:
 
 $(SHARED_LIBS): %.so: %_sh.o
-	ld -shared $(PGSQL_LDFLAGS) -o $@ $<
+	ld -shared $(PGSQL_LDFLAGS) -o $@ $< -lc
 
 %_sh.o: %.c
 	$(CC) $(PGSQL_CFLAGS) $(SH_CFLAGS) -o $@ -c $<
