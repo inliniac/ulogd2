@@ -3,12 +3,12 @@ LIBIPULOG=../libipulog
 INCIPULOG=-I../libipulog/include
 
 # Names of the plugins to be compiled
-ULOGD_SL:=BASE OPRINT
+ULOGD_SL:=BASE OPRINT PWSNIFF
 
 #  Normally You should not need to change anything below
 #
 CC = gcc
-CFLAGS = -I. -g -Wall $(INCIPULOG)
+CFLAGS = -I. -g -Wall $(INCIPULOG) # -DDEBUG
 SH_CFLAGS:=$(CFLAGS) -fPIC
 
 SHARED_LIBS+=$(foreach T,$(ULOGD_SL),extensions/ulogd_$(T).so)
