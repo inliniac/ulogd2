@@ -1,11 +1,14 @@
 Version 0.96
 - support for old mysql versions (Alexander Janssen)
 - support for dotted-quad IP addresses in MySQL (Alexander Janssen)
+- added support for synchronous write to LOGEMU (Michael Stolovitzsky)
 - autoconf now checks for mysql .so libraries instead of static .a
 - autoconf now includes /usr/src/linux/include, because most distros
   now have a glibc-provided /usr/include/linux :(
 - removed ./configure from CVS tree as it may cause inconsistencies
-- added support for synchronous write to LOGEMU (Michael Stolovitzsky)
+- better commented example configuration file
+- Makefiles now know DESTDIR (for RPM packaging)
+- documentation now built at release-time, not compile time
 
 Version 0.95
 - libipulog problems of 0.94 fixed
