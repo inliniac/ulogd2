@@ -1,4 +1,4 @@
-/* ulogd_MAC.c, Version $Revision: 1.20 $
+/* ulogd_MAC.c, Version $Revision: 1.21 $
  *
  * ulogd interpreter plugin for 
  * 	o MAC addresses
@@ -26,7 +26,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  
- * $Id: ulogd_BASE.c,v 1.20 2003/08/23 17:46:45 laforge Exp $
+ * $Id: ulogd_BASE.c,v 1.21 2003/08/24 08:25:10 laforge Exp $
  *
  */
 
@@ -417,9 +417,9 @@ static ulog_interpreter_t base_ip[] = {
 	{ NULL, "raw", 0, &_interp_raw, 3, raw_rets },
 	{ NULL, "oob", 0, &_interp_oob, 6, oob_rets },
 	{ NULL, "ip", 0, &_interp_iphdr, 10, iphdr_rets },
-	{ NULL, "tcp", 0, &_interp_tcphdr, 12, tcphdr_rets },
-	{ NULL, "icmp", 0, &_interp_icmp, 6, icmphdr_rets },
-	{ NULL, "udp", 0, &_interp_udp, 3, udphdr_rets },
+	{ NULL, "tcp", 0, &_interp_tcphdr, 17, tcphdr_rets },
+	{ NULL, "icmp", 0, &_interp_icmp, 7, icmphdr_rets },
+	{ NULL, "udp", 0, &_interp_udp, 4, udphdr_rets },
 	{ NULL, "ahesp", 0, &_interp_ahesp, 1, ahesphdr_rets },
 	{ NULL, "", 0, NULL, 0, NULL }, 
 };
