@@ -70,7 +70,7 @@ else
 
 	DATABASE_DIR="${DATABASE_DIR} mysql"
 
-	DATABASE_LIB="${DATABASE_LIB} -lmysqlclient " 
+	MYSQL_LIB="${DATABASE_LIB} -lmysqlclient " 
 	DATABASE_LIB_DIR="${DATABASE_LIB_DIR} -L${MYSQLLIBS} "
 
 	DATABASE_DRIVERS="${DATABASE_DRIVERS} ../mysql/mysql_driver.o "
@@ -79,6 +79,7 @@ else
 
 
 	AC_SUBST(MYSQLINCLUDES)
+	AC_SUBST(MYSQL_LIB)
 
         if test -f $MYSQLLIBS/libmystrings.so
         then
@@ -169,12 +170,13 @@ else
 
 	DATABASE_DIR="${DATABASE_DIR} pgsql"
 
-	DATABASE_LIB="${DATABASE_LIB} -lpq " 
+	PGSQL_LIB="${DATABASE_LIB} -lpq " 
 	DATABASE_LIB_DIR="${DATABASE_LIB_DIR} -L${PGSQLLIBS} "
 
 	DB_DEF="${DB_DEF} -DHAVE_PGSQL "
 
 	AC_SUBST(PGSQLINCLUDES)
+	AC_SUBST(PGSQL_LIB)
 
 fi      
 ])      
