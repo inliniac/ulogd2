@@ -1,4 +1,4 @@
-/* ulogd_PCAP.c, Version $Revision: 1.6 $
+/* ulogd_PCAP.c, Version $Revision: 1.7 $
  *
  * ulogd output target for writing pcap-style files (like tcpdump)
  *
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_PCAP.c,v 1.6 2003/09/28 15:19:27 laforge Exp $
+ * $Id: ulogd_PCAP.c,v 1.7 2003/10/16 12:56:59 laforge Exp $
  *
  */
 
@@ -156,7 +156,7 @@ void append_create_outfile(void) {
 	struct stat st_dummy;
 	int exist = 0;
 
-	if (stat(pcapf_ce.u.string, &st_dummy) == 0 && st.st_size > 0) {
+	if (stat(pcapf_ce.u.string, &st_dummy) == 0 && st_dummy.st_size > 0) {
 		exist = 1;
 	}
 
