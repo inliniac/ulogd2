@@ -1,4 +1,4 @@
-/* ulog_test, $Revision: 1.2 $
+/* ulog_test, $Revision: 1.3 $
  *
  * small testing program for libipulog, part of the netfilter ULOG target
  * for the linux 2.4 netfilter subsystem.
@@ -7,7 +7,7 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulog_test.c,v 1.2 2000/07/31 15:02:33 laforge Exp $
+ * $Id: ulog_test.c,v 1.3 2000/09/22 06:57:16 laforge Exp $
  */
 
 #include <stdio.h>
@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
 {
 	struct ipulog_handle *h;
 	unsigned char* buf;
-	size_t len;
+	int len;
 	ulog_packet_msg_t *upkt;
 	int i;
 
@@ -67,14 +67,15 @@ int main(int argc, char *argv[])
 
 	/* loop receiving packets and handling them over to handle_packet */
 	for (i = 0; i < atoi(argv[1]); i++) {
-		len = ipulog_read(h, buf, BUFSIZ, 1);
+		len = ipulog_read(h, buf, MYBUFSIZ, 1);
 		if (len < 0) {
 			ipulog_perror("ulog_test: short read");
 			exit(1);
 		}
-		upkt = ipulog_get_packet(buf);	
-		printf("%d: ", len);
-		handle_packet(upkt);
+		printf("%d bytes received\n", len);
+		while (upkt = ipulog_get_packet(h, buf, len)) {
+			handle_packet(upkt);
+		}
 	}
 	
 	/* just to give it a cleaner look */

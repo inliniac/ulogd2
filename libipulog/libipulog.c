@@ -1,5 +1,5 @@
 /* 
- * libipulog.c, $Revision: 1.4 $
+ * libipulog.c, $Revision: 1.5 $
  *
  * netfilter ULOG userspace library.
  *
@@ -9,7 +9,7 @@
  * This library is still under development, so be aware of sudden interface
  * changes
  *
- * $Id: libipulog.c,v 1.4 2000/08/12 07:11:29 laforge Exp $
+ * $Id: libipulog.c,v 1.5 2000/09/22 06:57:16 laforge Exp $
  */
 
 #include <stdlib.h>
@@ -25,6 +25,7 @@ struct ipulog_handle
 	u_int8_t blocking;
 	struct sockaddr_nl local;
 	struct sockaddr_nl peer;
+	struct nlmsghdr* last_nlhdr;
 };
 
 /* internal */
@@ -41,9 +42,10 @@ enum
 	IPULOG_ERR_NLEOF,
 	IPULOG_ERR_TRUNC,
 	IPULOG_ERR_INVGR,
+	IPULOG_ERR_INVNL,
 };
 
-#define IPULOG_MAXERR IPULOG_ERR_INVGR
+#define IPULOG_MAXERR IPULOG_ERR_INVNL
 
 static int ipulog_errno = IPULOG_ERR_NONE;
 
@@ -59,10 +61,11 @@ struct ipulog_errmap_t
 	{ IPULOG_ERR_SOCKET, "Unable to create netlink socket" },
 	{ IPULOG_ERR_BIND, "Unable to bind netlink socket" },
 	{ IPULOG_ERR_RECVBUF, "Receive buffer size invalid" },
-	{ IPULOG_ERR_RECV, "Receive buffer size invalid" },
+	{ IPULOG_ERR_RECV, "Error during netlink receive" },
 	{ IPULOG_ERR_NLEOF, "Received EOF on netlink socket" },
 	{ IPULOG_ERR_TRUNC, "Receive message truncated" },
 	{ IPULOG_ERR_INVGR, "Invalid group specified" },
+	{ IPULOG_ERR_INVNL, "Invalid netlink message" },
 };
 
 static ssize_t ipulog_netlink_recvfrom(const struct ipulog_handle *h,
@@ -94,7 +97,7 @@ static ssize_t ipulog_netlink_recvfrom(const struct ipulog_handle *h,
 		return -1;
 	}
 	nlh = (struct nlmsghdr *)buf;
-	if (nlh->nlmsg_flags & MSG_TRUNC || nlh->nlmsg_len > status)
+	if (nlh->nlmsg_flags & MSG_TRUNC || status > len)
 	{
 		ipulog_errno = IPULOG_ERR_TRUNC;
 		return -1;
@@ -186,9 +189,48 @@ ssize_t ipulog_read(struct ipulog_handle *h, unsigned char *buf,
 
 /* get a pointer to the actual start of the ipulog packet,
    use this to strip netlink header */
-ulog_packet_msg_t *ipulog_get_packet(const unsigned char *buf)
+ulog_packet_msg_t *ipulog_get_packet(struct ipulog_handle *h,
+				     const unsigned char *buf, 
+				     size_t len)
 {
-	return NLMSG_DATA((struct nlmsghdr *) buf);
+	struct nlmsghdr *nlh;
+	size_t remain_len;
+
+	/* if last header in handle not inside this buffer,
+	 * drop reference to last header */
+	if ((unsigned char *)h->last_nlhdr > (buf + len) || 
+	    (unsigned char *)h->last_nlhdr < buf) {
+		h->last_nlhdr = NULL;
+	}
+	
+	if (!h->last_nlhdr) {
+		/* fist message in buffer */
+		nlh = (struct nlmsghdr *) buf;
+		if (!NLMSG_OK(nlh, len)) {
+			/* ERROR */
+			ipulog_errno = IPULOG_ERR_INVNL;
+			return NULL;
+		}
+	} else {
+		/* we are in n-th part of multilink message */
+		if (h->last_nlhdr->nlmsg_type == NLMSG_DONE) {
+			/* if last part in multilink message, return */
+			h->last_nlhdr = NULL;
+			return NULL;
+		}
+
+		/* calculate remaining lenght from lasthdr to end of buffer */
+		remain_len = (len - 
+				((unsigned char *)h->last_nlhdr - buf));
+		nlh = NLMSG_NEXT(h->last_nlhdr, remain_len);
+	}
+
+	/* update last_nlhdr field */
+	if (nlh->nlmsg_flags & NLM_F_MULTI) {
+			h->last_nlhdr = nlh;
+	}
+
+	return NLMSG_DATA(nlh);
 }
 
 /* print a human readable description of the last error to stderr */
