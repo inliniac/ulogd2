@@ -1,11 +1,11 @@
-/* ulogd, Version $Revision: 1.32 $
+/* ulogd, Version $Revision: 1.33 $
  *
- * $Id: ulogd.c,v 1.32 2003/01/13 13:37:56 laforge Exp $
+ * $Id: ulogd.c,v 1.33 2003/02/08 12:21:18 laforge Exp $
  *
- * userspace logging daemon for the netfilter ULOG target
+ * userspace logging daemon for the iptables ULOG target
  * of the linux 2.4 netfilter subsystem.
  *
- * (C) 2000-2001 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2000-2003 by Harald Welte <laforge@gnumonks.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd.c,v 1.32 2003/01/13 13:37:56 laforge Exp $
+ * $Id: ulogd.c,v 1.33 2003/02/08 12:21:18 laforge Exp $
  *
  * Modifications:
  * 	14 Jun 2001 Martin Josefsson <gandalf@wlug.westbo.se>
@@ -31,7 +31,7 @@
  * 		- added support for logging to stdout
  */
 
-#define ULOGD_VERSION	"1.0pre1"
+#define ULOGD_VERSION	"1.00"
 
 #include <unistd.h>
 #include <stdio.h>
@@ -575,7 +575,7 @@ static void print_usage(void)
 {
 	/* FIXME */
 	printf("ulogd Version %s\n", ULOGD_VERSION);
-	printf("Copyright (C) 2000-2002 Harald Welte "
+	printf("Copyright (C) 2000-2003 Harald Welte "
 	       "<laforge@gnumonks.org>\n\n");
 	printf("Paramters:\n");
 	printf("\t-h --help\tThis help page\n");

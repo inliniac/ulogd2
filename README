@@ -1,7 +1,7 @@
-Userspace logging facility for netfilter / linux 2.4
-$Id: README,v 1.6 2001/05/20 15:01:35 laforge Exp $
+Userspace logging facility for iptables / linux 2.4
+$Id: README,v 1.7 2002/04/16 12:44:41 laforge Exp $
 
-Project Homepage: http://www.gnumonks.org/projects/
+Project Homepage: http://www.gnumonks.org/projects/ulogd
 Mailinglist: http://lists.gnumonks.org/mailman/listinfo/ulogd/
 
 This is just a short README, pleaes see the more extensive documentation
@@ -12,7 +12,7 @@ in the doc/ subdirectory.
 This packages is intended for passing packets from the kernel to userspace 
 to do some logging there. It should work like that:
 
-- Register a target called ULOG with netfilter
+- Register a target called ULOG with iptables
 - if the target is hit: 
 	- send the packet out using netlink multicast facility
 	- return NF_CONTINUE immediately
@@ -36,13 +36,17 @@ an easy to use plugin interface to write additional packet interpreters and
 output targets. Example plugins (interpreter: ip, tcp, icmp output: simple
 logging to a file) are included.
 
+= documentation (doc)
+A quite verbose documentation of this package and it's configuration exists,
+please actually make use of it and read it :)
+
 ===> USAGE
 
 The kernel part of the userspace logging facility (ipt_ULOG.o) is included
 in kernels >= 2.4.18-pre8.  If you are running older kernel versions, you MUST
 install the ulog-patch from netfilter patch-o-matic FIRST !!
 
-Please go to the netfilter homepage (http://netfilter.gnumonks.org/)
+Please go to the netfilter homepage (http://www.netfilter.org/)
 and download the latest iptables package.  There is a system called
 patch-o-matic, which manages recent netfilter development, which has
 not been included in the stock kernel yet.
@@ -84,7 +88,7 @@ Setting --ulog-cprange to 0 does always copy the whole packet. Default is 0
 
 ===> COPYRIGHT + CREDITS
 
-The code is (C) 2000-2002 by Harald Welte <laforge@gnumonks.org>
+The code is (C) 2000-2003 by Harald Welte <laforge@gnumonks.org>
 
 Thanks also to the valuable Contributions of Daniel Stone, Alexander
 Janssen and Michael Stolovitzsky.
