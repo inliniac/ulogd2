@@ -1,5 +1,5 @@
 /* 
- * libipulog.c, $Revision: 1.5 $
+ * libipulog.c, $Revision: 1.6 $
  *
  * netfilter ULOG userspace library.
  *
@@ -9,7 +9,7 @@
  * This library is still under development, so be aware of sudden interface
  * changes
  *
- * $Id: libipulog.c,v 1.5 2000/09/22 06:57:16 laforge Exp $
+ * $Id: libipulog.c,v 1.6 2001/01/30 09:28:04 laforge Exp $
  */
 
 #include <stdlib.h>
@@ -213,8 +213,10 @@ ulog_packet_msg_t *ipulog_get_packet(struct ipulog_handle *h,
 		}
 	} else {
 		/* we are in n-th part of multilink message */
-		if (h->last_nlhdr->nlmsg_type == NLMSG_DONE) {
-			/* if last part in multilink message, return */
+		if (h->last_nlhdr->nlmsg_type == NLMSG_DONE ||
+		    !(h->last_nlhdr->nlmsg_flags & NLM_F_MULTI)) {
+			/* if last part in multilink message, 
+			 * or no multipart message at all: return */
 			h->last_nlhdr = NULL;
 			return NULL;
 		}
@@ -225,10 +227,7 @@ ulog_packet_msg_t *ipulog_get_packet(struct ipulog_handle *h,
 		nlh = NLMSG_NEXT(h->last_nlhdr, remain_len);
 	}
 
-	/* update last_nlhdr field */
-	if (nlh->nlmsg_flags & NLM_F_MULTI) {
-			h->last_nlhdr = nlh;
-	}
+	h->last_nlhdr = nlh;
 
 	return NLMSG_DATA(nlh);
 }
