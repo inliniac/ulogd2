@@ -1,6 +1,6 @@
-/* ulogd, Version $Revision: 1.23 $
+/* ulogd, Version $Revision: 1.24 $
  *
- * $Id: ulogd.c,v 1.23 2001/09/01 11:56:27 laforge Exp $
+ * $Id: ulogd.c,v 1.24 2002/04/16 12:44:41 laforge Exp $
  *
  * userspace logging daemon for the netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd.c,v 1.23 2001/09/01 11:56:27 laforge Exp $
+ * $Id: ulogd.c,v 1.24 2002/04/16 12:44:41 laforge Exp $
  *
  * Modifications:
  * 	14 Jun 2001 Martin Josefsson <gandalf@wlug.westbo.se>
@@ -30,6 +30,8 @@
  * 		- added support for non-fork mode
  * 		- added support for logging to stdout
  */
+
+#define ULOGD_VERSION	"0.98"
 
 #include <unistd.h>
 #include <stdio.h>
@@ -316,7 +318,7 @@ void register_interpreter(ulog_interpreter_t *me)
 
 /***********************************************************************
  * OUTPUT MANAGEMENT 
- ***********************************************************************
+ ***********************************************************************/
 
 /* try to lookup a registered output plugin for a given name */
 static ulog_output_t *find_output(const char *name)
@@ -454,7 +456,7 @@ static int logfile_open(const char *name)
 {
 	if (!strcmp(name,"stdout")) {
 		logfile = stdout;
-	else {
+	} else {
 		logfile = fopen(name, "a");
 		if (!logfile) {
 			fprintf(stderr, "ERROR: can't open logfile %s: %s\n", 
@@ -550,6 +552,11 @@ static void sighup_handler(int signal)
 	}
 }
 
+static void print_usage(void)
+{
+	/* FIXME */
+}
+
 static struct option opts[] = {
 	{ "version", 0, NULL, 'V' },
 	{ "daemon", 0, NULL, 'd' },
@@ -560,7 +567,7 @@ static struct option opts[] = {
 int main(int argc, char* argv[])
 {
 	int len;
-	char argch;
+	int argch;
 	int daemonize = 0;
 	ulog_packet_msg_t *upkt;
 
@@ -584,9 +591,11 @@ int main(int argc, char* argv[])
 			daemonize = 1;
 			break;
 		case 'V':
-			printf("ulogd Version %s\n");
-			printf("Copyright (C) 2000-2002 Harald Welte\n");
-			break
+			printf("ulogd Version %s\n", ULOGD_VERSION);
+			printf("Copyright (C) 2000-2002 Harald Welte "
+			       "<laforge@gnumonks.org>\n");
+			exit(0);
+			break;
 		}
 	}
 
