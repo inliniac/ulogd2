@@ -120,7 +120,7 @@ AC_ARG_WITH(mysql-log-ip-as-string,
  --with-mysql-log-ip-as-string		log IPs as string rather than as
 					unsigned long-integer.
 ,[
-   EXTRA_MYSQL_DEF="${EXTRA_MYSQL_DEF} -DIP_AS_STRING=1"
+   EXTRA_MYSQL_DEF="-D${EXTRA_MYSQL_DEF} -DIP_AS_STRING=1"
    AC_MSG_WARN(the use of --with-mysql-log-ip-as-string is discouraged)
 ])
 
