@@ -1,13 +1,26 @@
-/* ulogd, Version $Revision: 1.21 $
+/* ulogd, Version $Revision: 1.22 $
  *
- * $Id: ulogd.c,v 1.21 2001/07/03 14:44:25 laforge Exp $
+ * $Id: ulogd.c,v 1.22 2001/07/04 00:22:54 laforge Exp $
  *
  * userspace logging daemon for the netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
  *
- * (C) 2000 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2000-2001 by Harald Welte <laforge@gnumonks.org>
  *
- * this code is released under the terms of GNU GPL
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License version 2 
+ *  as published by the Free Software Foundation
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * $Id: ulogd.c,v 1.16 2001/05/26 23:19:28 laforge Exp $
  *
  * Modifications:
  * 	14 Jun 2001 Martin Josefsson <gandalf@wlug.westbo.se>
@@ -578,16 +591,18 @@ int main(int argc, char* argv[])
 
 		/* endless loop receiving packets and handling them over to
 		 * handle_packet */
-		while(len = ipulog_read(libulog_h, libulog_buf, MYBUFSIZ, 1)) {
-			if (len < 0) {
-				/* an error during read occurred,
-				 * we may want some errmsg here */
-				continue;
-			}
-			while(upkt = ipulog_get_packet(libulog_h,
+		while (len = ipulog_read(libulog_h, libulog_buf, MYBUFSIZ, 1)) {
+
+			if (len <= 0) {
+				/* this is not supposed to happen */
+				ulogd_log(ULOGD_ERROR, "ipulog_read == %d!\n",
+					  len);
+			} else {
+				while (upkt = ipulog_get_packet(libulog_h,
 						       libulog_buf, len)) {
-				DEBUGP("==> packet received\n");
-				handle_packet(upkt);
+					DEBUGP("==> packet received\n");
+					handle_packet(upkt);
+				}
 			}
 		}
 
