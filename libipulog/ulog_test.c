@@ -1,0 +1,72 @@
+/* ulog_test, Version $Revision$
+ *
+ * small testing program for libipulog, part of the netfilter ULOG target
+ * for the linux 2.4 netfilter subsystem.
+ *
+ * (C) 2000 by Harald Welte <laforge@sunbeam.franken.de>
+ *
+ * this code is released under the terms of GNU GPL
+ *
+ * $Id$
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <libipulog/libipulog.h>
+
+#define MYBUFSIZ 2048
+
+/* prints some logging about a single packet */
+void handle_packet(ulog_packet_msg_t *pkt)
+{
+	unsigned char *p;
+	int i;
+	
+	printf("Hook=%u Mark=%u len=%d ", pkt->hook, pkt->mark, pkt->data_len);
+	if (strlen(pkt->prefix))
+		printf("Prefix=%s ", pkt->prefix);
+	
+	if (pkt->mac_len)
+	{
+		printf("mac=");
+		p = pkt->mac;
+		for (i = 0; i < pkt->mac_len; i++, p++)
+			printf("%02x%c", *p, i==pkt->mac_len-1 ? ' ':':');
+	}
+	printf("\n");
+
+}
+
+main()
+{
+	struct ipulog_handle *h;
+	unsigned char* buf;
+	size_t len;
+	ulog_packet_msg_t *upkt;
+	
+	/* allocate a receive buffer */
+	buf = (unsigned char *) malloc(MYBUFSIZ);
+	
+	/* create ipulog handle */
+	h = ipulog_create_handle(ipulog_group2gmask(32));
+	if (!h)
+	{
+		/* if some error occurrs, print it to stderr */
+		ipulog_perror(NULL);
+		exit(1);
+	}
+
+	/* endless loop receiving packets and handling them over to
+	 * handle_packet */
+	while(1)
+	{
+		len = ipulog_read(h, buf, BUFSIZ, 1);
+		upkt = ipulog_get_packet(buf);	
+		printf("got %d bytes\n", len);
+		handle_packet(upkt);
+	}
+	
+	/* just to give it a cleaner look */
+	ipulog_destroy_handle(h);
+
+}
