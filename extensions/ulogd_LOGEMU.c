@@ -1,4 +1,4 @@
-/* ulogd_LOGEMU.c, Version $Revision: 1.7 $
+/* ulogd_LOGEMU.c, Version $Revision: 1.8 $
  *
  * ulogd output target for syslog logging emulation
  *
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_LOGEMU.c,v 1.7 2001/09/01 11:51:54 laforge Exp $
+ * $Id: ulogd_LOGEMU.c,v 1.8 2001/09/27 15:45:25 laforge Exp $
  *
  */
 
@@ -231,6 +231,9 @@ int _output_logemu(ulog_iret_t *res)
 					break;
 			}
 			break;
+		default:
+
+			fprintf(of, "PROTO=%u ", GET_VALUE(11).ui8);
 	}
 	fprintf(of,"\n");
 
