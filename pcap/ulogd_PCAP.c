@@ -1,4 +1,4 @@
-/* ulogd_PCAP.c, Version $Revision: 1.9 $
+/* ulogd_PCAP.c, Version $Revision: 1.1 $
  *
  * ulogd output target for writing pcap-style files (like tcpdump)
  *
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_LOGEMU.c,v 1.9 2002/04/27 19:45:51 laforge Exp $
+ * $Id: ulogd_PCAP.c,v 1.1 2002/06/13 12:55:21 laforge Exp $
  *
  */
 

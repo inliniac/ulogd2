@@ -8,6 +8,7 @@ AC_PROG_INSTALL
 
 dnl Checks for libraries.
 AC_CHECK_LIB(dl, dlopen)
+AC_CHECK_HEADERS(pcap.h)
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
@@ -181,8 +182,9 @@ AC_SUBST(DB_DEF)
 AC_SUBST(EXTRA_MYSQL_DEF)
 
 AC_SUBST(DATABASE_DRIVERS)
+AC_SUBST(HAVE_PCAP_H)
 
 AM_CONDITIONAL(HAVE_MYSQL, test x$mysqldir != x)
 AM_CONDITIONAL(HAVE_PGSQL, test x$pgsqldir != x)
 
-AC_OUTPUT(extensions/Makefile doc/Makefile conffile/Makefile libipulog/Makefile mysql/Makefile pgsql/Makefile Makefile Rules.make)
+AC_OUTPUT(extensions/Makefile doc/Makefile conffile/Makefile libipulog/Makefile mysql/Makefile pgsql/Makefile pcap/Makefile Makefile Rules.make)

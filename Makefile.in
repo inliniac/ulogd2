@@ -15,6 +15,11 @@ else
 SUBDIRS+=pgsql
 endif
 
+ifeq (x@HAVE_PCAP_H@,x)
+else
+SUBDIRS+=pcap
+endif
+
 #  Normally You should not need to change anything below
 
 all: recurse ulogd
