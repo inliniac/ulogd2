@@ -2,7 +2,7 @@
  *
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  *
- * $Id: conffile.h,v 1.5 2000/09/12 14:29:37 laforge Exp $
+ * $Id: conffile.h,v 1.1 2000/11/20 11:43:22 laforge Exp $
  * 
  * This code is distributed under the terms of GNU GPL */
 
@@ -54,7 +54,7 @@ typedef struct config_entry {
 } config_entry_t;
 
 /* if an error occurs, config_errce is set to the erroneous ce */
-config_entry_t *config_errce;
+extern config_entry_t *config_errce;
 
 /* tell us the name of the config file */
 int config_register_file(const char *file);

@@ -2,7 +2,7 @@
  *
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  *
- * $Id: conffile.c,v 1.1 2000/11/20 11:43:22 laforge Exp $
+ * $Id: conffile.c,v 1.2 2001/02/04 13:08:02 laforge Exp $
  * 
  * This code is distributed under the terms of GNU GPL */
 
@@ -33,7 +33,7 @@ static char *fname = NULL;
  * Return value:	pointer to first char after word
  * This function can deal with "" quotes 
  */
-char* get_word(char *line, char *not, char *buf)
+static char *get_word(char *line, char *not, char *buf)
 {
 	char *p, *start = NULL, *stop = NULL;
 	int inquote = 0;
@@ -69,7 +69,7 @@ char* get_word(char *line, char *not, char *buf)
 	if (!stop)
 		return NULL;
 
-	strncpy(buf, start, stop-start);
+	strncpy(buf, start, (size_t) (stop-start));
 	*(buf + (stop-start)) = '\0';
 
 	/* skip quote character */

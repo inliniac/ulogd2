@@ -1,4 +1,4 @@
-/* ulogd, Version $Revision: 1.14 $
+/* ulogd, Version $Revision: 1.15 $
  *
  * userspace logging daemon for the netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -7,7 +7,7 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.c,v 1.14 2001/01/29 11:45:22 laforge Exp $
+ * $Id: ulogd.c,v 1.15 2001/02/04 10:15:19 laforge Exp $
  */
 
 #include <stdio.h>
@@ -112,7 +112,7 @@ static unsigned int interh_allocid(ulog_interpreter_t *ip)
 /* get interpreter id by name */
 unsigned int interh_getid(const char *name)
 {
-	int i;
+	unsigned int i;
 	for (i = 1; i <= ulogd_interh_ids; i++)
 		if (!strcmp(name, (ulogd_interh[i])->name))
 			return i;
@@ -123,7 +123,7 @@ unsigned int interh_getid(const char *name)
 /* dump out the contents of the interpreter hash */
 static void interh_dump(void)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 1; i <= ulogd_interh_ids; i++)
 		ulogd_log(ULOGD_DEBUG, "ulogd_interh[%d] = %s\n", 
@@ -185,18 +185,18 @@ static unsigned int keyh_allocid(ulog_interpreter_t *ip, unsigned int offset,
 /* dump the keyhash to standard output */
 static void keyh_dump(void)
 {
-	int i;
+	unsigned int i;
 
 	printf("dumping keyh\n");
 	for (i = 1; i <= ulogd_keyh_ids; i++)
-		printf("ulogd_keyh[%d] = %s:%d\n", i, ulogd_keyh[i].interp->name, 
-				ulogd_keyh[i].offset);
+		printf("ulogd_keyh[%lu] = %s:%u\n", i, 
+			ulogd_keyh[i].interp->name, ulogd_keyh[i].offset);
 }
 
 /* get keyid by name */
 unsigned int keyh_getid(const char *name)
 {
-	int i;
+	unsigned int i;
 	for (i = 1; i <= ulogd_keyh_ids; i++)
 		if (!strcmp(name, ulogd_keyh[i].name))
 			return i;
@@ -239,7 +239,7 @@ ulog_iret_t *keyh_getres(unsigned int id)
 /* try to lookup a registered interpreter for a given name */
 static ulog_interpreter_t *find_interpreter(const char *name)
 {
-	int id;
+	unsigned int id;
 	
 	id = interh_getid(name);
 	if (!id)
@@ -252,7 +252,7 @@ static ulog_interpreter_t *find_interpreter(const char *name)
  * target. */ 
 void register_interpreter(ulog_interpreter_t *me)
 {
-	int i;
+	unsigned int i;
 
 	/* check if we already have an interpreter with this name */
 	if (find_interpreter(me->name)) {
@@ -285,7 +285,8 @@ void register_interpreter(ulog_interpreter_t *me)
 
 	/* all work done, we can prepend the new interpreter to the list */
 	if (ulogd_interpreters)
-		me->result[me->key_num - 1].next = &ulogd_interpreters->result[0];
+		me->result[me->key_num - 1].next = 
+					&ulogd_interpreters->result[0];
 	me->next = ulogd_interpreters;
 	ulogd_interpreters = me;
 }
@@ -313,7 +314,7 @@ void register_output(ulog_output_t *me)
 	if (find_output(me->name)) {
 		ulogd_log(ULOGD_NOTICE, "output `%s' already registered\n",
 				me->name);
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	ulogd_log(ULOGD_NOTICE, "registering output `%s'\n", me->name);
 	me->next = ulogd_outputs;
@@ -371,8 +372,10 @@ static void clean_results(ulog_iret_t *ret)
 	ulog_iret_t *r;
 
 	for (r = ret; r; r = r->next) {
-		if (r->flags & ULOGD_RETF_FREE)
+		if (r->flags & ULOGD_RETF_FREE) {
 			free(r->value.ptr);
+			r->value.ptr = NULL;
+		}
 		memset(&r->value, 0, sizeof(r->value));
 		r->flags &= ~ULOGD_RETF_VALID;
 	}

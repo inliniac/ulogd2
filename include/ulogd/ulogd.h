@@ -1,6 +1,6 @@
 #ifndef _ULOGD_H
 #define _ULOGD_H
-/* ulogd, Version $Revision: 1.11 $
+/* ulogd, Version $Revision: 1.12 $
  *
  * userspace logging daemon for netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -9,7 +9,7 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.h,v 1.11 2001/02/04 10:15:19 laforge Exp $
+ * $Id: ulogd.h,v 1.12 2001/02/04 13:07:22 laforge Exp $
  */
 
 #include <libipulog/libipulog.h>
@@ -148,7 +148,7 @@ unsigned int keyh_getid(const char *name);
 ulog_iret_t *keyh_getres(unsigned int id);
 
 /* the key hash itself */
-struct ulogd_keyh_entry *ulogd_keyh;
+extern struct ulogd_keyh_entry *ulogd_keyh;
 
 #define IS_VALID(x)	(x.flags & ULOGD_RETF_VALID)
 
