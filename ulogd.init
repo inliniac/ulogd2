@@ -11,7 +11,7 @@
 function start()
 {
 	printf "Starting %s: " "ulogd"
-	daemon /usr/sbin/ulogd
+	daemon /usr/sbin/ulogd -d
 	echo
 	touch /var/lock/subsys/ulogd
 }
