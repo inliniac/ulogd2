@@ -87,10 +87,10 @@ static int loglevel = 1;		/* current loglevel */
 static char *ulogd_configfile = ULOGD_CONFIGFILE;
 
 /* linked list for all registered interpreters */
-//static ulog_interpreter_t *ulogd_interpreters;
+//static struct ulog_interpreter *ulogd_interpreters;
 
 /* linked list for all registered plugins */
-static ulog_output_t *ulogd_plugins;
+static struct ulogd_plugin *ulogd_plugins;
 LIST_HEAD(ulogd_pi_stacks);
 
 /***********************************************************************
@@ -108,7 +108,7 @@ LIST_HEAD(ulogd_pi_stacks);
 #define INTERH_ALLOC_GRAN	5
 
 /* hashtable for all registered interpreters */
-static ulog_interpreter_t **ulogd_interh;
+static struct ulogd_interpreter **ulogd_interh;
 
 /* current hashtable size */
 static unsigned int ulogd_interh_ids_alloc;
@@ -117,7 +117,7 @@ static unsigned int ulogd_interh_ids_alloc;
 static unsigned int ulogd_interh_ids;
 
 /* allocate a new interpreter id and write it into the interpreter struct */
-static unsigned int interh_allocid(ulog_interpreter_t *ip)
+static unsigned int interh_allocid(struct ulogd_interpreter *ip)
 {
 	unsigned int id;
 
@@ -125,15 +125,15 @@ static unsigned int interh_allocid(ulog_interpreter_t *ip)
 	
 	if (id >= ulogd_interh_ids_alloc) {
 		if (!ulogd_interh)
-			ulogd_interh = (ulog_interpreter_t **) 
+			ulogd_interh = (struct ulogd_interpreter **) 
 				malloc(INTERH_ALLOC_GRAN *
-					sizeof(ulog_interpreter_t));
+					sizeof(struct ulogd_interpreter));
 		else
-			ulogd_interh = (ulog_interpreter_t **)
+			ulogd_interh = (struct ulogd_interpreter **)
 				realloc(ulogd_interh, 
 					(INTERH_ALLOC_GRAN +
 					 ulogd_interh_ids_alloc) *
-					sizeof(ulog_interpreter_t));
+					sizeof(struct ulogd_interpreter));
 
 		ulogd_interh_ids_alloc += INTERH_ALLOC_GRAN;
 	}
@@ -180,7 +180,7 @@ static unsigned int ulogd_keyh_ids_alloc;
 static unsigned int ulogd_keyh_ids;
 
 /* allocate a new key_id */
-static unsigned int keyh_allocid(ulog_interpreter_t *ip, unsigned int offset,
+static unsigned int keyh_allocid(struct ulogd_interpreter *ip, unsigned int offset,
 				const char *name)
 {
 	unsigned int id;
@@ -255,9 +255,9 @@ char *keyh_getname(unsigned int id)
 }
 
 /* get result for given key id. does not check if result valid */
-ulog_iret_t *keyh_getres(unsigned int id)
+struct ulogd_iret *keyh_getres(unsigned int id)
 {
-	ulog_iret_t *ret;
+	struct ulogd_iret *ret;
 
 	if (id > ulogd_keyh_ids) {
 		ulogd_log(ULOGD_NOTICE,
@@ -275,7 +275,7 @@ ulog_iret_t *keyh_getres(unsigned int id)
  ***********************************************************************/
 
 /* try to lookup a registered interpreter for a given name */
-static ulog_interpreter_t *find_interpreter(const char *name)
+static struct ulogd_interpreter *find_interpreter(const char *name)
 {
 	unsigned int id;
 	
@@ -288,7 +288,7 @@ static ulog_interpreter_t *find_interpreter(const char *name)
 
 /* the function called by all interpreter plugins for registering their
  * target. */ 
-void register_interpreter(ulog_interpreter_t *me)
+void register_interpreter(struct ulogd_interpreter *me)
 {
 	unsigned int i;
 
@@ -334,9 +334,9 @@ void register_interpreter(ulog_interpreter_t *me)
  ***********************************************************************/
 
 /* try to lookup a registered plugin for a given name */
-static ulog_plugin_t *find_plugin(const char *name)
+static struct ulogd_plugin *find_plugin(const char *name)
 {
-	ulog_output_t *ptr;
+	struct ulogd_plugin *ptr;
 
 	for (ptr = ulogd_outputs; ptr; ptr = ptr->next) {
 		if (strcmp(name, ptr->name) == 0)
@@ -347,7 +347,7 @@ static ulog_plugin_t *find_plugin(const char *name)
 }
 
 /* the function called by all plugins for registering themselves */
-void register_plugin(ulog_plugin_t *me)
+void register_plugin(struct ulogd_plugin *me)
 {
 	if (find_plugin(me->name)) {
 		ulogd_log(ULOGD_NOTICE, "output `%s' already registered\n",
@@ -395,9 +395,9 @@ void __ulogd_log(int level, char *file, int line, const char *format, ...)
 }
 
 /* propagate results to all registered output plugins */
-static void propagate_results(ulog_iret_t *ret)
+static void propagate_results(struct ulogd_iret *ret)
 {
-	ulog_output_t *p;
+	struct ulogd_plugin *p;
 
 	for (p = ulogd_outputs; p; p = p->next) {
 		(*p->output)(ret);
@@ -405,9 +405,9 @@ static void propagate_results(ulog_iret_t *ret)
 }
 
 /* clean results (set all values to 0 and free pointers) */
-static void clean_results(ulog_iret_t *ret)
+static void clean_results(struct ulogd_iret *ret)
 {
-	ulog_iret_t *r;
+	struct ulogd_iret *r;
 
 	for (r = ret; r; r = r->next) {
 		if (r->flags & ULOGD_RETF_FREE) {
@@ -421,16 +421,36 @@ static void clean_results(ulog_iret_t *ret)
 
 
 
-static int ulogd_pluginstance_t *ulogd_pluginsance_alloc(int len)
+static struct ulogd_pluginstance *
+pluginstance_alloc_init(struct ulogd_plugin *pl, char *pi_id,
+			struct ulogd_pluginstance *stack)
 {
-	ulogd_pluginstance_t *pi = malloc(sizeof(ulogd_pluginstance_t)+len);
+	unsigned int ce_size;
+	struct ulogd_pluginstance *pi = malloc(sizeof(struct ulogd_pluginstance)+len);
 	if (!pi)
 		return NULL;
-	memset(pi, 0, sizeof(ulogd_pluginstance_t)+len);
+
+	/* initialize */
+	memset(pi, 0, sizeof(struct ulogd_pluginstance)+len);
 	INIT_LIST_HEAD(&pi->list);
+	pi->plugin = pl;
+	memcpy(pi->id, pi_id, sizeof(pi->id));
+
+	/* copy config keys */
+	pi->config_kset.num_ces = pl->config_kset.num_ces;
+	ce_size = pl->config_kset.num_ces*sizeof(struct config_entry);
+	pi->config_kset.ces = malloc(ce_size);
+	if (!pi->configs) {
+		free(pi);
+		return NULL;
+	}
+	memcpy(pi->config_kset.ces, pl->config_kset.ces, ce_size);
 	
+	/* FIXME: allocate input and output keys ?*/
+
 	return pi;
 }
+
 
 /* plugin loader to dlopen() a plugins */
 static int load_plugin(char *file)
@@ -446,7 +466,7 @@ static int load_plugin(char *file)
 /* create a new stack of plugins */
 static int create_stack(char *option)
 {
-	ulogd_pluginstance_t *stack = NULL;
+	struct ulogd_pluginstance *stack = NULL;
 	char *buf = strdup(option);
 	char *tok;
 
@@ -457,19 +477,43 @@ static int create_stack(char *option)
 
 	ulogd_log(ULOGD_DEBUG, "building new pluginstance stack:\n");
 
-	for (tok = strtok(buf, ":\n"); tok; tok = strtok(NULL, ":\n")) {
-		ulogd_pluginstance_t *pi = ulogd_pluginstance_alloc(0);
-		ulogd_plugin_t *pl = find_plugin(tok);
+	for (tok = strtok(buf, ",\n"); tok; tok = strtok(NULL, ",\n")) {
+		char *plname, *equals;
+		char pi_id[ULOGD_MAX_KEYLEN];
+		struct ulogd_pluginstance *pi;
+		struct ulogd_plugin *pl;
+
+		/* parse token into sub-tokens */
+		equals = strchr(tok, '=');
+		if (!equals || (equals - tok >= ULOGD_MAX_KEYLEN)) {
+			ulogd_log(ULOGD_ERROR, "syntax error while parsing `%s'"
+				  "of line `%s'\n", tok, buf);
+		}
+		strncpy(pi_id, tok, ULOGD_MAX_KEYLEN-1);
+		pi_id[equals-tok] = '\0';
+		plname = equals+1;
+
+		/* find matching plugin */
+ 		pl = find_plugin(plname);
 		if (!pl) {
 			ulogd_log(ULOGD_ERROR, "can't find requested plugin "
 				  "%s\n", );
 			return 1;
 		}
-		pi->plugin = pl;
+
+		/* allocate */
+		pi = ulogd_pluginstance_alloc_init(pl. pi_id, stack);
+		if (!pi) {
+			ulogd_log(ULOGD_ERROR, 
+				  "unable to allocate pluginstance for %s\n",
+				  pi_id);
+			return 1;
+		}
+
+		/* FIXME: call constructor routine from end to beginning,
+		 * fix up input/output keys */
+			
 		ulogd_log(ULOGD_DEBUG, "pushing `%s' on stack\n", pl->name);
-
-		/* FIXME: allocate input and output keys */
-
 		if (!stack)
 			stack = pi;
 		else
@@ -498,7 +542,7 @@ static int logfile_open(const char *name)
 }
 
 /* wrapper to handle conffile error codes */
-static int parse_conffile(const char *section, config_entry_t *ce)
+static int parse_conffile(const char *section, struct config_keyset *ce)
 {
 	int err;
 
@@ -538,42 +582,47 @@ static int parse_conffile(const char *section, config_entry_t *ce)
 }
 
 /* configuration directives of the main program */
-static config_entry_t logf_ce = {
-	.next = NULL,
-	.key = "logfile",
-	.type = CONFIG_TYPE_STRING, 
-	.options = CONFIG_OPT_NONE,
-	.u.string = ULOGD_LOGFILE_DEFAULT,
+static struct config_entry ulogd_ces[] = {
+	{
+		.key = "logfile",
+		.type = CONFIG_TYPE_STRING, 
+		.options = CONFIG_OPT_NONE,
+		.u.string = ULOGD_LOGFILE_DEFAULT,
+	},
+	{
+		.key = "plugin",
+		.type = CONFIG_TYPE_CALLBACK,
+		.options = CONFIG_OPT_MULTI,
+		.u.parser = &load_plugin,
+	},
+	{
+		.key = "loglevel", 
+		.type = CONFIG_TYPE_INT,
+		.options = CONFIG_OPT_NONE,
+		.u.value = 1,
+	},
+	{
+		.key = "stack",
+		.type = CONFIG_TYPE_CALLBACK,
+		.options = CONFIG_OPT_NONE,
+		.u.parser = &create_stack,
+	},
 };
 
-static config_entry_t plugin_ce = { 
-	.next = &logf_ce,
-	.key = "plugin",
-	.type = CONFIG_TYPE_CALLBACK,
-	.options = CONFIG_OPT_MULTI,
-	.u.parser: &load_plugin,
+static struct config_keyset ulogd_kset = {
+	.ces = &ulogd_ces,
+	.num_ces = sizeof(ulogd_ces)/sizeof(struct config_entry),
 };
 
-static config_entry_t loglevel_ce = { 
-	.next = &logf_ce,
-	.key = "loglevel", 
-	.type = CONFIG_TYPE_INT,
-	.options = CONFIG_OPT_NONE,
-	.u.value = 1,
-};
-
-static config_entry_t stack_ce = { 
-	.next = &loglevel_ce,
-	.key = "stack",
-	.type = CONFIG_TYPE_CALLBACK,
-	.options = CONFIG_OPT_NONE,
-	.u.parser = &create_stack,
-};
+#define logfile_ce	ulogd_ces[0]
+#define plugin_ce	ulogd_ces[1]
+#define loglevel_ce	ulogd_ces[2]
+#define stack_ce	ulogd_ces[3]
 					
 
 static void sigterm_handler(int signal)
 {
-	ulog_output_t *p;
+	struct ulogd_plugin *p;
 	
 	ulogd_log(ULOGD_NOTICE, "sigterm received, exiting\n");
 
@@ -592,7 +641,7 @@ static void sigterm_handler(int signal)
 
 static void sighup_handler(int signal)
 {
-	ulog_output_t *p;
+	struct ulogd_plugin *p;
 
 	if (logfile != stdout) {
 		fclose(logfile);
@@ -697,7 +746,7 @@ int main(int argc, char* argv[])
 	}
 	
 	/* parse config file */
-	if (parse_conffile("global", &logf_ce)) {
+	if (parse_conffile("global", &ulogd_kset)) {
 		ulogd_log(ULOGD_FATAL, "parse_conffile\n");
 		exit(1);
 	}
@@ -705,12 +754,13 @@ int main(int argc, char* argv[])
 	if (change_uid) {
 		ulogd_log(ULOGD_NOTICE, "Changing UID / GID\n");
 		if (setgid(gid)) {
-			ulogd_log(ULOGD_FATAL, "can't set GID\n");
+			ulogd_log(ULOGD_FATAL, "can't set GID %u\n", gid);
 			ipulog_perror(NULL);
 			exit(1);
 		}
 		if (setegid(gid)) {
-			ulogd_log(ULOGD_FATAL, "can't sett effective GID\n");
+			ulogd_log(ULOGD_FATAL, "can't sett effective GID %u\n",
+				  gid);
 			ipulog_perror(NULL);
 			exit(1);
 		}
@@ -720,12 +770,13 @@ int main(int argc, char* argv[])
 			exit(1);
 		}
 		if (setuid(uid)) {
-			ulogd_log(ULOGD_FATAL, "can't set UID\n");
+			ulogd_log(ULOGD_FATAL, "can't set UID %u\n", uid);
 			ipulog_perror(NULL);
 			exit(1);
 		}
 		if (seteuid(uid)) {
-			ulogd_log(ULOGD_FATAL, "can't set effective UID\n");
+			ulogd_log(ULOGD_FATAL, "can't set effective UID %u\n",
+				  uid);
 			ipulog_perror(NULL);
 			exit(1);
 		}

@@ -24,6 +24,33 @@ struct ulog_input {
 };
 
 /* configuration entries */
+
+static struct config_entry ulog_ces[] = {
+	{
+		.key 	 = "bufsize",
+		.type 	 = CONFIG_TYPE_INT,
+		.options = CONFIG_OPT_NONE,
+		.u.value = ULOGD_BUFSIZE_DEFAULT,
+	},
+	{
+		.key	 = "nlgroup",
+		.type	 = CONFIG_TYPE_INT,
+		.options = CONFIG_OPT_NONE,
+		.u.value = ULOGD_NLGROUP_DEFAULT,
+	},
+	{
+		.key	 = "rmem",
+		.type	 = CONFIG_TYPE_INT,
+		.options = CONFIG_OPT_NONE,
+		.u.value = ULOGD_RMEM_DEFAULT,
+	},
+};
+
+#define bufsiz_ce(x)	(x[0])
+#define nlgroup_ce(x)	(x[1])
+#define rmem_cd(x)	(x[2])
+
+#if 0
 static config_entry_t bufsiz_ce = { NULL, "bufsize", CONFIG_TYPE_INT,       
 				   CONFIG_OPT_NONE, 0,
 				   { value: ULOGD_BUFSIZE_DEFAULT } }; 
@@ -35,6 +62,7 @@ static config_entry_t nlgroup_ce = { &bufsiz_ce, "nlgroup", CONFIG_TYPE_INT,
 static config_entry_t rmem_ce = { &nlgroup_ce, "rmem", CONFIG_TYPE_INT,
 				  CONFIG_OPT_NONE, 0, 
 				  { value: ULOGD_RMEM_DEFAULT } };
+#endif
 
 
 static struct ulogd_key output_keys[] = {
@@ -239,7 +267,8 @@ struct ulogd_plugin libulog_plugin = {
 		},
 	.constructor = &init,
 	.destructor = &fini,
-	.configs = &rmem_ce,
+	.num_configs = (sizeof(ulog_ces)/sizeof(struct config_entry)),
+	.configs = &ulog_ces,
 };
 
 void _init(void)

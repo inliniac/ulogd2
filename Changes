@@ -1,3 +1,9 @@
+Version 2.00alpha (2004-Oct-03)
+- Total re-work.  ulogd2 is almost unrelated to the ULOG netfilter target.
+  Instead, it has become a generic logging framework for anything from
+  firewall logs, flow-based accounting to kernel network performance
+  statistics.
+
 Version 1.10 (2003-Oct-xx)
 - Change format of configuration file.  Now every plugin has it's own section
   in the config file, making the whole parsing procedure easier - and

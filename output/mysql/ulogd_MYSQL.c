@@ -65,39 +65,45 @@ static char *stmt_val;
 static char *stmt_ins;
 
 /* our configuration directives */
-static config_entry_t db_ce = { 
-	.key = "db", 
-	.type = CONFIG_TYPE_STRING,
-	.options = CONFIG_OPT_MANDATORY,
+static struct config_entry mysql_ces[] = { 
+	{
+		.key = "db", 
+		.type = CONFIG_TYPE_STRING,
+		.options = CONFIG_OPT_MANDATORY,
+	},
+	{
+		.key = "host", 
+		.type = CONFIG_TYPE_STRING,
+		.options = CONFIG_OPT_MANDATORY,
+	},
+	{
+		.key = "user", 
+		.type = CONFIG_TYPE_STRING,
+		.options = CONFIG_OPT_MANDATORY,
+	},
+	{
+		.key = "pass", 
+		.type = CONFIG_TYPE_STRING,
+		.options = CONFIG_OPT_MANDATORY,
+	},
+	{
+		.key = "table", 
+		.type = CONFIG_TYPE_STRING,
+		.options = CONFIG_OPT_MANDATORY,
+	},
 };
 
-static config_entry_t host_ce = { 
-	.next = &db_ce, 
-	.key = "host", 
-	.type = CONFIG_TYPE_STRING,
-	.options = CONFIG_OPT_MANDATORY,
+static struct config_keyset mysql_keyset = {
+	.num_ces = sizeof(mysql_ces)/sizeof(struct config_entry),
+	.ces = &mysql_ces,
 };
 
-static config_entry_t user_ce = { 
-	.next = &host_ce, 
-	.key = "user", 
-	.type = CONFIG_TYPE_STRING,
-	.options = CONFIG_OPT_MANDATORY,
-};
 
-static config_entry_t pass_ce = { 
-	.next = &user_ce, 
-	.key = "pass", 
-	.type = CONFIG_TYPE_STRING,
-	.options = CONFIG_OPT_MANDATORY,
-};
-
-static config_entry_t table_ce = { 
-	.next = &pass_ce, 
-	.key = "table", 
-	.type = CONFIG_TYPE_STRING,
-	.options = CONFIG_OPT_MANDATORY,
-};
+#define db_ce(x)	x[0]
+#define host_ce(x)	x[1]
+#define user_ce(x)	x[2]
+#define pass_ce(x)	x[3]
+#define table_ce(x)	x[4]
 
 /* our main output function, called by ulogd */
 static int mysql_output(ulog_iret_t *result)
@@ -357,6 +363,7 @@ static ulog_output_t mysql_plugin = {
 	.output = &mysql_output, 
 	.init = &mysql_init,
 	.fini = &mysql_fini,
+	.config_kset = &mysql_keyset,
 };
 
 void _init(void) 

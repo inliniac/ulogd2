@@ -81,9 +81,12 @@ static int oprint_interp(struct ulogd_pluginstance *instance)
 	return 0;
 }
 
-static config_entry_t outf_ce = { NULL, "file", CONFIG_TYPE_STRING, 
-				  CONFIG_OPT_NONE, 0,
-				  { string: ULOGD_OPRINT_DEFAULT } };
+static struct config_entry outf_ce = { 
+	.key = "file", 
+	.type = CONFIG_TYPE_STRING, 
+	.options = CONFIG_OPT_NONE,
+	.u.string = ULOGD_OPRINT_DEFAULT
+};
 
 static void sighup_handler_print(int signal)
 {
@@ -155,6 +158,7 @@ static struct ulogd_plugin oprint_plugin = {
 	.destructor = &oprint_fini,
 	.signal = &sighup_handler_print,
 	.configs = &outf_ce,
+	.num_configs = 1,
 };
 
 void _init(void)
