@@ -1,6 +1,6 @@
 #ifndef _ULOGD_H
 #define _ULOGD_H
-/* ulogd, Version $Revision: 1.13 $
+/* ulogd, Version $Revision: 1.14 $
  *
  * userspace logging daemon for netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -9,11 +9,12 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.h,v 1.13 2001/05/26 23:19:28 laforge Exp $
+ * $Id: ulogd.h,v 1.14 2001/06/14 19:25:25 laforge Exp $
  */
 
 #include <libipulog/libipulog.h>
 #include <stdio.h>
+#include <signal.h>	/* need this because of extension-sighandler */
 
 /* All types with MSB = 1 make use of value.ptr
  * other types use one of the union's member */

@@ -1,6 +1,6 @@
-/* ulogd, Version $Revision: 1.16 $
+/* ulogd, Version $Revision: 1.17 $
  *
- * $Id: ulogd.c,v 1.16 2001/05/26 23:19:28 laforge Exp $
+ * $Id: ulogd.c,v 1.17 2001/06/14 19:25:25 laforge Exp $
  *
  * userspace logging daemon for the netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -521,8 +521,8 @@ static void sighup_handler(int signal)
 	ulogd_log(ULOGD_NOTICE, "sighup received, calling plugin handlers\n");
 	
 	for (p = ulogd_outputs; p; p = p->next) {
-		if (p->sighup)
-			(*p->sighup)(SIGHUP);
+		if (p->signal)
+			(*p->signal)(SIGHUP);
 	}
 }
 

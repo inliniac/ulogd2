@@ -100,9 +100,9 @@ else
 	if test "x$MYSQL_FUNCTION_TEST" = x
 	then
                 EXTRA_MYSQL_DEF="OLD_MYSQL=1 "
-                AC_MSG_RESULT(found an older version of MySQL)
+                AC_MSG_RESULT(found old MySQL)
 	else
-		AC_MSG_RESULT(found a newer version of MySQL)
+		AC_MSG_RESULT(found new MySQL)
 	fi
 
 fi      
