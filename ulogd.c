@@ -1,4 +1,4 @@
-/* ulogd, Version $Revision: 1.3 $
+/* ulogd, Version $Revision: 1.4 $
  *
  * first try of a logging daemon for my netfilter ULOG target
  * for the linux 2.4 netfilter subsystem.
@@ -7,7 +7,7 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.c,v 1.3 2000/08/02 12:20:46 laforge Exp root $
+ * $Id: ulogd.c,v 1.4 2000/08/09 16:26:34 root Exp $
  */
 
 #include <stdio.h>
@@ -236,7 +236,7 @@ int main(int argc, char* argv[])
 		 * handle_packet */
 		while(1)
 		{
-			len = ipulog_read(h, buf, BUFSIZ, 1);
+			len = ipulog_read(h, buf, MYBUFSIZ, 1);
 			upkt = ipulog_get_packet(buf);	
 			DEBUGP("==> packet received\n");
 			handle_packet(upkt);
