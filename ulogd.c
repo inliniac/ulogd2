@@ -1,6 +1,6 @@
-/* ulogd, Version $Revision: 1.17 $
+/* ulogd, Version $Revision: 1.18 $
  *
- * $Id: ulogd.c,v 1.17 2001/06/14 19:25:25 laforge Exp $
+ * $Id: ulogd.c,v 1.18 2001/06/17 20:08:30 laforge Exp $
  *
  * userspace logging daemon for the netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -579,6 +579,13 @@ int main(int argc, char* argv[])
 		/* endless loop receiving packets and handling them over to
 		 * handle_packet */
 		while(len = ipulog_read(libulog_h, libulog_buf, MYBUFSIZ, 1)) {
+			if (len < 0) {
+				/* an error during read occurred,
+				 * we may want some rate limiting here */
+				ulogd_log(LOG_ERROR, 
+					  ipulog_strerror(ipulog_errno));
+				continue;
+			}
 			while(upkt = ipulog_get_packet(libulog_h,
 						       libulog_buf, len)) {
 				DEBUGP("==> packet received\n");

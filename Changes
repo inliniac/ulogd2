@@ -1,3 +1,6 @@
+Version 0.97
+- added error handling after ipulog_read() to prevent endless loops
+
 Version 0.96
 - support for old mysql versions (Alexander Janssen)
 - support for dotted-quad IP addresses in MySQL (Alexander Janssen)
