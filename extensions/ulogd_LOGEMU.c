@@ -1,4 +1,4 @@
-/* ulogd_LOGEMU.c, Version $Revision: 1.1 $
+/* ulogd_LOGEMU.c, Version $Revision: 1.2 $
  *
  * ulogd output target for syslog logging emulation
  *
@@ -8,7 +8,7 @@
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  * This software is released under the terms of GNU GPL
  *
- * $Id: ulogd_LOGEMU.c,v 1.1 2000/11/16 21:15:30 laforge Exp $
+ * $Id: ulogd_LOGEMU.c,v 1.2 2000/11/20 11:43:22 laforge Exp $
  *
  */
 
@@ -29,12 +29,6 @@
 	((unsigned char *)&addr)[1], \
         ((unsigned char *)&addr)[2], \
         ((unsigned char *)&addr)[3]
-
-#define HIPQUAD(addr) \
-        ((unsigned char *)&addr)[3], \
-        ((unsigned char *)&addr)[2], \
-        ((unsigned char *)&addr)[1], \
-        ((unsigned char *)&addr)[0]
 
 static FILE *of = NULL;
 
@@ -93,8 +87,8 @@ int _output_logemu(ulog_iret_t *res)
 	/* FIXME: configurable */
 	fprintf(of, "MAC=%s ", (char *) GET_VALUE(3).ptr);
 
-	fprintf(of, "SRC=%u.%u.%u.%u DST=%u.%u.%u.%u ", 
-			HIPQUAD(GET_VALUE(4).ui32), HIPQUAD(GET_VALUE(5).ui32));
+	fprintf(of, "SRC=%s ", inet_ntoa(htonl(GET_VALUE(4).ui32)));
+	fprintf(of, "DST=%s ", inet_ntoa(htonl(GET_VALUE(5).ui32)));
 
 	fprintf(of, "LEN=%u TOS=%02X PREC=0x%02X TTL=%u ID=%u ", 
 			GET_VALUE(6).ui16, GET_VALUE(7).ui8 & IPTOS_TOS_MASK, 
@@ -175,8 +169,7 @@ int _output_logemu(ulog_iret_t *res)
 						GET_VALUE(31).ui32 >> 24);
 					break;
 				case ICMP_REDIRECT:
-					fprintf(of, "GATEWAY=%u.%u.%u.%u ",
-						HIPQUAD(GET_VALUE(31).ui32));
+					fprintf(of, "GATEWAY=%s ", inet_ntoa(htonl(GET_VALUE(31).ui32)));
 					break;
 				case ICMP_DEST_UNREACH:
 					if (GET_VALUE(28).ui8 == ICMP_FRAG_NEEDED)
