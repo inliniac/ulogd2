@@ -1,4 +1,4 @@
-/* ulogd_MAC.c, Version $Revision: 1.16 $
+/* ulogd_MAC.c, Version $Revision: 1.17 $
  *
  * ulogd interpreter plugin for 
  * 	o MAC addresses
@@ -26,7 +26,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  
- * $Id: ulogd_BASE.c,v 1.16 2003/01/13 13:35:58 laforge Exp $
+ * $Id: ulogd_BASE.c,v 1.17 2003/04/27 07:43:37 laforge Exp $
  *
  */
 
@@ -112,7 +112,9 @@ static ulog_iret_t *_interp_oob(struct ulog_interpreter *ip,
 	ret[0].value.ptr = pkt->prefix;
 	ret[0].flags |= ULOGD_RETF_VALID;
 
-	if (pkt->timestamp_sec || pkt->timestamp_usec) {
+	/* god knows why timestamp_usec contains crap if timestamp_sec == 0
+	 * if (pkt->timestamp_sec || pkt->timestamp_usec) { */
+	if (pkt->timestamp_sec) {
 		ret[1].value.ui32 = pkt->timestamp_sec;
 		ret[1].flags |= ULOGD_RETF_VALID;
 		ret[2].value.ui32 = pkt->timestamp_usec;
