@@ -1,7 +1,7 @@
 /* config file parser functions
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  *
- * $Id$
+ * $Id: conffile.c,v 1.1 2000/09/09 08:36:05 laforge Exp $
  * 
  * This code is distributed under the terms of GNU GPL */
 
@@ -22,15 +22,37 @@ static char *get_word(const char *string)
 	int len;
 	char *word, *space;
 	space = strchr(string, ' ');
-	if (!space)
-		return NULL;
+	if (!space) {
+		space = strchr(string, '\t');
+		if (!space)
+			return NULL;
+	}
 	len = space - string;
+	if (!len) 
+		return NULL;
+
 	word = (char *) malloc(len+1);
 	if (!word)
 		return NULL;
+
 	strncpy(word, string, len);
 
+	if (*(word + len) == '\n')
+		*(word + len) = '\0';
+
 	return word;
+}
+
+static int config_iskey(char *name)
+{
+	config_entry_t *ce;
+
+	for (ce = config; ce; ce = ce->next) {
+		if (!strcmp(name, ce->key))
+			return 0;
+	}
+
+	return 1;
 }
 
 int config_register_key(config_entry_t *ce)
@@ -41,11 +63,12 @@ int config_register_key(config_entry_t *ce)
 	return 0;
 }
 
-int config_parse_file(const char *fname)
+int config_parse_file(const char *fname, int final)
 {
 	FILE *cfile;
 	char *line, *word, *args;
 	config_entry_t *ce;
+	int err = 0;
 
 	line = (char *) malloc(LINE_LEN+1);	
 	if (!line) 
@@ -65,6 +88,12 @@ int config_parse_file(const char *fname)
 		word = get_word(line);
 		if (!word)
 			continue;
+		
+		if (final && !config_iskey(word)) {
+			err = -ERRUNKN;
+			config_errce = ce;
+			goto cpf_error;
+		}
 
 		args = line + strlen(word) + 1;
 
@@ -72,18 +101,20 @@ int config_parse_file(const char *fname)
 			if (strcmp(ce->key, word)) {
 				continue;
 			}
+
 			if (ce->hit && !(ce->options & CONFIG_OPT_MULTI))
 			{
 				DEBUGC("->ce-hit and option not multi!\n");
-				free(line);
-				fclose(cfile);
-				return -ERRMULT;
+				config_errce = ce;
+				err = -ERRMULT;
+				goto cpf_error;
 			}
 			ce->hit++;
 			switch (ce->type) {
 				case CONFIG_TYPE_STRING:
-					if (strlen(args) <= ce->u.str.maxlen) {
-						strcpy(ce->u.str.string, args);
+					if (strlen(args) <
+					    CONFIG_VAL_STRING_LEN) {
+						strcpy(ce->u.string, args);
 					}
 					break;
 				case CONFIG_TYPE_INT:
@@ -102,14 +133,16 @@ int config_parse_file(const char *fname)
 		if ((ce->options & CONFIG_OPT_MANDATORY) && (ce->hit == 0)) {
 			DEBUGC("mandatory config directive %s not found\n",
 				ce->key);
-			free(line);
-			fclose(cfile);
-			return -ERRMAND;
+			config_errce = ce;
+			err = -ERRMAND;
+			goto cpf_error;
 		}
 
 	}
 
+cpf_error:
+	free(line);
 	fclose(cfile);
-	return 0;
+	return err;
 }
 
