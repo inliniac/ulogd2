@@ -1,11 +1,20 @@
-/* ulogd_MAC.c, Version $Revision: 1.7 $
+/* ulogd_MAC.c, Version $Revision: 1.8 $
  *
- * ulogd logging interpreter for MAC addresses, TIME, IP and TCP headers, etc.
+ * ulogd interpreter plugin for 
+ * 	o MAC addresses
+ * 	o NFMARK field
+ * 	o TIME
+ * 	o Interface names
+ * 	o IP header
+ * 	o TCP header
+ * 	o UDP header
+ * 	o ICMP header
+ * 	o AH/ESP header
  *
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  * This software is released under the terms of GNU GPL
  *
- * $Id: ulogd_BASE.c,v 1.7 2000/11/16 17:20:52 laforge Exp $
+ * $Id: ulogd_BASE.c,v 1.8 2000/11/16 21:15:30 laforge Exp $
  *
  */
 
@@ -22,7 +31,8 @@
  * 			Raw header
  ***********************************************************************/
 static ulog_iret_t mac_rets[1] = {
-	{ NULL, NULL, 0, ULOGD_RET_STRING, ULOGD_RETF_FREE, "raw.mac", NULL },
+	{ NULL, NULL, 0, ULOGD_RET_STRING, ULOGD_RETF_FREE, "raw.mac", 
+	  { ptr: NULL } },
 };
 
 static ulog_iret_t *_interp_mac(struct ulog_interpreter *ip, 
@@ -36,7 +46,7 @@ static ulog_iret_t *_interp_mac(struct ulog_interpreter *ip,
 	if (pkt->mac_len) {
 		buf = (char *) malloc(3 * pkt->mac_len + 1);
 		if (!buf) {
-			ulogd_error("OOM!!!\n");
+			ulogd_log(ULOGD_ERROR, "OOM!!!\n");
 			return NULL;
 		}
 		*buf = '\0';
@@ -58,12 +68,18 @@ static ulog_iret_t *_interp_mac(struct ulog_interpreter *ip,
  ***********************************************************************/
 
 static ulog_iret_t oob_rets[] = {
-	{ NULL, NULL, 0, ULOGD_RET_STRING, ULOGD_RETF_NONE, "oob.prefix", NULL },
-	{ NULL, NULL, 0, ULOGD_RET_UINT32, ULOGD_RETF_NONE, "oob.time.sec", NULL },
-	{ NULL, NULL, 0, ULOGD_RET_UINT32, ULOGD_RETF_NONE, "oob.time.usec", NULL },
-	{ NULL, NULL, 0, ULOGD_RET_UINT32, ULOGD_RETF_NONE, "oob.mark", NULL },
-	{ NULL, NULL, 0, ULOGD_RET_STRING, ULOGD_RETF_NONE, "oob.in", NULL },
-	{ NULL, NULL, 0, ULOGD_RET_STRING, ULOGD_RETF_NONE, "oob.out", NULL },
+	{ NULL, NULL, 0, ULOGD_RET_STRING, ULOGD_RETF_NONE, "oob.prefix", 
+		{ ptr: NULL } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT32, ULOGD_RETF_NONE, "oob.time.sec", 
+		{ ui32: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT32, ULOGD_RETF_NONE, "oob.time.usec", 
+		{ ui32: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT32, ULOGD_RETF_NONE, "oob.mark", 
+		{ ui32: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_STRING, ULOGD_RETF_NONE, "oob.in", 
+		{ ptr: NULL } },
+	{ NULL, NULL, 0, ULOGD_RET_STRING, ULOGD_RETF_NONE, "oob.out", 
+		{ ptr: NULL } },
 };
 
 static ulog_iret_t *_interp_oob(struct ulog_interpreter *ip, 
@@ -92,16 +108,26 @@ static ulog_iret_t *_interp_oob(struct ulog_interpreter *ip,
  ***********************************************************************/
 
 static ulog_iret_t iphdr_rets[] = {
-	{ NULL, NULL, 0, ULOGD_RET_IPADDR, ULOGD_RETF_NONE, "ip.saddr", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_IPADDR, ULOGD_RETF_NONE, "ip.daddr", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_UINT8, ULOGD_RETF_NONE, "ip.protocol", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_UINT8, ULOGD_RETF_NONE, "ip.tos", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_UINT8, ULOGD_RETF_NONE, "ip.ttl", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "ip.totlen", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_UINT8, ULOGD_RETF_NONE, "ip.ihl", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "ip.csum", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "ip.id", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "ip.fragoff", 0 },
+	{ NULL, NULL, 0, ULOGD_RET_IPADDR, ULOGD_RETF_NONE, "ip.saddr", 
+		{ ui32: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_IPADDR, ULOGD_RETF_NONE, "ip.daddr", 
+		{ ui32: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT8, ULOGD_RETF_NONE, "ip.protocol", 
+		{ ui8: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT8, ULOGD_RETF_NONE, "ip.tos", 
+		{ ui8: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT8, ULOGD_RETF_NONE, "ip.ttl", 
+		{ ui8: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "ip.totlen", 
+		{ ui16: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT8, ULOGD_RETF_NONE, "ip.ihl", 
+		{ ui8: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "ip.csum", 
+		{ ui16: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "ip.id", 
+		{ ui16: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "ip.fragoff", 
+		{ ui16: 0 } },
 };
 
 static ulog_iret_t *_interp_iphdr(struct ulog_interpreter *ip, 
@@ -138,18 +164,30 @@ static ulog_iret_t *_interp_iphdr(struct ulog_interpreter *ip,
  * 			TCP HEADER
  ***********************************************************************/
 static ulog_iret_t tcphdr_rets[] = {
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "tcp.sport", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "tcp.dport", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_UINT32, ULOGD_RETF_NONE, "tcp.seq", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_UINT32, ULOGD_RETF_NONE, "tcp.ackseq", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "tcp.window", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_BOOL, ULOGD_RETF_NONE, "tcp.urg", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "tcp.urgp", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_BOOL, ULOGD_RETF_NONE, "tcp.ack", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_BOOL, ULOGD_RETF_NONE, "tcp.psh", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_BOOL, ULOGD_RETF_NONE, "tcp.rst", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_BOOL, ULOGD_RETF_NONE, "tcp.syn", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_BOOL, ULOGD_RETF_NONE, "tcp.fin", 0 },
+	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "tcp.sport", 
+		{ ui16: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "tcp.dport", 
+		{ ui16: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT32, ULOGD_RETF_NONE, "tcp.seq", 
+		{ ui32: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT32, ULOGD_RETF_NONE, "tcp.ackseq", 
+		{ ui32: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "tcp.window",
+	        { ui32:	0 } },
+	{ NULL, NULL, 0, ULOGD_RET_BOOL, ULOGD_RETF_NONE, "tcp.urg", 
+		{ b: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "tcp.urgp",
+		{ ui16: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_BOOL, ULOGD_RETF_NONE, "tcp.ack", 
+		{ b: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_BOOL, ULOGD_RETF_NONE, "tcp.psh", 
+		{ b: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_BOOL, ULOGD_RETF_NONE, "tcp.rst", 
+		{ b: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_BOOL, ULOGD_RETF_NONE, "tcp.syn", 
+		{ b: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_BOOL, ULOGD_RETF_NONE, "tcp.fin", 
+		{ b: 0 } },
 };
 
 static ulog_iret_t *_interp_tcphdr(struct ulog_interpreter *ip, 
@@ -207,9 +245,12 @@ static ulog_iret_t *_interp_tcphdr(struct ulog_interpreter *ip,
  * 			UDP HEADER
  ***********************************************************************/
 static ulog_iret_t udphdr_rets[] = {
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "udp.sport", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "udp.dport", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "udp.len", 0 },
+	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "udp.sport", 
+		{ ui16 :0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "udp.dport", 
+		{ ui16: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "udp.len", 
+		{ ui16: 0 } },
 };
 
 static ulog_iret_t *_interp_udp(struct ulog_interpreter *ip, 
@@ -238,12 +279,18 @@ static ulog_iret_t *_interp_udp(struct ulog_interpreter *ip,
  ***********************************************************************/
 
 static ulog_iret_t icmphdr_rets[] = {
-	{ NULL, NULL, 0, ULOGD_RET_UINT8, ULOGD_RETF_NONE, "icmp.type", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_UINT8, ULOGD_RETF_NONE, "icmp.code", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "icmp.echoid", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "icmp.echoseq", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_IPADDR, ULOGD_RETF_NONE, "icmp.gateway", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "icmp.fragmtu", 0 },
+	{ NULL, NULL, 0, ULOGD_RET_UINT8, ULOGD_RETF_NONE, "icmp.type", 
+		{ ui8: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT8, ULOGD_RETF_NONE, "icmp.code", 
+		{ ui8: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "icmp.echoid", 
+		{ ui16: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "icmp.echoseq", 
+		{ ui16: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_IPADDR, ULOGD_RETF_NONE, "icmp.gateway", 
+		{ ui32: 0 } },
+	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "icmp.fragmtu", 
+		{ ui16: 0 } },
 };
 
 static ulog_iret_t *_interp_icmp(struct ulog_interpreter *ip, 
@@ -290,16 +337,18 @@ static ulog_iret_t *_interp_icmp(struct ulog_interpreter *ip,
  ***********************************************************************/
 
 static ulog_iret_t ahesphdr_rets[] = {
-	{ NULL, NULL, 0, ULOGD_RET_UINT8, ULOGD_RETF_NONE, "ahesp.spi", 0 },
+	{ NULL, NULL, 0, ULOGD_RET_UINT8, ULOGD_RETF_NONE, "ahesp.spi", 
+		{ ui8: 0 } },
 };
 
 static ulog_iret_t *_interp_ahesp(struct ulog_interpreter *ip, 
 				ulog_packet_msg_t *pkt)
 {
-	struct iphdr *iph = (struct iphdr *) pkt->payload;
+
 	ulog_iret_t *ret = ip->result;
-	void *protoh = (u_int32_t *) (iph + iph->ihl);
 #if 0
+	struct iphdr *iph = (struct iphdr *) pkt->payload;
+	void *protoh = (u_int32_t *) (iph + iph->ihl);
 	struct esphdr *esph = protoh;
 
 	if (iph->protocol != IPPROTO_ESP)
@@ -321,7 +370,7 @@ static ulog_interpreter_t base_ip[] = {
 	{ NULL, "icmp", 0, &_interp_icmp, 6, &icmphdr_rets },
 	{ NULL, "udp", 0, &_interp_udp, 3, &udphdr_rets },
 	{ NULL, "ahesp", 0, &_interp_ahesp, 1, &ahesphdr_rets },
-	{ NULL, "", 0, NULL, 0, { NULL } }, 
+	{ NULL, "", 0, NULL, 0, NULL }, 
 };
 
 void _base_reg_ip(void)

@@ -1,7 +1,8 @@
 /* config file parser functions
+ *
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  *
- * $Id: conffile.c,v 1.6 2000/09/22 06:54:33 laforge Exp $
+ * $Id: conffile.c,v 1.7 2000/11/16 17:20:52 laforge Exp $
  * 
  * This code is distributed under the terms of GNU GPL */
 
@@ -16,12 +17,16 @@
 #define DEBUGC(format, args...)
 #endif
 
+/* linked list of all registered configuration directives */
 static config_entry_t *config = NULL;
 
+/* points to config entry with error */
 config_entry_t *config_errce = NULL;
 
+/* Filename of the config file */
 static char *fname = NULL;
 
+/* the the next word in string */
 static char *get_word(const char *string)
 {
 	int len;
@@ -49,6 +54,7 @@ static char *get_word(const char *string)
 	return word;
 }
 
+/* do we have a config directive for this name */
 static int config_iskey(char *name)
 {
 	config_entry_t *ce;
@@ -65,6 +71,7 @@ static int config_iskey(char *name)
  * PUBLIC INTERFACE
  ***********************************************************************/
 
+/* register linked list of config directives with us */
 int config_register_key(config_entry_t *ce)
 {
 	config_entry_t *myentry;
@@ -81,6 +88,7 @@ int config_register_key(config_entry_t *ce)
 	return 0;
 }
 
+/* register config file with us */
 int config_register_file(const char *file)
 {
 	/* FIXME: stat of file */
@@ -96,6 +104,7 @@ int config_register_file(const char *file)
 	return 0;
 }
 
+/* parse config file */
 int config_parse_file(int final)
 {
 	FILE *cfile;

@@ -1,0 +1,38 @@
+#
+
+include @top_srcdir@/Rules.make
+CFLAGS+=-I@top_srcdir@/libipulog/include -I@top_srcdir@/conffile
+
+SUBDIRS=conffile libipulog extensions doc
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+sysconfdir=@sysconfdir@
+
+#  Normally You should not need to change anything below
+
+all: recurse ulogd
+
+recurse: 
+	@for d in $(SUBDIRS); do if ! make -C $$d; then exit 1; fi; done
+
+ulogd: ulogd.c $(LIBIPULOG) ulogd.h conffile/conffile.o $(LIBIPULOG)/libipulog.a
+	$(CC) $(CFLAGS) -rdynamic $(LIBS) $< conffile/conffile.o $(LIBIPULOG)/libipulog.a -o $@
+
+clean:
+#	rm -f ulogd *.o extensions/*.o extensions/*.so conffile/*.o
+	rm -f ulogd ulogd.o
+	@for d in $(SUBDIRS); do if ! make -C $$d $@; then exit 1; fi; done
+
+distclean: clean
+	@for d in $(SUBDIRS); do if ! make -C $$d $@; then exit 1; fi; done
+	rm -f Makefile config.cache config.log config.status Rules.make 
+
+install: all
+	@INSTALL@ -m 755 -d @libdir@/ulogd
+	@INSTALL@ -m 644 extensions/*.so @libdir@/ulogd
+	@INSTALL@ -m 755 ulogd @sbindir@/ulogd
+	@INSTALL@ -m 600 ulogd.conf @sysconfdir@/ulogd.conf
+	
+doc:
+	$(MAKE) -C $@

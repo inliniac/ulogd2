@@ -1,7 +1,8 @@
 /* config file parser functions
+ *
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  *
- * $Id: conffile.h,v 1.4 2000/09/09 21:55:46 laforge Exp $
+ * $Id: conffile.h,v 1.5 2000/09/12 14:29:37 laforge Exp $
  * 
  * This code is distributed under the terms of GNU GPL */
 
@@ -40,11 +41,11 @@ enum {
 #define CONFIG_OPT_MULTI	0x0002
 
 typedef struct config_entry {
-	struct config_entry *next;
-	char key[CONFIG_KEY_LEN];
-	u_int8_t type;
-	u_int8_t options;
-	u_int8_t hit;
+	struct config_entry *next;	/* the next one in linked list */
+	char key[CONFIG_KEY_LEN];	/* name of config directive */
+	u_int8_t type;			/* type; see above */
+	u_int8_t options;		/* options; see above  */
+	u_int8_t hit;			/* found? */
 	union {
 		char string[CONFIG_VAL_STRING_LEN];
 		int value;

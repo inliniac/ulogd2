@@ -1,11 +1,11 @@
-/* ulogd_PWSNIFF.c, Version $Revision: 1.2 $
+/* ulogd_PWSNIFF.c, Version $Revision: 1.3 $
  *
  * ulogd logging interpreter for POP3 / FTP like plaintext passwords.
  *
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  * This software is released under the terms of GNU GPL
  *
- * $Id: ulogd_PWSNIFF.c,v 1.2 2000/09/22 06:54:33 laforge Exp $
+ * $Id: ulogd_PWSNIFF.c,v 1.3 2000/11/16 17:20:52 laforge Exp $
  *
  */
 
@@ -17,8 +17,8 @@
 #include <linux/in.h>
 #include <linux/tcp.h>
 
-#ifdef DEBUG
-#define DEBUGP ulogd_error
+#ifdef DEBUG_PWSNIFF
+#define DEBUGP(x) ulogd_log(ULOGD_DEBUG, x)
 #else
 #define DEBUGP(format, args...)
 #endif
@@ -96,7 +96,7 @@ static ulog_iret_t *_interp_pwsniff(ulog_interpreter_t *ip, ulog_packet_msg_t *p
 		ret[0].value.ptr = (char *) malloc(len+1);
 		ret[0].flags |= ULOGD_RETF_VALID;
 		if (!ret[0].value.ptr) {
-			ulogd_error("_interp_pwsniff: OOM (size=%u)\n", len);
+			ulogd_log(ULOGD_ERROR, "OOM (size=%u)\n", len);
 			return NULL;
 		}
 		strncpy(ret[0].value.ptr, begp, len);
@@ -106,7 +106,7 @@ static ulog_iret_t *_interp_pwsniff(ulog_interpreter_t *ip, ulog_packet_msg_t *p
 		ret[1].value.ptr = (char *) malloc(pw_len+1);
 		ret[1].flags |= ULOGD_RETF_VALID;
 		if (!ret[1].value.ptr){
-			ulogd_error("_interp_pwsniff: OOM (size=%u)\n", pw_len);
+			ulogd_log(ULOGD_ERROR, "OOM (size=%u)\n", pw_len);
 			return NULL;
 		}
 		strncpy(ret[1].value.ptr, pw_begp, pw_len);
@@ -117,13 +117,15 @@ static ulog_iret_t *_interp_pwsniff(ulog_interpreter_t *ip, ulog_packet_msg_t *p
 }
 
 static ulog_iret_t pwsniff_rets[] = {
-	{ NULL, NULL, 0, ULOGD_RET_STRING, ULOGD_RETF_FREE, "pwsniff.user", 0 },
-	{ NULL, NULL, 0, ULOGD_RET_STRING, ULOGD_RETF_FREE, "pwsniff.pass", 0 },
+	{ NULL, NULL, 0, ULOGD_RET_STRING, ULOGD_RETF_FREE, "pwsniff.user", 
+		{ ptr: NULL } },
+	{ NULL, NULL, 0, ULOGD_RET_STRING, ULOGD_RETF_FREE, "pwsniff.pass", 
+		{ ptr: NULL } },
 };
 static ulog_interpreter_t base_ip[] = { 
 
 	{ NULL, "pwsniff", 0, &_interp_pwsniff, 2, &pwsniff_rets },
-	{ NULL, "", NULL }, 
+	{ NULL, "", 0, NULL, 0, NULL }, 
 };
 void _base_reg_ip(void)
 {

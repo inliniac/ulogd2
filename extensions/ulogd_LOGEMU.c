@@ -1,13 +1,14 @@
-/* ulogd_LOGEMU.c, Version $Revision: 1.4 $
+/* ulogd_LOGEMU.c, Version $Revision: 1.1 $
  *
  * ulogd output target for syslog logging emulation
- * this target produces a file which looks the same like the syslog-entries
+ *
+ * This target produces a file which looks the same like the syslog-entries
  * of the LOG target.
  *
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  * This software is released under the terms of GNU GPL
  *
- * $Id: ulogd_LOGEMU.c,v 1.4 2000/09/22 06:54:33 laforge Exp $
+ * $Id: ulogd_LOGEMU.c,v 1.1 2000/11/16 21:15:30 laforge Exp $
  *
  */
 
@@ -18,6 +19,10 @@
 #include <netinet/ip_icmp.h>
 #include "ulogd.h"
 #include "conffile.h"
+
+#ifndef ULOGD_LOGEMU_DEFAULT
+#define ULOGD_LOGEMU_DEFAULT	"/var/log/ulogd.syslogemu"
+#endif
 
 #define NIPQUAD(addr) \
 	((unsigned char *)&addr)[0], \
@@ -38,7 +43,7 @@ struct intr_id {
 	unsigned int id;		
 };
 
-#define INTR_IDS 	33
+#define INTR_IDS 	34
 static struct intr_id intr_ids[INTR_IDS] = {
 	{ "oob.prefix", 0 },
 	{ "oob.in", 0 },
@@ -73,11 +78,10 @@ static struct intr_id intr_ids[INTR_IDS] = {
 	{ "icmp.echoseq", 0 },
 	{ "icmp.gateway", 0 },
 	{ "icmp.fragmtu", 0 },
-	{ "ah.spi", 0 },
+	{ "ahesp.spi", 0 },
 };
 
 #define GET_VALUE(x)	ulogd_keyh[intr_ids[x].id].interp->result[ulogd_keyh[intr_ids[x].id].offset].value
-#define IS_VALID(x)	(ulogd_keyh[intr_ids[x].id].interp->result[ulogd_keyh[intr_ids[x].id].offset].flags & ULOGD_RETF_VALID)
 
 int _output_logemu(ulog_iret_t *res)
 {
@@ -185,6 +189,7 @@ int _output_logemu(ulog_iret_t *res)
 	fprintf(of,"\n");
 	return 0;
 }
+
 /* get all key id's for the keys we are intrested in */
 static int get_ids(void)
 {
@@ -195,7 +200,9 @@ static int get_ids(void)
 		cur_id = &intr_ids[i];
 		cur_id->id = keyh_getid(cur_id->name);
 		if (!cur_id->id) {
-			ulogd_error("Cannot resolve keyhash id for %s\n", cur_id->name);
+			ulogd_log(ULOGD_ERROR, 
+				"Cannot resolve keyhash id for %s\n", 
+				cur_id->name);
 			return 1;
 		}
 	}	
@@ -203,7 +210,7 @@ static int get_ids(void)
 }
 
 static ulog_output_t logemu_op[] = {
-	{ NULL, "logemu", &_output_logemu },
+	{ NULL, "syslogemu", &_output_logemu },
 	{ NULL, "", NULL },
 };
 
@@ -219,24 +226,25 @@ static void _logemu_reg_op(void)
 
 static config_entry_t syslogf_ce = { NULL, "syslogfile", CONFIG_TYPE_STRING, 
 				  CONFIG_OPT_NONE, 0,
-				  { string: "/var/log/ulogd.syslogemu" } };
+				  { string: ULOGD_LOGEMU_DEFAULT } };
 void _init(void)
 {
-#ifdef DEBUG_LOGEMU
-	of = stdout;
-#else
+	/* FIXME: error handling */
 	config_register_key(&syslogf_ce);
 	config_parse_file(0);
 
+#ifdef DEBUG_LOGEMU
+	of = stdout;
+#else
 	of = fopen(syslogf_ce.u.string, "a");
 	if (!of) {
-		ulogd_error("ulogd_LOGEMU: can't open syslogemu: %s\n", strerror(errno));
+		ulogd_log(ULOGD_FATAL, "can't open syslogemu: %s\n", 
+			strerror(errno));
 		exit(2);
 	}		
 #endif
 	if (get_ids()) {
-		ulogd_error("ulogd_LOGEMU: can't resolve all keyhash id's\n");
-		exit(2);
+		ulogd_log(ULOGD_ERROR, "can't resolve all keyhash id's\n");
 	}
 
 	_logemu_reg_op();

@@ -1,11 +1,11 @@
-/* ulogd_MAC.c, Version $Revision: 1.4 $
+/* ulogd_MAC.c, Version $Revision: 1.5 $
  *
  * ulogd output target for logging to a file 
  *
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  * This software is released under the terms of GNU GPL
  *
- * $Id: ulogd_OPRINT.c,v 1.4 2000/09/22 06:54:33 laforge Exp $
+ * $Id: ulogd_OPRINT.c,v 1.5 2000/11/16 17:20:52 laforge Exp $
  *
  */
 
@@ -14,6 +14,10 @@
 #include <string.h>
 #include "ulogd.h"
 #include "conffile.h"
+
+#ifndef ULOGD_OPRINT_DEFAULT
+#define ULOGD_OPRINT_DEFAULT	"/var/log/ulogd.pktlog"
+#endif
 
 #define NIPQUAD(addr) \
 	((unsigned char *)&addr)[0], \
@@ -42,22 +46,14 @@ int _output_print(ulog_iret_t *res)
 				break;
 			case ULOGD_RET_BOOL:
 			case ULOGD_RET_INT8:
-				fprintf(of, "%d\n", ret->value.i8);
-				break;
 			case ULOGD_RET_INT16:
-				fprintf(of, "%d\n", ret->value.i16);
-				break;
 			case ULOGD_RET_INT32:
-				fprintf(of, "%ld\n", ret->value.i32);
+				fprintf(of, "%d\n", ret->value.i32);
 				break;
 			case ULOGD_RET_UINT8:
-				fprintf(of, "%u\n", ret->value.ui8);
-				break;
 			case ULOGD_RET_UINT16:
-				fprintf(of, "%u\n", ret->value.ui16);
-				break;
 			case ULOGD_RET_UINT32:
-				fprintf(of, "%lu\n", ret->value.ui32);
+				fprintf(of, "%u\n", ret->value.ui32);
 				break;
 			case ULOGD_RET_IPADDR:
 				fprintf(of, "%u.%u.%u.%u\n", 
@@ -72,7 +68,7 @@ int _output_print(ulog_iret_t *res)
 }
 
 static ulog_output_t base_op[] = {
-	{ NULL, "print", &_output_print },
+	{ NULL, "oprint", &_output_print },
 	{ NULL, "", NULL },
 };
 
@@ -88,7 +84,7 @@ static void _base_reg_op(void)
 
 static config_entry_t outf_ce = { NULL, "dumpfile", CONFIG_TYPE_STRING, 
 				  CONFIG_OPT_NONE, 0,
-				  { string: "/var/log/ulogd.pktlog" } };
+				  { string: ULOGD_OPRINT_DEFAULT } };
 void _init(void)
 {
 #ifdef DEBUG
@@ -99,7 +95,8 @@ void _init(void)
 
 	of = fopen(outf_ce.u.string, "a");
 	if (!of) {
-		ulogd_error("ulogd_OPRINT: can't open PKTLOG: %s\n", strerror(errno));
+		ulogd_log(ULOGD_FATAL, "can't open PKTLOG: %s\n", 
+			strerror(errno));
 		exit(2);
 	}		
 #endif

@@ -1,15 +1,15 @@
 #ifndef _ULOGD_H
 #define _ULOGD_H
-/* ulogd, Version $Revision: 1.8 $
+/* ulogd, Version $Revision: 1.9 $
  *
- * first try of a logging daemon for my netfilter ULOG target
- * for the linux 2.4 netfilter subsystem.
+ * userspace logging daemon for netfilter ULOG target
+ * of the linux 2.4 netfilter subsystem.
  *
- * (C) 2000 by Harald Welte <laforge@sunbeam.franken.de>
+ * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.h,v 1.8 2000/11/16 17:20:52 laforge Exp $
+ * $Id: ulogd.h,v 1.9 2000/11/16 21:15:30 laforge Exp $
  */
 
 #include <libipulog/libipulog.h>
@@ -49,10 +49,11 @@
 /* maximum length of ulogd key */
 #define ULOGD_MAX_KEYLEN 32
 
-#define ULOGD_DEBUG	1
-#define ULOGD_NOTICE	5
-#define ULOGD_ERROR	8
-
+#define ULOGD_DEBUG	1	/* debugging information */
+#define ULOGD_INFO	3
+#define ULOGD_NOTICE	5	/* abnormal/unexpected condition */
+#define ULOGD_ERROR	7	/* error condition, requires user action */
+#define ULOGD_FATAL	8	/* fatal, program aborted */
 
 extern FILE *logfile;
 
@@ -106,8 +107,15 @@ typedef struct ulog_output {
 	/* name of this ouput plugin */
 	char name[ULOGD_MAX_KEYLEN];
 	/* callback function */
-	int* (*output)(ulog_iret_t *ret);
+	int (*output)(ulog_iret_t *ret);
 } ulog_output_t;
+
+/* entries of the key hash */
+struct ulogd_keyh_entry {
+	ulog_interpreter_t *interp;	/* interpreter for this key */
+	unsigned int offset;		/* offset within interpreter */
+	const char *name;		/* name of this particular key */
+};
 
 /***********************************************************************
  * PUBLIC INTERFACE 
@@ -124,7 +132,6 @@ ulog_iret_t *alloc_ret(const u_int16_t type, const char*);
 
 /* write a message to the daemons' logfile */
 void ulogd_log(int level, const char *message, ...);
-
 /* backwards compatibility */
 #define ulogd_error(format, args...) ulogd_log(ULOGD_ERROR, format, ## args)
 
@@ -138,15 +145,10 @@ unsigned int keyh_getid(const char *name);
 ulog_iret_t *keyh_getres(unsigned int id);
 
 /* the key hash itself */
-struct ulogd_keyh_entry ulogd_keyh[100];
+struct ulogd_keyh_entry *ulogd_keyh;
 
-/* entries of the key hash */
-struct ulogd_keyh_entry {
-	ulog_interpreter_t *interp;	/* interpreter for this key */
-	unsigned int offset;		/* offset within interpreter */
-	const char *name;		/* name of this particular key */
-};
+#define IS_VALID(x)	(x.flags & ULOGD_RETF_VALID)
 
+#define SET_VALID(x)	(x.flags |= ULOGD_RETF_VALID)
 
-
-#endif
+#endif /* _ULOGD_H */

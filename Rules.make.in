@@ -1,0 +1,24 @@
+#
+
+CC=@CC@
+CFLAGS=@CFLAGS@ @CPPFLAGS@ 
+CFLAGS+=$(INCIPULOG) $(INCCONFFILE)
+#CFLAGS+=@DEFS@
+#CFLAGS+=-g -DDEBUG -DDEBUG_MYSQL
+
+LIBS=@LIBS@
+
+
+# Path of libipulog (from iptables)
+LIBIPULOG=@top_srcdir@/libipulog
+#INCIPULOG=-I@top_srcdir@/libipulog/include
+
+#INCCONFFILE=-I@top_srcdir@/conffile
+
+# Names of the plugins to be compiled
+ULOGD_SL:=BASE OPRINT PWSNIFF LOGEMU 
+
+# mysql output support
+ULOGD_SL+=MYSQL
+MYSQL_CFLAGS=
+MYSQL_LDFLAGS=-L/usr/lib/mysql -lmysqlclient

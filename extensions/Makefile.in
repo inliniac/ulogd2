@@ -1,0 +1,32 @@
+#
+
+#  Normally You should not need to change anything below
+#
+include @top_srcdir@/Rules.make
+
+CFLAGS+=-I@top_srcdir@ -I@top_srcdir@/libipulog/include -I@top_srcdir@/conffile
+SH_CFLAGS:=$(CFLAGS) -fPIC
+
+SHARED_LIBS+=$(foreach T,$(ULOGD_SL),ulogd_$(T).so)
+
+all: $(SHARED_LIBS)
+
+$(SHARED_LIBS): %.so: %_sh.o
+	ld -shared -o $@ $<
+
+%_sh.o: %.c
+	$(CC) $(SH_CFLAGS) -o $@ -c $<
+
+ulogd_MYSQL.so: ulogd_MYSQL_sh.o
+	ld -shared $(MYSQL_LDFLAGS) -o $@ $<
+
+ulogd_MYSQL_sh.o: ulogd_MYSQL.c
+	$(CC) $(MYSQL_CFLAGS) $(SH_CFLAGS) -o $@ -c $<
+	
+clean:
+	rm -f $(SHARED_LIBS) *.o
+
+distclean:
+	rm -f Makefile
+
+install: all
