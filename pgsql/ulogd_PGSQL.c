@@ -1,4 +1,4 @@
-/* ulogd_PGSQL.c, Version 1.1
+/* ulogd_PGSQL.c, Version $Revision: 1.3 $
  *
  * ulogd output plugin for logging to a PGSQL database
  *
