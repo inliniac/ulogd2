@@ -1,4 +1,4 @@
-/* ulogd_MYSQL.c, Version $Revision: 1.10 $
+/* ulogd_MYSQL.c, Version $Revision: 1.11 $
  *
  * ulogd output plugin for logging to a MySQL database
  *
@@ -17,7 +17,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  * 
- * $Id: ulogd_MYSQL.c,v 1.10 2003/08/11 19:44:07 laforge Exp $
+ * $Id: ulogd_MYSQL.c,v 1.11 2003/08/23 11:40:54 laforge Exp $
  *
  * 15 May 2001, Alex Janssen <alex@ynfonatic.de>:
  *      Added a compability option for older MySQL-servers, which
@@ -314,7 +314,7 @@ static int _mysql_open_db(char *server, char *user, char *pass, char *db)
 	if (!dbh)
 		return 1;
 
-	if (!mysql_connect(dbh, server, user, pass, db, 0, NULL, 0))
+	if (!mysql_real_connect(dbh, server, user, pass, db, 0, NULL, 0))
 		return 1;
 
 	return 0;
