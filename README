@@ -1,0 +1,39 @@
+===> CONECEPT
+
+I want to write a flexible, almost universal logging daemon for my netfilter 
+ULOG target. These are my thoughts about how the architecture which is most capable of doing that:
+
+1. Interpreter lugins
+
+It should be possible to add plugins / runtime modules for new protocols, etc.
+For example the standard logging daemon provides source-ip, dest-ip, 
+source-port, dest-port, etc. Logging for variuos other protocols (GRE, 
+IPsec, ...) may be implemented as modules.
+
+2. Output plugins
+... describe how and where to put the information gained by logging plugins. 
+The easiest way is to build a line per packet and fprint it to a file. 
+Some people might want to log into a SQL database or want an output 
+conforming to the intrusion detection systems communication draft from the
+ietf.
+
+
+===> DETAILS
+
+The major clue is providing a framework which is as flexible as possible. 
+Nobody knows what strange network protocols are out there :) Flexibility
+depends on the communication between the output of the logging plugins 
+and input of the output plugins.
+
+Rusty advised me to use some kind of type-key-value triples, but I think
+this is the total overkill and is too complicated for me to implement it 
+in a reasonable short period of time. (3 hours later) Hmm... Rusty finally 
+convinced me to use linked lists of type-key-value triples - and it wasn't 
+that difficult.
+
+===> INSTALLATION
+
+Just copy the plugins into /usr/local/lib/ulogd and the ulogd to wherever 
+You want it to be.
+
+===>
