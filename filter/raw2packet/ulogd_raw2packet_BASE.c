@@ -44,12 +44,28 @@
  * 			Raw header
  ***********************************************************************/
 static ulog_iret_t raw_rets[] = {
-	{ NULL, NULL, 0, ULOGD_RET_STRING, ULOGD_RETF_FREE, "raw.mac", 
-	  { ptr: NULL } },
-	{ NULL, NULL, 0, ULOGD_RET_RAW, ULOGD_RETF_NONE, "raw.pkt",
-	  { ptr: NULL } },
-	{ NULL, NULL, 0, ULOGD_RET_UINT32, ULOGD_RETF_NONE, "raw.pktlen",
-	  { ui32: 0 } },
+	{ 
+		.type = ULOGD_RET_STRING, 
+		.flags = ULOGD_RETF_FREE, 
+		.name = "raw.mac", 
+	},
+	{
+		.type = ULOGD_RET_RAW,
+		.flags = ULOGD_RETF_NONE,
+		.name = "raw.pkt",
+	},
+	{
+		.type = ULOGD_RET_UINT32,
+		.flags = ULOGD_RETF_NONE,
+		.name = "raw.pktlen",
+		.ipfix = { .vendor = 0, .field_id = 1 },
+	},
+	{
+		.type = ULOGD_RET_UINT32,
+		.flags = ULOGD_RETF_NONE,
+		.name = "raw.pktcount",
+		.ipfix = { .vendor = 0, .field_id = 2 },
+	},
 };
 
 static ulog_iret_t *_interp_raw(ulog_interpreter_t *ip, 
@@ -81,6 +97,8 @@ static ulog_iret_t *_interp_raw(ulog_interpreter_t *ip,
 	ret[1].flags |= ULOGD_RETF_VALID;
 	ret[2].value.ui32 = pkt->data_len;
 	ret[2].flags |= ULOGD_RETF_VALID;
+	ret[3].value.ui32 = 1;
+	ret[3].flags |= ULOGD_RETF_VALID;
 
 	return ret;
 }
@@ -90,18 +108,36 @@ static ulog_iret_t *_interp_raw(ulog_interpreter_t *ip,
  ***********************************************************************/
 
 static ulog_iret_t oob_rets[] = {
-	{ NULL, NULL, 0, ULOGD_RET_STRING, ULOGD_RETF_NONE, "oob.prefix", 
-		{ ptr: NULL } },
-	{ NULL, NULL, 0, ULOGD_RET_UINT32, ULOGD_RETF_NONE, "oob.time.sec", 
-		{ ui32: 0 } },
-	{ NULL, NULL, 0, ULOGD_RET_UINT32, ULOGD_RETF_NONE, "oob.time.usec", 
-		{ ui32: 0 } },
-	{ NULL, NULL, 0, ULOGD_RET_UINT32, ULOGD_RETF_NONE, "oob.mark", 
-		{ ui32: 0 } },
-	{ NULL, NULL, 0, ULOGD_RET_STRING, ULOGD_RETF_NONE, "oob.in", 
-		{ ptr: NULL } },
-	{ NULL, NULL, 0, ULOGD_RET_STRING, ULOGD_RETF_NONE, "oob.out", 
-		{ ptr: NULL } },
+	{
+		.type = ULOGD_RET_STRING,
+		.flags = ULOGD_RETF_NONE, 
+		.name = "oob.prefix", 
+	},
+	{ 	.type = ULOGD_RET_UINT32, 
+		.flags = ULOGD_RETF_NONE, 
+		.name = "oob.time.sec", 
+		.ipfix = { .vendor = 0, .field_id = 22 },
+	},
+	{
+		.type = ULOGD_RET_UINT32,
+		.flags = ULOGD_RETF_NONE,
+		.name = "oob.time.usec", 
+	},
+	{
+		.type = ULOGD_RET_UINT32,
+		.flags = ULOGD_RETF_NONE,
+		.name = "oob.mark", 
+	},
+	{
+		.type = ULOGD_RET_STRING,
+		.flags = ULOGD_RETF_NONE,
+		.name = "oob.in", 
+	},
+	{
+		.type = ULOGD_RET_STRING,
+		.flags = ULOGD_RETF_NONE,
+		.name = "oob.out", 
+	},
 };
 
 static ulog_iret_t *_interp_oob(struct ulog_interpreter *ip, 
@@ -139,26 +175,60 @@ static ulog_iret_t *_interp_oob(struct ulog_interpreter *ip,
  ***********************************************************************/
 
 static ulog_iret_t iphdr_rets[] = {
-	{ NULL, NULL, 0, ULOGD_RET_IPADDR, ULOGD_RETF_NONE, "ip.saddr", 
-		{ ui32: 0 } },
-	{ NULL, NULL, 0, ULOGD_RET_IPADDR, ULOGD_RETF_NONE, "ip.daddr", 
-		{ ui32: 0 } },
-	{ NULL, NULL, 0, ULOGD_RET_UINT8, ULOGD_RETF_NONE, "ip.protocol", 
-		{ ui8: 0 } },
-	{ NULL, NULL, 0, ULOGD_RET_UINT8, ULOGD_RETF_NONE, "ip.tos", 
-		{ ui8: 0 } },
-	{ NULL, NULL, 0, ULOGD_RET_UINT8, ULOGD_RETF_NONE, "ip.ttl", 
-		{ ui8: 0 } },
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "ip.totlen", 
-		{ ui16: 0 } },
-	{ NULL, NULL, 0, ULOGD_RET_UINT8, ULOGD_RETF_NONE, "ip.ihl", 
-		{ ui8: 0 } },
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "ip.csum", 
-		{ ui16: 0 } },
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "ip.id", 
-		{ ui16: 0 } },
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "ip.fragoff", 
-		{ ui16: 0 } },
+	{ 
+		.type = ULOGD_RET_IPADDR,
+		.flags = ULOGD_RETF_NONE, 
+		.name = "ip.saddr", 
+		.ipfix = { .vendor = 0, .field_id = 8 },
+	},
+	{
+		.type = ULOGD_RET_IPADDR,
+		.flags = ULOGD_RETF_NONE,
+		.name = "ip.daddr", 
+		.ipfix = { .vendor = 0, .field_id = 12 },
+	},
+	{
+		.type = ULOGD_RET_UINT8,
+		.flags = ULOGD_RETF_NONE,
+		.name = "ip.protocol", 
+		.ipfix = { .vendor = 0, .field_id = 4 },
+	},
+	{
+		.type = ULOGD_RET_UINT8,
+		.flags = ULOGD_RETF_NONE,
+		.name = "ip.tos", 
+		.ipfix = { .vendor = 0, .field_id = 5 },
+	},
+	{
+		.type = ULOGD_RET_UINT8,
+		.flags = ULOGD_RETF_NONE,
+		.name = "ip.ttl", 
+	},
+	{
+		.type = ULOGD_RET_UINT16,
+		.flags = ULOGD_RETF_NONE,
+		.name = "ip.totlen", 
+	},
+	{
+		.type = ULOGD_RET_UINT8,
+		.flags = ULOGD_RETF_NONE,
+		.name = "ip.ihl", 
+	},
+	{
+		.type = ULOGD_RET_UINT16,
+		.flags = ULOGD_RETF_NONE,
+		.name = "ip.csum", 
+	},
+	{
+		.type = ULOGD_RET_UINT16,
+		.flags = ULOGD_RETF_NONE,
+		.name "ip.id", 
+	},
+	{
+		.type = ULOGD_RET_UINT16,
+		.flags = ULOGD_RETF_NONE,
+		.name = "ip.fragoff", 
+	},
 };
 
 static ulog_iret_t *_interp_iphdr(struct ulog_interpreter *ip, 
@@ -195,26 +265,58 @@ static ulog_iret_t *_interp_iphdr(struct ulog_interpreter *ip,
  * 			TCP HEADER
  ***********************************************************************/
 static ulog_iret_t tcphdr_rets[] = {
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "tcp.sport", 
-		{ ui16: 0 } },
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "tcp.dport", 
-		{ ui16: 0 } },
-	{ NULL, NULL, 0, ULOGD_RET_UINT32, ULOGD_RETF_NONE, "tcp.seq", 
-		{ ui32: 0 } },
-	{ NULL, NULL, 0, ULOGD_RET_UINT32, ULOGD_RETF_NONE, "tcp.ackseq", 
-		{ ui32: 0 } },
-	{ NULL, NULL, 0, ULOGD_RET_UINT8, ULOGD_RETF_NONE, "tcp.offset",
-		{ ui8: 0 } },
-	{ NULL, NULL, 0, ULOGD_RET_UINT8, ULOGD_RETF_NONE, "tcp.reserved",
-		{ ui8: 0 } },
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "tcp.window",
-		{ ui16:	0 } },
-	{ NULL, NULL, 0, ULOGD_RET_BOOL, ULOGD_RETF_NONE, "tcp.urg", 
-		{ b: 0 } },
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "tcp.urgp",
-		{ ui16: 0 } },
-	{ NULL, NULL, 0, ULOGD_RET_BOOL, ULOGD_RETF_NONE, "tcp.ack", 
-		{ b: 0 } },
+	{
+		.type = ULOGD_RET_UINT16,
+		.flags = ULOGD_RETF_NONE,
+		.name = "tcp.sport", 
+		.ipfix = { .vendor = 0, .field_id = 7 },
+	},
+	{
+		.type = ULOGD_RET_UINT16,
+		.flags = ULOGD_RETF_NONE,
+		.name = "tcp.dport", 
+		.ipfix = { .vendor = 0, .field_id = 11 },
+	},
+	{
+		.type = ULOGD_RET_UINT32,
+		.flags = ULOGD_RETF_NONE,
+		.name = "tcp.seq", 
+	},
+	{
+		.type = ULOGD_RET_UINT32,
+		.flags = ULOGD_RETF_NONE,
+		.name = "tcp.ackseq", 
+	}
+	{
+		.type = ULOGD_RET_UINT8,
+		.flags = ULOGD_RETF_NONE, 
+		.name = "tcp.offset",
+	},
+	{
+		.type = ULOGD_RET_UINT8,
+		.flags = ULOGD_RETF_NONE,
+		.name = "tcp.reserved",
+	}, 
+	{
+		.type = ULOGD_RET_UINT16,
+		.flags = ULOGD_RETF_NONE,
+		.name = "tcp.window",
+	},
+	{
+		.type = ULOGD_RET_BOOL, 
+		.flags = ULOGD_RETF_NONE,
+		.name = "tcp.urg", 
+	},
+	{
+		.type = ULOGD_RET_UINT16, 
+		.flags = ULOGD_RETF_NONE,
+		.name = "tcp.urgp",
+	},
+	{
+		.type = ULOGD_RET_BOOL, 
+		.flags = ULOGD_RETF_NONE, 
+		.name = "tcp.ack", 
+	},
 	{ NULL, NULL, 0, ULOGD_RET_BOOL, ULOGD_RETF_NONE, "tcp.psh", 
 		{ b: 0 } },
 	{ NULL, NULL, 0, ULOGD_RET_BOOL, ULOGD_RETF_NONE, "tcp.rst", 
@@ -287,14 +389,28 @@ static ulog_iret_t *_interp_tcphdr(struct ulog_interpreter *ip,
  * 			UDP HEADER
  ***********************************************************************/
 static ulog_iret_t udphdr_rets[] = {
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "udp.sport", 
-		{ ui16 :0 } },
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "udp.dport", 
-		{ ui16: 0 } },
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "udp.len", 
-		{ ui16: 0 } },
-	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "udp.csum",
-		{ ui16: 0 } },
+	{
+		.type = ULOGD_RET_UINT16,
+		.flags = ULOGD_RETF_NONE,
+		.name = "udp.sport", 
+		.ipfix = { .vendor = 0, .field_id = 7 },
+	},
+	{
+		.type = ULOGD_RET_UINT16,
+		.flags = ULOGD_RETF_NONE,
+		.name = "udp.dport", 
+		.ipfix = { .vendor = 0, .field_id = 11 },
+	},
+	{
+		.type = ULOGD_RET_UINT16,
+		.flags = ULOGD_RETF_NONE,
+		.name = "udp.len", 
+	},
+	{
+		.type = ULOGD_RET_UINT16,
+		.flags = ULOGD_RETF_NONE,
+		.name = "udp.csum",
+	},
 };
 
 static ulog_iret_t *_interp_udp(struct ulog_interpreter *ip, 
