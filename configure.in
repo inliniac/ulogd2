@@ -175,11 +175,26 @@ else
 fi      
 ])      
 
+dnl
+dnl Check whether the user wants to log IP-addresses as strings rather
+dnl than integers to his pgsql-database.
+dnl
+
+AC_ARG_WITH(pgsql-log-ip-as-string,
+ --with-pgsql-log-ip-as-string		log IPs as string rather than as interger
+,[
+   EXTRA_PGSQL_DEF="-DIP_AS_STRING=1"
+])
+
+
+
+
 AC_SUBST(DATABASE_DIR)
 AC_SUBST(DATABASE_LIB)
 AC_SUBST(DATABASE_LIB_DIR)
 AC_SUBST(DB_DEF)
 AC_SUBST(EXTRA_MYSQL_DEF)
+AC_SUBST(EXTRA_PGSQL_DEF)
 
 AC_SUBST(DATABASE_DRIVERS)
 AC_SUBST(HAVE_PCAP_H)

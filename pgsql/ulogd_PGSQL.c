@@ -17,7 +17,8 @@
 #include "ulogd.h"
 #include "conffile.h"
 
-#ifdef DEBUG_PQSQL
+
+#ifdef DEBUG_PGSQL
 #define DEBUGP(x, args...)	fprintf(stderr, x, ## args)
 #else
 #define DEBUGP(x, args...)
@@ -123,21 +124,13 @@ static int _pgsql_output(ulog_iret_t *result)
 				sprintf(stmt_ins, "%u,", res->value.ui16);
 				break;
 			case ULOGD_RET_IPADDR:
-/* #ifdef IP_AS_STRING
+#ifdef IP_AS_STRING
 				*stmt_ins++ = '\'';
-				tmpstr = inet_ntoa(ntohl(res->value.ui32));
-#ifdef OLD_PGSQL
-				pgsql_escape_string(stmt_ins, tmpstr,
-						    strlen(tmpstr));
-#else
-				pgsql_real_escape_string(dbh, stmt_ins,
-							 tmpstr,
-							 strlen(tmpstr));
-#endif /* OLD_PGSQL */
-/*
-                                stmt_ins = stmt + strlen(stmt);
-                                sprintf(stmt_ins, "',");
-                                break;
+				tmpstr = (char *)inet_ntoa(ntohl(res->value.ui32));
+				PQescapeString(stmt_ins,tmpstr,strlen(tmpstr)); 
+				stmt_ins = stmt + strlen(stmt);
+				sprintf(stmt_ins, "',");
+				break;
 #endif /* IP_AS_STRING */
 				/* EVIL: fallthrough when logging IP as
 				 * u_int32_t */
@@ -149,25 +142,17 @@ static int _pgsql_output(ulog_iret_t *result)
 				sprintf(stmt_ins, "%lu,", res->value.ui64);
 				break;
 			case ULOGD_RET_BOOL:
-				sprintf(stmt_ins, "1,");
+				sprintf(stmt_ins, "'%d',", res->value.b);
 				break;
 			case ULOGD_RET_STRING:
 				*stmt_ins++ = '\'';
-/*  Change by Jaki
-#ifdef OLD_PGSQL
-				pgsql_escape_string(stmt_ins, res->value.ptr,
-					strlen(res->value.ptr));
-#else
-				pgsql_real_escape_string(dbh, stmt_ins,
-					res->value.ptr, strlen(res->value.ptr));
-#endif
-*End Change by Jaki
-*/
-                                strcpy(stmt_ins,"\'");
-				strcpy(stmt_ins,res->value.ptr);  /* Added by Jaki */
+				PQescapeString(stmt_ins,res->value.ptr,strlen(res->value.ptr)); 
 				stmt_ins = stmt + strlen(stmt);
 				sprintf(stmt_ins, "',");
-			/* sprintf(stmt_ins, "'%s',", res->value.ptr); */
+				break;
+			case ULOGD_RET_RAW:
+				ulogd_log(ULOGD_NOTICE,"%s: pgsql doesn't support type RAW\n",res->key);
+				sprintf(stmt_ins, "NULL,");
 				break;
 			default:
 				ulogd_log(ULOGD_NOTICE,

@@ -1,4 +1,4 @@
-/* ulogd_MAC.c, Version $Revision: 1.12 $
+/* ulogd_MAC.c, Version $Revision: 1.13 $
  *
  * ulogd interpreter plugin for 
  * 	o MAC addresses
@@ -26,7 +26,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  
- * $Id: ulogd_BASE.c,v 1.12 2002/06/13 12:55:21 laforge Exp $
+ * $Id: ulogd_BASE.c,v 1.13 2002/08/25 15:43:51 laforge Exp $
  *
  */
 
@@ -232,32 +232,23 @@ static ulog_iret_t *_interp_tcphdr(struct ulog_interpreter *ip,
 	ret[3].flags |= ULOGD_RETF_VALID;
 	ret[4].value.ui16 = ntohs(tcph->window);
 	ret[4].flags |= ULOGD_RETF_VALID;
+
+	ret[5].value.b = tcph->urg;
+	ret[5].flags |= ULOGD_RETF_VALID;
 	if (tcph->urg) {
-		ret[5].value.b = tcph->urg;
-		ret[5].flags |= ULOGD_RETF_VALID;
 		ret[6].value.ui16 = ntohs(tcph->urg_ptr);
 		ret[6].flags |= ULOGD_RETF_VALID;
 	}
-	if (tcph->ack) {
-		ret[7].value.b = tcph->ack;
-		ret[7].flags |= ULOGD_RETF_VALID;
-	}
-	if (tcph->psh) {
-		ret[8].value.b = tcph->psh;
-		ret[8].flags |= ULOGD_RETF_VALID;
-	}
-	if (tcph->rst) {
-		ret[9].value.b = tcph->rst;
-		ret[9].flags |= ULOGD_RETF_VALID;
-	}
-	if (tcph->syn) {
-		ret[10].value.b = tcph->syn;
-		ret[10].flags |= ULOGD_RETF_VALID;
-	}
-	if (tcph->fin) {
-		ret[11].value.b = tcph->fin;
-		ret[11].flags |= ULOGD_RETF_VALID;
-	}
+	ret[7].value.b = tcph->ack;
+	ret[7].flags |= ULOGD_RETF_VALID;
+	ret[8].value.b = tcph->psh;
+	ret[8].flags |= ULOGD_RETF_VALID;
+	ret[9].value.b = tcph->rst;
+	ret[9].flags |= ULOGD_RETF_VALID;
+	ret[10].value.b = tcph->syn;
+	ret[10].flags |= ULOGD_RETF_VALID;
+	ret[11].value.b = tcph->fin;
+	ret[11].flags |= ULOGD_RETF_VALID;
 	
 	return ret;
 }
