@@ -1,4 +1,4 @@
-#
+
 
 include @top_srcdir@/Rules.make
 CFLAGS+=-I@top_srcdir@/libipulog/include -I@top_srcdir@/include
@@ -20,13 +20,38 @@ else
 SUBDIRS+=pcap
 endif
 
+
+ULOGD_VERSION=1.10
+OLD_ULOGD_VERSION=1.09
+
 #  Normally You should not need to change anything below
 
 all: recurse ulogd
 
-distrib:
-	@for d in $(SUBDIRS); do if ! make -C $$d distrib; then exit 1; fi; done
-	@make distclean
+.PHONY: distclean
+distclean: clean
+	@for d in $(SUBDIRS); do if ! make -C $$d $@; then exit 1; fi; done
+	rm -f Makefile config.cache config.log config.status Rules.make
+
+.PHONY: distrib
+distrib: check distclean delrelease $(RELEASE_DIR)/ulogd-$(ULOGD_VERSION).tar.bz2 diff md5sums
+
+.PHONY: check
+check:
+	@if echo $(CFLAGS) | egrep -e '-g|-pg' > /dev/null; then echo Remove debugging flags; exit 1; else exit 0; fi
+
+.PHONY: delrelease
+delrelease:
+	rm -f $(RELEASE_DIR)/ulogd-$(ULOGD_VERSION).tar.bz2
+
+$(RELEASE_DIR)/ulogd-$(ULOGD_VERSION).tar.bz2:
+	cd .. & ln -sf ulogd ulogd-$(ULOGD_VERSION) && tar cvf - --exclude CVS --exclude .svn ulogd-$(ULOGD_VERSION)/. | bzip2 -9 > $@ && rm ulogd-$(ULOGD_VERSION)
+
+.PHONY: diff
+diff: $(RELEASE_DIR)/ulogd-$(ULOGD_VERSION).tar.bz2
+	@mkdir /tmp/diffdir
+	@cd /tmp/diffdir && tar -x --bzip2 -f $(RELEASE_DIR)/ulogd-$(ULOGD_VERSION).tar.bz2
+	@set -e; cd /tmp/diffdir; tar -x --bzip2 -f $(RELEASE_DIR)/ulogd-$(OLD_ULOGD_VERSION).tar.bz2; echo Creating patch-ulogd-$(OLD_ULOGD_VERSION)-$(ULOGD_VERSION).bz2; diff -urN ulogd-$(OLD_ULOGD_VERSION) ulogd-$(ULOGD_VERSION) | bzip2 -9 > $(RELEASE_DIR)/patch-ulogd-$(OLD_ULOGD_VERSION)-$(ULOGD_VERSON).bz2
 
 recurse: 
 	@for d in $(SUBDIRS); do if ! make -C $$d; then exit 1; fi; done
@@ -44,16 +69,12 @@ clean:
 	rm -f ulogd ulogd.o ulogd.conf
 	@for d in $(SUBDIRS); do if ! make -C $$d $@; then exit 1; fi; done
 
-distclean: clean
-	@for d in $(SUBDIRS); do if ! make -C $$d $@; then exit 1; fi; done
-	rm -f Makefile config.cache config.log config.status Rules.make
-
 install: all
 	@for d in $(SUBDIRS); do if ! make -C $$d $@; then exit 1; fi; done
-	@[ -d $(DESTDIR)@sbindir@ ] || mkdir -p $(DESTDIR)@sbindir@
-	@INSTALL@ -D -m 755 ulogd $(DESTDIR)@sbindir@/ulogd
-	@[ -d $(DESTDIR)@sysconfdir@ ] || mkdir -p $(DESTDIR)@sysconfdir@
-	@[ -f $(DESTDIR)@sysconfdir@/ulogd.conf ] || @INSTALL@ -D -m 600 ulogd.conf $(DESTDIR)@sysconfdir@/ulogd.conf
+	@[ -d $(DESTDIR)$(BINDIR) ] || mkdir -p $(DESTDIR)$(BINDIR)
+	@INSTALL@ -D -m 755 ulogd $(DESTDIR)$(BINDIR)/ulogd
+	@[ -d $(DESTDIR)$(ETCDIR) ] || mkdir -p $(DESTDIR)$(ETCDIR)
+	@[ -f $(DESTDIR)$(ETCDIR)/ulogd.conf ] || @INSTALL@ -D -m 600 ulogd.conf $(DESTDIR)$(ETCDIR)/ulogd.conf
 	
 doc:
 	$(MAKE) -C $@

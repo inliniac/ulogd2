@@ -1,9 +1,9 @@
 #
 
-prefix=@prefix@
+PREFIX=@prefix@
 exec_prefix=@exec_prefix@
-sysconfdir=@sysconfdir@
-sbindir=@sbindir@
+ETCDIR=@sysconfdir@
+BINDIR=@sbindir@
 
 ULOGD_CONFIGFILE=@sysconfdir@/ulogd.conf
 
