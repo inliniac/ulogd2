@@ -1,13 +1,13 @@
-/* ulog_test, $Revision$
+/* ulog_test, $Revision: 1.2 $
  *
  * small testing program for libipulog, part of the netfilter ULOG target
  * for the linux 2.4 netfilter subsystem.
  *
- * (C) 2000 by Harald Welte <laforge@sunbeam.franken.de>
+ * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulog_test.c,v 1.1 2000/07/30 19:34:05 laforge Exp laforge $
+ * $Id: ulog_test.c,v 1.2 2000/07/31 15:02:33 laforge Exp $
  */
 
 #include <stdio.h>

@@ -1,15 +1,15 @@
 /* 
- * libipulog.c, $Revision: 1.3 $
+ * libipulog.c, $Revision: 1.4 $
  *
  * netfilter ULOG userspace library.
  *
- * (C) 2000 by Harald Welte <laforge@sunbeam.franken.de>
+ * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  * released under the terms of GNU GPL
  *
  * This library is still under development, so be aware of sudden interface
  * changes
  *
- * $Id: libipulog.c,v 1.3 2000/08/11 09:56:45 laforge Exp $
+ * $Id: libipulog.c,v 1.4 2000/08/12 07:11:29 laforge Exp $
  */
 
 #include <stdlib.h>
