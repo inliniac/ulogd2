@@ -17,7 +17,7 @@ INCCONFFILE=-I@top_srcdir@/conffile
 CC=@CC@
 CFLAGS=@CFLAGS@ @CPPFLAGS@ 
 CFLAGS+=-DULOGD_CONFIGFILE=\"$(ULOGD_CONFIGFILE)\"
-# doesn't wor for subdirs
+# doesn't work for subdirs
 #CFLAGS+=$(INCIPULOG) $(INCCONFFILE)
 CFLAGS+=-I/usr/src/linux/include
 #CFLAGS+=@DEFS@

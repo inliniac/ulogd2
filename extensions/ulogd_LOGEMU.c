@@ -1,4 +1,4 @@
-/* ulogd_LOGEMU.c, Version $Revision: 1.9 $
+/* ulogd_LOGEMU.c, Version $Revision: 1.10 $
  *
  * ulogd output target for syslog logging emulation
  *
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_LOGEMU.c,v 1.9 2002/04/27 19:45:51 laforge Exp $
+ * $Id: ulogd_LOGEMU.c,v 1.10 2002/12/09 14:42:43 laforge Exp $
  *
  */
 
@@ -30,6 +30,9 @@
 #include <string.h>
 #include <time.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
 #include <ulogd/ulogd.h>
@@ -119,11 +122,11 @@ int _output_logemu(ulog_iret_t *res)
 	timestr = ctime(&now) + 4;
 
 	/* truncate time */
-	if (tmp = strchr(timestr, '\n'))
+	if ((tmp = strchr(timestr, '\n')))
 		*tmp = '\0';
 
 	/* truncate hostname */
-	if (tmp = strchr(hostname, '.'))
+	if ((tmp = strchr(hostname, '.')))
 		*tmp = '\0';
 
 	/* print time and hostname */

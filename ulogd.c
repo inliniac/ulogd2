@@ -1,6 +1,6 @@
-/* ulogd, Version $Revision: 1.28 $
+/* ulogd, Version $Revision: 1.29 $
  *
- * $Id: ulogd.c,v 1.28 2002/07/30 07:23:36 laforge Exp $
+ * $Id: ulogd.c,v 1.29 2002/12/09 14:42:43 laforge Exp $
  *
  * userspace logging daemon for the netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd.c,v 1.28 2002/07/30 07:23:36 laforge Exp $
+ * $Id: ulogd.c,v 1.29 2002/12/09 14:42:43 laforge Exp $
  *
  * Modifications:
  * 	14 Jun 2001 Martin Josefsson <gandalf@wlug.westbo.se>
@@ -39,6 +39,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <time.h>
+#include <ctype.h>
 #include <signal.h>
 #include <dlfcn.h>
 #include <sys/types.h>
@@ -145,6 +146,7 @@ unsigned int interh_getid(const char *name)
 	return 0;
 }
 
+#ifdef DEBUG
 /* dump out the contents of the interpreter hash */
 static void interh_dump(void)
 {
@@ -155,6 +157,7 @@ static void interh_dump(void)
 			i, (ulogd_interh[i])->name);
 
 }
+#endif
 
 /* key hash allocation granularity */
 #define KEYH_ALLOC_GRAN 20
@@ -207,6 +210,7 @@ static unsigned int keyh_allocid(ulog_interpreter_t *ip, unsigned int offset,
 	return id;
 }
 
+#ifdef DEBUG
 /* dump the keyhash to standard output */
 static void keyh_dump(void)
 {
@@ -217,6 +221,7 @@ static void keyh_dump(void)
 		printf("ulogd_keyh[%lu] = %s:%u\n", i, 
 			ulogd_keyh[i].interp->name, ulogd_keyh[i].offset);
 }
+#endif
 
 /* get keyid by name */
 unsigned int keyh_getid(const char *name)
@@ -670,8 +675,8 @@ int main(int argc, char* argv[])
 
 	/* endless loop receiving packets and handling them over to
 	 * handle_packet */
-	while (len = ipulog_read(libulog_h, libulog_buf, 
-				 bufsiz_ce.u.value, 1)) {
+	while ((len = ipulog_read(libulog_h, libulog_buf, 
+				 bufsiz_ce.u.value, 1))) {
 
 		if (len <= 0) {
 			/* this is not supposed to happen */
@@ -679,8 +684,8 @@ int main(int argc, char* argv[])
 				  "ipulog_errno == %d, errno = %d\n",
 				  len, ipulog_errno, errno);
 		} else {
-			while (upkt = ipulog_get_packet(libulog_h,
-					       libulog_buf, len)) {
+			while ((upkt = ipulog_get_packet(libulog_h,
+					       libulog_buf, len))) {
 				DEBUGP("==> packet received\n");
 				handle_packet(upkt);
 			}
@@ -689,4 +694,5 @@ int main(int argc, char* argv[])
 
 	/* hackish, but result is the same */
 	sigterm_handler(SIGTERM);	
+	return(0);
 }
