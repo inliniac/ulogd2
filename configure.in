@@ -86,6 +86,25 @@ else
         else
                 MYSQLEXTRALIBS=
         fi
+
+	dnl Here we check whether we have an old MySQL client library
+	dnl installed, which does not support the mysql_real_escape_string(),
+	dnl but the real_escape_string() function.
+	dnl Having a look in the libary itself should be more reliable than
+	dnl parsing the output of mysql --version.
+
+	AC_MSG_CHECKING(for mysql_real_escape_string support)
+
+	MYSQL_FUNCTION_TEST=`strings ${MYSQLLIBS}/libmysqlclient.a | grep mysql_real_escape_string`
+
+	if test "x$MYSQL_FUNCTION_TEST" = x
+	then
+                EXTRA_MYSQL_DEF="OLD_MYSQL=1 "
+                AC_MSG_RESULT(found an older version of MySQL)
+	else
+		AC_MSG_RESULT(found a newer version of MySQL)
+	fi
+
 fi      
 ])      
 
@@ -93,6 +112,7 @@ AC_SUBST(DATABASE_DIR)
 AC_SUBST(DATABASE_LIB)
 AC_SUBST(DATABASE_LIB_DIR)
 AC_SUBST(DB_DEF)
+AC_SUBST(EXTRA_MYSQL_DEF)
 
 AC_SUBST(DATABASE_DRIVERS)
 

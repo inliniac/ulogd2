@@ -1,13 +1,16 @@
-/* ulogd_MYSQL.c, Version $Revision: 1.1 $
+/* ulogd_MYSQL.c, Version $Revision: 1.2 $
  *
  * ulogd output plugin for logging to a MySQL database
  *
  * (C) 2000 by Harald Welte <laforge@gnumonks.org> 
  * This software is distributed under the terms of GNU GPL 
  *
- * $Id: ulogd_MYSQL.c,v 1.1 2000/11/20 19:37:55 laforge Exp $
+ * $Id: ulogd_MYSQL.c,v 1.2 2001/02/16 18:07:52 laforge Exp $
  *
- **/
+ * 15.5.2001, Alex Janssen <alex@ynfonatic.de>:
+ *      Added a compability option for older MySQL-servers, which
+ *      don't support mysql_real_escape_string
+ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -130,8 +133,13 @@ static int _mysql_output(ulog_iret_t *result)
 				break;
 			case ULOGD_RET_STRING:
 				*stmt_ins++ = '\'';
+#ifdef OLD_MYSQL
+				mysql_escape_string(stmt_ins, res->value.ptr,
+					strlen(res->value.ptr));
+#else
 				mysql_real_escape_string(dbh, stmt_ins,
 					res->value.ptr, strlen(res->value.ptr));
+#endif
 				stmt_ins = stmt + strlen(stmt);
 				sprintf(stmt_ins, "',");
 			/* sprintf(stmt_ins, "'%s',", res->value.ptr); */
