@@ -27,8 +27,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <ulogd.h>
 #include <string.h>
+#include <ulogd/ulogd.h>
 
 #ifdef DEBUG_LOCAL
 #define DEBUGP(x) ulogd_log(ULOGD_DEBUG, x)

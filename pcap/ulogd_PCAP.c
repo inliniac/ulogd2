@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_PCAP.c,v 1.1 2002/06/13 12:55:21 laforge Exp $
+ * $Id: ulogd_PCAP.c,v 1.1 2002/07/30 08:00:47 laforge Exp $
  *
  */
 
@@ -32,8 +32,8 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <pcap.h>
-#include "ulogd.h"
-#include "conffile.h"
+#include <ulogd/ulogd.h>
+#include <ulogd/conffile.h>
 
 #ifndef ULOGD_PCAP_DEFAULT
 #define ULOGD_PCAP_DEFAULT	"/var/log/ulogd.pcap"

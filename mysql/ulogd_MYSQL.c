@@ -1,4 +1,4 @@
-/* ulogd_MYSQL.c, Version $Revision: 1.5 $
+/* ulogd_MYSQL.c, Version $Revision: 1.6 $
  *
  * ulogd output plugin for logging to a MySQL database
  *
@@ -17,7 +17,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  * 
- * $Id: ulogd_MYSQL.c,v 1.4 2001/05/20 13:51:46 laforge Exp $
+ * $Id: ulogd_MYSQL.c,v 1.6 2001/09/01 11:52:56 laforge Exp $
  *
  * 15 May 2001, Alex Janssen <alex@ynfonatic.de>:
  *      Added a compability option for older MySQL-servers, which
@@ -34,9 +34,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ulogd.h>
+#include <ulogd/ulogd.h>
+#include <ulogd/conffile.h>
 #include <mysql/mysql.h>
-#include "ulogd.h"
-#include "conffile.h"
 
 #ifdef DEBUG_MYSQL
 #define DEBUGP(x, args...)	fprintf(stderr, x, ## args)

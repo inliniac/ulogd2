@@ -1,4 +1,4 @@
-/* ulogd_MAC.c, Version $Revision: 1.7 $
+/* ulogd_MAC.c, Version $Revision: 1.8 $
  *
  * ulogd output target for logging to a file 
  *
@@ -17,15 +17,15 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_OPRINT.c,v 1.6 2000/11/20 11:43:22 laforge Exp $
+ * $Id: ulogd_OPRINT.c,v 1.8 2001/09/01 11:51:54 laforge Exp $
  *
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "ulogd.h"
-#include "conffile.h"
+#include <ulogd/ulogd.h>
+#include <ulogd/conffile.h>
 
 #ifndef ULOGD_OPRINT_DEFAULT
 #define ULOGD_OPRINT_DEFAULT	"/var/log/ulogd.pktlog"

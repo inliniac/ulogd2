@@ -12,10 +12,9 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <ulogd.h>
+#include <ulogd/ulogd.h>
+#include <ulogd/conffile.h>
 #include <libpq-fe.h>
-#include "ulogd.h"
-#include "conffile.h"
 
 
 #ifdef DEBUG_PGSQL

@@ -4,7 +4,7 @@
 #
 include @top_srcdir@/Rules.make
 
-CFLAGS+=-I@top_srcdir@ -I@top_srcdir@/libipulog/include -I@top_srcdir@/conffile
+CFLAGS+=-I@top_srcdir@ -I@top_srcdir@/libipulog/include -I@top_srcdir@/include
 SH_CFLAGS:=$(CFLAGS) -fPIC
 
 SHARED_LIBS=ulogd_PGSQL.so

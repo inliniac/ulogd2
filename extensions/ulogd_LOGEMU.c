@@ -1,4 +1,4 @@
-/* ulogd_LOGEMU.c, Version $Revision: 1.8 $
+/* ulogd_LOGEMU.c, Version $Revision: 1.9 $
  *
  * ulogd output target for syslog logging emulation
  *
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_LOGEMU.c,v 1.8 2001/09/27 15:45:25 laforge Exp $
+ * $Id: ulogd_LOGEMU.c,v 1.9 2002/04/27 19:45:51 laforge Exp $
  *
  */
 
@@ -32,8 +32,8 @@
 #include <sys/time.h>
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
-#include "ulogd.h"
-#include "conffile.h"
+#include <ulogd/ulogd.h>
+#include <ulogd/conffile.h>
 
 #ifndef ULOGD_LOGEMU_DEFAULT
 #define ULOGD_LOGEMU_DEFAULT	"/var/log/ulogd.syslogemu"

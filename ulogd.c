@@ -1,6 +1,6 @@
-/* ulogd, Version $Revision: 1.27 $
+/* ulogd, Version $Revision: 1.28 $
  *
- * $Id: ulogd.c,v 1.27 2002/07/30 07:15:54 laforge Exp $
+ * $Id: ulogd.c,v 1.28 2002/07/30 07:23:36 laforge Exp $
  *
  * userspace logging daemon for the netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd.c,v 1.27 2002/07/30 07:15:54 laforge Exp $
+ * $Id: ulogd.c,v 1.28 2002/07/30 07:23:36 laforge Exp $
  *
  * Modifications:
  * 	14 Jun 2001 Martin Josefsson <gandalf@wlug.westbo.se>
@@ -45,8 +45,8 @@
 #include <dirent.h>
 #include <getopt.h>
 #include <libipulog/libipulog.h>
-#include "conffile.h"
-#include "ulogd.h"
+#include <ulogd/conffile.h>
+#include <ulogd/ulogd.h>
 
 /* Size of the netlink receive buffer. If you have _big_ in-kernel
  * queues, you may have to increase this number. 
