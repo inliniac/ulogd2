@@ -1,4 +1,4 @@
-/* ulogd_MAC.c, Version $Revision: 1.8 $
+/* ulogd_MAC.c, Version $Revision: 1.9 $
  *
  * ulogd interpreter plugin for 
  * 	o MAC addresses
@@ -11,10 +11,22 @@
  * 	o ICMP header
  * 	o AH/ESP header
  *
- * (C) 2000 by Harald Welte <laforge@gnumonks.org>
- * This software is released under the terms of GNU GPL
+ * (C) 2000-2001 by Harald Welte <laforge@gnumonks.org>
  *
- * $Id: ulogd_BASE.c,v 1.8 2000/11/16 21:15:30 laforge Exp $
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License version 2 
+ *  as published by the Free Software Foundation
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ 
+ * $Id: ulogd_BASE.c,v 1.9 2000/11/20 11:43:22 laforge Exp $
  *
  */
 
