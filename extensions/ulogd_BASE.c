@@ -1,11 +1,11 @@
-/* ulogd_MAC.c, Version $Revision: 1.4 $
+/* ulogd_MAC.c, Version $Revision: 1.5 $
  *
  * ulogd logging interpreter for MAC addresses, TIME, IP and TCP headers, etc.
  *
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  * This software is released under the terms of GNU GPL
  *
- * $Id: ulogd_BASE.c,v 1.4 2000/09/12 14:29:37 laforge Exp $
+ * $Id: ulogd_BASE.c,v 1.5 2000/09/22 06:54:33 laforge Exp $
  *
  */
 
@@ -101,6 +101,9 @@ ulog_iret_t *_interp_iphdr(ulog_packet_msg_t *pkt)
 
 	ret2 = ret2->next = alloc_ret(ULOGD_RET_UINT8, "ip.hdr.ihl");
 	ret2->value.ui8 = iph->ihl;
+
+	ret2 = ret2->next = alloc_ret(ULOGD_RET_UINT16, "ip.hdr.csum");
+	ret2->value.ui16 = ntohs(iph->check);
 
 	return ret;
 }
