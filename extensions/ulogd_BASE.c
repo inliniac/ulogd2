@@ -1,4 +1,4 @@
-/* ulogd_MAC.c, Version $Revision: 1.9 $
+/* ulogd_MAC.c, Version $Revision: 1.10 $
  *
  * ulogd interpreter plugin for 
  * 	o MAC addresses
@@ -26,7 +26,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  
- * $Id: ulogd_BASE.c,v 1.9 2000/11/20 11:43:22 laforge Exp $
+ * $Id: ulogd_BASE.c,v 1.10 2001/09/01 11:51:54 laforge Exp $
  *
  */
 
@@ -309,7 +309,7 @@ static ulog_iret_t *_interp_icmp(struct ulog_interpreter *ip,
 				ulog_packet_msg_t *pkt)
 {
 	struct iphdr *iph = (struct iphdr *) pkt->payload;
-	void *protoh = (u_int32_t *) (iph + iph->ihl);
+	void *protoh = (u_int32_t *)iph + iph->ihl;
 	struct icmphdr *icmph = protoh;
 	ulog_iret_t *ret = ip->result;
 
