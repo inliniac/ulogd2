@@ -2,7 +2,7 @@
  *
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  *
- * $Id: conffile.c,v 1.7 2000/11/16 17:20:52 laforge Exp $
+ * $Id: conffile.c,v 1.1 2000/11/20 11:43:22 laforge Exp $
  * 
  * This code is distributed under the terms of GNU GPL */
 
@@ -26,32 +26,59 @@ config_entry_t *config_errce = NULL;
 /* Filename of the config file */
 static char *fname = NULL;
 
-/* the the next word in string */
-static char *get_word(const char *string)
+/* get_word() - Function to parse a line into words.
+ * Arguments:	line	line to parse
+ * 		delim	possible word delimiters
+ * 		buf	pointer to buffer where word is returned
+ * Return value:	pointer to first char after word
+ * This function can deal with "" quotes 
+ */
+char* get_word(char *line, char *not, char *buf)
 {
-	int len;
-	char *word, *space;
-	space = strrchr(string, ' ');
+	char *p, *start = NULL, *stop = NULL;
+	int inquote = 0;
 
-	if (!space) {
-		space = strrchr(string, '\t');
-		if (!space)
-			return NULL;
+	for (p = line; *p; p++) {
+		if (*p == '"') {
+			start  = p + 1;
+			inquote = 1;
+			break;
+		}
+		if (!strchr(not, *p)) {
+			start = p;
+			break;
+		}
 	}
-	len = space - string;
-	if (!len) 
+	if (!start)
 		return NULL;
 
-	word = (char *) malloc(len+1);
-	if (!word)
+	/* determine pointer to one char after word */
+	for (p = start; *p; p++) {
+		if (inquote) {
+			if (*p == '"') {
+				stop = p;
+				break;
+			}
+		} else {
+			if (strchr(not, *p)) {
+				stop = p;
+				break;
+			}
+		}
+	}
+	if (!stop)
 		return NULL;
 
-	strncpy(word, string, len);
+	strncpy(buf, start, stop-start);
+	*(buf + (stop-start)) = '\0';
 
-//	if (*(word + len) == '\n')
-		*(word + len) = '\0';
+	/* skip quote character */
+	if (inquote)
+		/* yes, we can return stop + 1. If " was the last 
+		 * character in string, it now points to NULL-term */
+		return (stop + 1);
 
-	return word;
+	return stop;
 }
 
 /* do we have a config directive for this name */
@@ -108,7 +135,7 @@ int config_register_file(const char *file)
 int config_parse_file(int final)
 {
 	FILE *cfile;
-	char *line, *word, *args;
+	char *line, *args;
 	config_entry_t *ce;
 	int err = 0;
 
@@ -124,14 +151,15 @@ int config_parse_file(int final)
 	
 	while (fgets(line, LINE_LEN, cfile))
 	{
+		char wordbuf[LINE_LEN];
+		char *wordend;
+		
 		DEBUGC("line read: %s\n", line);
 		if (*line == '#')
 			continue;
 
-		word = get_word(line);
-		if (!word)
+		if (!(wordend = get_word(line, " \t\n", (char *) &wordbuf)))
 			continue;
-
 #if 0
 		/* if we do the final parse and word is not a config key */
 		if (final && config_iskey(word)) {
@@ -141,15 +169,15 @@ int config_parse_file(int final)
 		}
 #endif
 
-		args = line + strlen(word) + 1;
-		*(args + strlen(args) - 1 ) = '\0';
-		
 		DEBUGC("parse_file: entering main loop\n");
 		for (ce = config; ce; ce = ce->next) {
 			DEBUGC("parse main loop, key: %s\n", ce->key);
-			if (strcmp(ce->key, word)) {
+			if (strcmp(ce->key, (char *) &wordbuf)) {
 				continue;
 			}
+
+			wordend = get_word(wordend, " \t\n", (char *) &wordbuf);
+			args = (char *)&wordbuf;
 
 			if (ce->hit && !(ce->options & CONFIG_OPT_MULTI))
 			{
@@ -165,6 +193,7 @@ int config_parse_file(int final)
 					if (strlen(args) < 
 					    CONFIG_VAL_STRING_LEN ) {
 						strcpy(ce->u.string, args);
+						/* FIXME: what if not ? */
 					}
 					break;
 				case CONFIG_TYPE_INT:
