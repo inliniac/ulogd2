@@ -3,7 +3,7 @@ LIBIPULOG=../libipulog
 INCIPULOG=-I../libipulog/include
 
 # Names of the plugins to be compiled
-ULOGD_SL:=BASE OPRINT PWSNIFF #MYSQL
+ULOGD_SL:=BASE OPRINT PWSNIFF LOGEMU #MYSQL
 
 #  Normally You should not need to change anything below
 #

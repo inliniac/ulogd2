@@ -1,4 +1,4 @@
-/* ulogd, Version $Revision: 1.10 $
+/* ulogd, Version $Revision: 1.11 $
  *
  * first try of a logging daemon for my netfilter ULOG target
  * for the linux 2.4 netfilter subsystem.
@@ -7,7 +7,7 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.c,v 1.10 2000/09/12 14:29:37 laforge Exp $
+ * $Id: ulogd.c,v 1.11 2000/11/16 17:20:52 laforge Exp $
  */
 
 #include <stdio.h>
@@ -94,13 +94,7 @@ static void interh_dump(void)
 
 }
 
-struct ulogd_keyh_entry {
-	ulog_interpreter_t *interp;	/* interpreter for this key */
-	unsigned int offset;		/* offset within interpreter */
-	const char *name;		/* name of this particular key */
-};
-
-static struct ulogd_keyh_entry ulogd_keyh[100];
+struct ulogd_keyh_entry ulogd_keyh[100];
 static unsigned int ulogd_keyh_ids;
 
 /* allocate a new key_id */
@@ -146,6 +140,17 @@ inline char *keyh_getname(unsigned int id)
 	return ulogd_keyh[id].interp->name;
 }
 
+ulog_iret_t *keyh_getres(unsigned int id)
+{
+	ulog_iret_t *ret;
+
+	ret = &ulogd_keyh[id].interp->result[ulogd_keyh[id].offset];
+
+	if (ret->flags & ULOGD_RETF_VALID)
+		return ret;
+
+	return NULL;
+}
 
 /* try to lookup a registered interpreter for a given name */
 static ulog_interpreter_t *find_interpreter(const char *name)
@@ -369,7 +374,7 @@ static int parse_conffile(int final)
 			break;
 		case -ERRUNKN:
 			ulogd_error("ERROR: unknown config key\n");
-				config_errce->key);
+/*				config_errce->key); */
 			break;
 	}
 	return 1;

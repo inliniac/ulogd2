@@ -1,6 +1,6 @@
 #ifndef _ULOGD_H
 #define _ULOGD_H
-/* ulogd, Version $Revision: 1.7 $
+/* ulogd, Version $Revision: 1.8 $
  *
  * first try of a logging daemon for my netfilter ULOG target
  * for the linux 2.4 netfilter subsystem.
@@ -9,7 +9,7 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.h,v 1.7 2000/09/12 14:29:37 laforge Exp $
+ * $Id: ulogd.h,v 1.8 2000/11/16 17:20:52 laforge Exp $
  */
 
 #include <libipulog/libipulog.h>
@@ -130,5 +130,23 @@ void ulogd_log(int level, const char *message, ...);
 
 /* get an interpreter hash id by name */
 unsigned int interh_getid(const char *name);
+
+/* get a key id if you have the name */
+unsigned int keyh_getid(const char *name);
+
+/* get a result for a given key id */
+ulog_iret_t *keyh_getres(unsigned int id);
+
+/* the key hash itself */
+struct ulogd_keyh_entry ulogd_keyh[100];
+
+/* entries of the key hash */
+struct ulogd_keyh_entry {
+	ulog_interpreter_t *interp;	/* interpreter for this key */
+	unsigned int offset;		/* offset within interpreter */
+	const char *name;		/* name of this particular key */
+};
+
+
 
 #endif
