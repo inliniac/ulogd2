@@ -35,9 +35,12 @@
  *
  * 	20 Apr 2004 Nicolas Pougetoux <nicolas.pougetoux@edelweb.fr>
  * 		- added suppurt for seteuid()
+ *
+ * 	22 Jul 2004 Harald Welte <laforge@gnumonks.org>
+ * 		- major restructuring for flow accounting / ipfix work
  */
 
-#define ULOGD_VERSION	"1.20"
+#define ULOGD_VERSION	"2.00alpha"
 
 #include <unistd.h>
 #include <stdio.h>
