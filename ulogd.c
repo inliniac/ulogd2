@@ -1,6 +1,6 @@
-/* ulogd, Version $Revision: 1.31 $
+/* ulogd, Version $Revision: 1.32 $
  *
- * $Id: ulogd.c,v 1.31 2003/01/13 13:33:23 laforge Exp $
+ * $Id: ulogd.c,v 1.32 2003/01/13 13:37:56 laforge Exp $
  *
  * userspace logging daemon for the netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd.c,v 1.31 2003/01/13 13:33:23 laforge Exp $
+ * $Id: ulogd.c,v 1.32 2003/01/13 13:37:56 laforge Exp $
  *
  * Modifications:
  * 	14 Jun 2001 Martin Josefsson <gandalf@wlug.westbo.se>
@@ -451,7 +451,8 @@ static void handle_packet(ulog_packet_msg_t *pkt)
 static int load_plugin(char *file)
 {
 	if (!dlopen(file, RTLD_NOW)) {
-		ulogd_log(ULOGD_ERROR, "load_plugins: %s\n", dlerror());
+		ulogd_log(ULOGD_ERROR, "load_plugins: '%s': %s\n", file,
+			  dlerror());
 		return 1;
 	}
 	return 0;
