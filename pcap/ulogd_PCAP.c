@@ -49,14 +49,20 @@
         ((unsigned char *)&addr)[2], \
         ((unsigned char *)&addr)[3]
 
-static config_entry_t pcapf_ce = { NULL, "file", CONFIG_TYPE_STRING, 
-				  CONFIG_OPT_NONE, 0,
-				  { string: ULOGD_PCAP_DEFAULT } };
+static config_entry_t pcapf_ce = { 
+	.key = "file", 
+	.type = CONFIG_TYPE_STRING, 
+	.options = CONFIG_OPT_NONE,
+	.u.string = ULOGD_PCAP_DEFAULT,
+};
 
-static config_entry_t pcapsync_ce = { &pcapf_ce, "sync", 
-				      CONFIG_TYPE_INT, CONFIG_OPT_NONE, 0,
-				      { value: ULOGD_PCAP_SYNC_DEFAULT }
-				     };
+static config_entry_t pcapsync_ce = { 
+	.next = &pcapf_ce, 
+	.key = "sync", 
+	.type = CONFIG_TYPE_INT,
+	.options = CONFIG_OPT_NONE,
+	.u.value = ULOGD_PCAP_SYNC_DEFAULT,
+};
 
 static FILE *of = NULL;
 
