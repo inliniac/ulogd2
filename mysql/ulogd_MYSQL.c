@@ -1,15 +1,22 @@
-/* ulogd_MYSQL.c, Version $Revision: 1.2 $
+/* ulogd_MYSQL.c, Version $Revision: 1.3 $
  *
  * ulogd output plugin for logging to a MySQL database
  *
  * (C) 2000 by Harald Welte <laforge@gnumonks.org> 
  * This software is distributed under the terms of GNU GPL 
  *
- * $Id: ulogd_MYSQL.c,v 1.2 2001/02/16 18:07:52 laforge Exp $
+ * $Id: ulogd_MYSQL.c,v 1.3 2001/05/17 15:06:58 laforge Exp $
  *
- * 15.5.2001, Alex Janssen <alex@ynfonatic.de>:
+ * 15 May 2001, Alex Janssen <alex@ynfonatic.de>:
  *      Added a compability option for older MySQL-servers, which
  *      don't support mysql_real_escape_string
+ *
+ * 17 May 2001, Alex Janssen <alex@ynfonatic.de>:
+ *      Added the --with-mysql-log-ip-as-string feature. This will log
+ *      IP's as string rather than an unsigned long integer to the database.
+ *	See ulogd/doc/mysql.table.ipaddr-as-string as an example.
+ *	BE WARNED: This has _WAY_ less performance during table searches.
+ *
  */
 
 #include <stdlib.h>
@@ -85,6 +92,8 @@ static int _mysql_output(ulog_iret_t *result)
 	struct _field *f;
 	ulog_iret_t *res;
 
+	char *tmpstr;
+
 	stmt_ins = stmt_val;
 
 	for (f = fields; f; f = f->next) {
@@ -122,6 +131,23 @@ static int _mysql_output(ulog_iret_t *result)
 				sprintf(stmt_ins, "%u,", res->value.ui16);
 				break;
 			case ULOGD_RET_IPADDR:
+#ifdef IP_AS_STRING
+				*stmt_ins++ = '\'';
+				tmpstr = inet_ntoa(ntohl(res->value.ui32));
+#ifdef OLD_MYSQL
+				mysql_escape_string(stmt_ins, tmpstr,
+						    strlen(tmpstr));
+#else
+				mysql_real_escape_string(dbh, stmt_ins,
+							 tmpstr,
+							 strlen(tmpstr));
+#endif /* OLD_MYSQL */
+                                stmt_ins = stmt + strlen(stmt);
+                                sprintf(stmt_ins, "',");
+                                break;
+#endif /* IP_AS_STRING */
+				/* EVIL: fallthrough when logging IP as
+				 * u_int32_t */
 			case ULOGD_RET_UINT32:
 				sprintf(stmt_ins, "%u,", res->value.ui32);
 				break;

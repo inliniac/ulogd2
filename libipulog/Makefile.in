@@ -1,7 +1,7 @@
 #
 
 include @top_srcdir@/Rules.make
-CFLAGS+=-Iinclude
+CFLAGS+=-Iinclude -I/usr/src/linux/include
 
 libipulog.a: libipulog.o
 	ld -i $< -o $@

@@ -27,7 +27,7 @@ clean:
 
 distclean: clean
 	@for d in $(SUBDIRS); do if ! make -C $$d $@; then exit 1; fi; done
-	rm -f Makefile config.cache config.log config.status Rules.make 
+	rm -f Makefile config.cache config.log config.status Rules.make configure
 
 install: all
 	@for d in $(SUBDIRS); do if ! make -C $$d $@; then exit 1; fi; done

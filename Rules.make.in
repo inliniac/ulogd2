@@ -8,27 +8,28 @@ ULOGD_CONFIGFILE=@sysconfdir@/ulogd.conf
 
 ULOGD_LIB_PATH=@libdir@/ulogd
 
+# Path of libipulog (from iptables)
+LIBIPULOG=@top_srcdir@/libipulog
+INCIPULOG=-I@top_srcdir@/libipulog/include
+INCCONFFILE=-I@top_srcdir@/conffile
+
 CC=@CC@
 CFLAGS=@CFLAGS@ @CPPFLAGS@ 
-CFLAGS+=$(INCIPULOG) $(INCCONFFILE)
 CFLAGS+=-DULOGD_CONFIGFILE=\"$(ULOGD_CONFIGFILE)\"
+# doesn't wor for subdirs
+#CFLAGS+=$(INCIPULOG) $(INCCONFFILE)
+CFLAGS+=-I/usr/src/linux/include
 #CFLAGS+=@DEFS@
 #CFLAGS+=-g -DDEBUG -DDEBUG_MYSQL
 
 LIBS=@LIBS@
 
 
-# Path of libipulog (from iptables)
-LIBIPULOG=@top_srcdir@/libipulog
-#INCIPULOG=-I@top_srcdir@/libipulog/include
-
-#INCCONFFILE=-I@top_srcdir@/conffile
-
 # Names of the plugins to be compiled
 ULOGD_SL:=BASE OPRINT PWSNIFF LOGEMU 
 
 # mysql output support
 #ULOGD_SL+=MYSQL
-MYSQL_CFLAGS=-I@MYSQLINCLUDES@ -D@EXTRA_MYSQL_DEF@
+MYSQL_CFLAGS=-I@MYSQLINCLUDES@ @EXTRA_MYSQL_DEF@
 MYSQL_LDFLAGS=@DATABASE_LIB_DIR@ @DATABASE_LIB@
 

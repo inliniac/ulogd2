@@ -33,7 +33,7 @@ dnl
 dnl test for MySQL
 dnl
 AC_ARG_WITH(mysql,
- --with-mysql=<directory>	use mysql backend in <directoty>,[
+ --with-mysql=<directory>		mysql installed in <directoty>,[
 if test $withval != yes
 then
         dir=$withval
@@ -44,14 +44,14 @@ mysqldir=""
 AC_MSG_CHECKING(for MySQL files)
 for d in $dir /usr /usr/local /usr/local/mysql /opt/mysql /opt/packages/mysql
 do
-        if test -f $d/lib/mysql/libmysqlclient.a
+        if test -f $d/lib/mysql/libmysqlclient.so
         then
                 AC_MSG_RESULT(found mysql in $d)
                 mysqldir=$d
                 mysqldir_suffix=/mysql
                 break
         fi
-        if test -f $d/lib/libmysqlclient.a
+        if test -f $d/lib/libmysqlclient.so
         then
                 AC_MSG_RESULT(found mysql in $d)
                 mysqldir=$d
@@ -80,7 +80,7 @@ else
 
 	AC_SUBST(MYSQLINCLUDES)
 
-        if test -f $MYSQLLIBS/libmystrings.a
+        if test -f $MYSQLLIBS/libmystrings.so
         then
                 DATABASE_LIB="${DATABASE_LIB} -lmystrings "
         else
@@ -95,7 +95,7 @@ else
 
 	AC_MSG_CHECKING(for mysql_real_escape_string support)
 
-	MYSQL_FUNCTION_TEST=`strings ${MYSQLLIBS}/libmysqlclient.a | grep mysql_real_escape_string`
+	MYSQL_FUNCTION_TEST=`strings ${MYSQLLIBS}/libmysqlclient.so | grep mysql_real_escape_string`
 
 	if test "x$MYSQL_FUNCTION_TEST" = x
 	then
@@ -107,6 +107,21 @@ else
 
 fi      
 ])      
+
+dnl
+dnl Check whether the user wants log IP-addresses as strings rather
+dnl than as unsigned long-integers to his MySQL-database. Since this
+dnl feature is only used in ulogd_MYSQL.c, there are no checks in any
+dnl way.
+dnl
+
+AC_ARG_WITH(mysql-log-ip-as-string,
+ --with-mysql-log-ip-as-string		log IPs as string rather than as
+					unsigned long-integer.
+,[
+   EXTRA_MYSQL_DEF="${EXTRA_MYSQL_DEF} -DIP_AS_STRING=1"
+   AC_MSG_WARN(the use of --with-mysql-log-ip-as-string is discouraged)
+])
 
 AC_SUBST(DATABASE_DIR)
 AC_SUBST(DATABASE_LIB)
