@@ -554,12 +554,20 @@ static config_entry_t rmem_ce = { &loglevel_ce, "rmem", CONFIG_TYPE_INT,
 
 static void sigterm_handler(int signal)
 {
+	ulog_output_t *p;
+	
 	ulogd_log(ULOGD_NOTICE, "sigterm received, exiting\n");
 
 	ipulog_destroy_handle(libulog_h);
 	free(libulog_buf);
 	if (logfile != stdout)
 		fclose(logfile);
+
+	for (p = ulogd_outputs; p; p = p->next) {
+		if (p->fini)
+			(*p->fini)();
+	}
+
 	exit(0);
 }
 
@@ -617,6 +625,7 @@ int main(int argc, char* argv[])
 	uid_t uid = 0;
 	gid_t gid = 0;
 	ulog_packet_msg_t *upkt;
+	ulog_output_t *p;
 
 
 	while ((argch = getopt_long(argc, argv, "c:dh::Vu:", opts, NULL)) != -1) {
@@ -726,6 +735,11 @@ int main(int argc, char* argv[])
 	}
 
 	logfile_open(logf_ce.u.string);
+
+	for (p = ulogd_outputs; p; p = p->next) {
+		if (p->init)
+			(*p->init)();
+	}
 
 #ifdef DEBUG
 	/* dump key and interpreter hash */
