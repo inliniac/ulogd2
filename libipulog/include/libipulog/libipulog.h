@@ -1,7 +1,7 @@
 #ifndef _LIBIPULOG_H
 #define _LIBIPULOG_H
 
-/* $Id$ */
+/* $Id: libipulog.h,v 1.3 2001/05/21 19:15:16 laforge Exp $ */
 
 #include <errno.h>
 #include <unistd.h>
@@ -20,6 +20,7 @@
 #endif
 
 struct ipulog_handle;
+static int ipulog_errno;
 
 u_int32_t ipulog_group2gmask(u_int32_t group);
 
