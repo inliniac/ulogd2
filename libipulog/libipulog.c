@@ -1,5 +1,5 @@
 /* 
- * libipulog.c, $Revision: 1.10 $
+ * libipulog.c, $Revision: 1.11 $
  *
  * netfilter ULOG userspace library.
  *
@@ -21,7 +21,7 @@
  * This library is still under development, so be aware of sudden interface
  * changes
  *
- * $Id: libipulog.c,v 1.10 2002/07/30 07:04:12 laforge Exp $
+ * $Id: libipulog.c,v 1.11 2003/05/04 10:00:10 laforge Exp $
  */
 
 #include <stdlib.h>
@@ -78,24 +78,24 @@ ipulog_netlink_recvfrom(const struct ipulog_handle *h,
 	addrlen = sizeof(h->peer);
 	status = recvfrom(h->fd, buf, len, 0, (struct sockaddr *)&h->peer,	
 			&addrlen);
-	if (status < 0) 
-	{
+	if (status < 0) {
 		ipulog_errno = IPULOG_ERR_RECV;
 		return status;
 	}
-	if (addrlen != sizeof (h->peer))
-	{
+	if (addrlen != sizeof (h->peer)) {
 		ipulog_errno = IPULOG_ERR_RECV;
 		return -1;
 	}	
-	if (status == 0)
-	{
+	if (h->peer.nl_pid != 0) {
+		ipulog_errno = IPULOG_ERR_RECV;
+		return -1;
+	}
+	if (status == 0) {
 		ipulog_errno = IPULOG_ERR_NLEOF;
 		return -1;
 	}
 	nlh = (struct nlmsghdr *)buf;
-	if (nlh->nlmsg_flags & MSG_TRUNC || status > len)
-	{
+	if (nlh->nlmsg_flags & MSG_TRUNC || status > len) {
 		ipulog_errno = IPULOG_ERR_TRUNC;
 		return -1;
 	}
