@@ -1,4 +1,4 @@
-/* ulogd_MYSQL.c, Version $Revision: 1.7 $
+/* ulogd_MYSQL.c, Version $Revision: 1.8 $
  *
  * ulogd output plugin for logging to a MySQL database
  *
@@ -17,7 +17,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  * 
- * $Id: ulogd_MYSQL.c,v 1.7 2002/12/09 14:42:43 laforge Exp $
+ * $Id: ulogd_MYSQL.c,v 1.8 2003/03/05 23:28:49 laforge Exp $
  *
  * 15 May 2001, Alex Janssen <alex@ynfonatic.de>:
  *      Added a compability option for older MySQL-servers, which
@@ -166,7 +166,7 @@ static int _mysql_output(ulog_iret_t *result)
 				sprintf(stmt_ins, "%lu,", res->value.ui64);
 				break;
 			case ULOGD_RET_BOOL:
-				sprintf(stmt_ins, "1,");
+				sprintf(stmt_ins, "'%d',", res->value.b);
 				break;
 			case ULOGD_RET_STRING:
 				*stmt_ins++ = '\'';
