@@ -5,7 +5,8 @@ Version 0.91
 Version 0.9
 - configuration file routines
 - plugins are able to register new configfile keys
-- new MYSQL plugin
+- new MYSQL output plugin
+- new syslog compatibility output plugin
 
 Version 0.3
 
