@@ -1,4 +1,4 @@
-/* ulogd_LOGEMU.c, Version $Revision: 1.6 $
+/* ulogd_LOGEMU.c, Version $Revision: 1.7 $
  *
  * ulogd output target for syslog logging emulation
  *
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_LOGEMU.c,v 1.5 2001/05/20 15:07:45 laforge Exp $
+ * $Id: ulogd_LOGEMU.c,v 1.7 2001/09/01 11:51:54 laforge Exp $
  *
  */
 
@@ -106,6 +106,7 @@ static struct intr_id intr_ids[INTR_IDS] = {
 };
 
 #define GET_VALUE(x)	ulogd_keyh[intr_ids[x].id].interp->result[ulogd_keyh[intr_ids[x].id].offset].value
+#define GET_FLAGS(x)	ulogd_keyh[intr_ids[x].id].interp->result[ulogd_keyh[intr_ids[x].id].offset].flags
 
 int _output_logemu(ulog_iret_t *res)
 {
@@ -136,7 +137,8 @@ int _output_logemu(ulog_iret_t *res)
 		(char *) GET_VALUE(2).ptr);
 
 	/* FIXME: configurable */
-	fprintf(of, "MAC=%s ", (char *) GET_VALUE(3).ptr);
+	fprintf(of, "MAC=%s ",
+		(GET_FLAGS(3) & ULOGD_RETF_VALID) ? (char *) GET_VALUE(3).ptr : "");
 
 	fprintf(of, "SRC=%s ", inet_ntoa(htonl(GET_VALUE(4).ui32)));
 	fprintf(of, "DST=%s ", inet_ntoa(htonl(GET_VALUE(5).ui32)));
