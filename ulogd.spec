@@ -44,10 +44,12 @@ rm -rf %{buildroot}
 mkdir -p %{buildroot}/%{_sysconfdir}
 mkdir -p %{buildroot}/%{_libdir}/ulogd
 mkdir -p %{buildroot}/%{_sbindir}/sbin
+mkdir -p %{buildroot}/%{_mandir}/man8
 make DESTDIR=%{buildroot} install
 
 mkdir -p %{buildroot}/%{_sysconfdir}/rc.d/init.d
 install ulogd.init %{buildroot}/%{_sysconfdir}/rc.d/init.d/ulogd
+install ulogd.8 %{buildroot}/%{_mandir}/man8/ulogd.8
 		
 %clean
 rm -rf %{buildroot}
@@ -57,6 +59,7 @@ rm -rf %{buildroot}
 %attr(0755,root,root) %{_sbindir}/ulogd
 %{_sysconfdir}/ulogd.conf
 %{_sysconfdir}/rc.d/init.d/ulogd
+%{_mandir}/man8/*
 %dir %{_libdir}/ulogd
 %{_libdir}/ulogd/ulogd_BASE.so
 %{_libdir}/ulogd/ulogd_LOCAL.so
@@ -79,6 +82,7 @@ rm -rf %{buildroot}
 * Sat Aug 25 2003 Harald Welte <laforge@gnumonks.org>
 + ulogd-1.00-1gm
 - updated to 1.01 release
+- add ulogd.8 manpage
 
 * Wed Mar 05 2003 Harald Welte <laforge@gnumonks.org>
 + ulogd-1.00-1gm
