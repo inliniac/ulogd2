@@ -1,3 +1,7 @@
+Version 0.94
+- fixed stupid build problem because of missing libipulog
+  (i'll never try to be intelligent again ;))
+
 Version 0.93
 - fixes logfile bug: wrong filename and line numbers printed
 - fixes config file parsing, new generic get_word() in conffile.c
