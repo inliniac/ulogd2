@@ -1,4 +1,4 @@
-/* ulogd, Version $Revision: 1.1 $
+/* ulogd, Version $Revision: 1.2 $
  *
  * first try of a logging daemon for my netfilter ULOG target
  * for the linux 2.4 netfilter subsystem.
@@ -7,7 +7,7 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.c,v 1.1 2000/08/02 08:41:55 laforge Exp laforge $
+ * $Id: ulogd.c,v 1.2 2000/08/02 12:16:29 laforge Exp laforge $
  */
 
 #include <stdio.h>
@@ -35,6 +35,8 @@
 #ifndef ULOGD_NLGROUP
 #define ULOGD_NLGROUP		32
 #endif
+
+static FILE *logfile;
 
 /* linked list for all registered interpreters */
 static ulog_interpreter_t *ulogd_interpreters;
