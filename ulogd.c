@@ -7,11 +7,12 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulog_test.c,v 1.1 2000/07/30 19:34:05 laforge Exp laforge $
+ * $Id: ulogd.c,v 1.1 2000/08/02 08:41:55 laforge Exp laforge $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <dlfcn.h>
 #include <sys/types.h>
 #include <dirent.h>
@@ -20,18 +21,26 @@
 
 #define MYBUFSIZ 2048
 
-#define ulogd_error(format, args...) fprintf(stderr, format, ## args)
+
 #define DEBUGP ulogd_error
 
+#ifndef ULOGD_PLUGIN_DIR
 #define ULOGD_PLUGIN_DIR	"/usr/local/lib/ulogd"
-#define NIPQUAD(addr) \
-        ((unsigned char *)&addr)[0], \
-        ((unsigned char *)&addr)[1], \
-        ((unsigned char *)&addr)[2], \
-        ((unsigned char *)&addr)[3]
+#endif
+
+#ifndef ULOGD_LOGFILE
+#define ULOGD_LOGFILE		"/var/log/ulogd.log"
+#endif
+
+#ifndef ULOGD_NLGROUP
+#define ULOGD_NLGROUP		32
+#endif
 
 /* linked list for all registered interpreters */
 static ulog_interpreter_t *ulogd_interpreters;
+
+/* linked list for all registered output targets */
+static ulog_output_t *ulogd_outputs;
 
 /* try to lookup a registered interpreter for a given name */
 ulog_interpreter_t *find_interpreter(const char *name)
@@ -40,10 +49,10 @@ ulog_interpreter_t *find_interpreter(const char *name)
 
 	for (ptr = ulogd_interpreters; ptr; ptr = ptr->next) {
 		if (strcmp(name, ptr->name) == 0)
-				break;
+				return ptr;
 	}
 
-	return ptr;
+	return NULL;
 }
 
 /* the function called by all interpreter plugins for registering their
@@ -58,6 +67,32 @@ void register_interpreter(ulog_interpreter_t *me)
 	DEBUGP("registering interpreter `%s'\n", me->name);
 	me->next = ulogd_interpreters;
 	ulogd_interpreters = me;
+}
+
+/* try to lookup a registered output plugin for a given name */
+ulog_output_t *find_output(const char *name)
+{
+	ulog_output_t *ptr;
+
+	for (ptr = ulogd_outputs; ptr; ptr = ptr->next) {
+		if (strcmp(name, ptr->name) == 0)
+				return ptr;
+	}
+
+	return NULL;
+}
+
+/* the function called by all output plugins for registering themselves */
+void register_output(ulog_output_t *me)
+{
+	if (find_output(me->name)) {
+		ulogd_error("output `%s' already registered\n",
+				me->name);
+		exit(1);
+	}
+	DEBUGP("registering output `%s'\n", me->name);
+	me->next = ulogd_outputs;
+	ulogd_outputs = me;
 }
 
 /* allocate a new ulog_iret_t. Called by interpreter plugins */
@@ -80,7 +115,9 @@ void free_ret(ulog_iret_t *ret)
 	ulog_iret_t *nextptr = NULL;
 
 	for (ptr = ret; ptr; ptr = nextptr) {
-		free(ptr->value);
+		if ((ptr->type | 0x7fff) == 0xffff) {
+			free(ptr->value.ptr);
+			}
 		if (ptr->next) {
 			nextptr = ptr->next;
 		} else {
@@ -90,41 +127,16 @@ void free_ret(ulog_iret_t *ret)
 	}
 }
 
+
 /* this should pass the result(s) to one or more registered output plugins,
  * but is currently only printing them out */
-void propagate_results(ulog_iret_t *res)
+void propagate_results(ulog_iret_t *ret)
 {
-	ulog_iret_t *ret;
+	ulog_output_t *p;
 
-	for (ret = res; ret; ret = ret->next)
+	for (p = ulogd_outputs; p; p = p->next)
 	{
-		printf("%s=", ret->key);
-		switch (ret->type) {
-			case ULOGD_RET_STRING:
-				printf("%s\n", ret->value);
-				break;
-			case ULOGD_RET_INT16:
-			case ULOGD_RET_INT32:
-				printf("%d\n", ret->value);
-				break;
-			case ULOGD_RET_UINT8:
-				printf("%u\n", *(u_int8_t *)ret->value);
-				break;
-			case ULOGD_RET_UINT16:
-				printf("%u\n", *(u_int16_t *)ret->value);
-				break;
-			case ULOGD_RET_UINT32:
-			case ULOGD_RET_UINT64:
-				printf("%lu\n", *(u_int32_t *)ret->value);
-				break;
-			case ULOGD_RET_IPADDR:
-				printf("%u.%u.%u.%u\n", 
-					NIPQUAD(*(u_int32_t *)ret->value));
-				break;
-			case ULOGD_RET_NONE:
-				printf("<none>");
-				break;
-		}
+		(*p->output)(ret);
 	}
 }
 
@@ -133,15 +145,23 @@ void propagate_results(ulog_iret_t *res)
 void handle_packet(ulog_packet_msg_t *pkt)
 {
 	ulog_interpreter_t *ptr;
-	ulog_iret_t *ret;
+	ulog_iret_t *ret, *b;
+        ulog_iret_t *allret = NULL;
 
+	/* call each registered interpreter */
 	for (ptr = ulogd_interpreters; ptr; ptr = ptr->next) {
 		ret = (*ptr->interp)(pkt);
 		if (ret) {
-			propagate_results(ret);
-			free_ret(ret);
+			/* prepend the results to allret */
+			if (allret) { 
+				for (b = ret; b->next; b = b->next);
+				b->next = allret;
+			}
+			allret = ret;
 		}
 	}	
+	propagate_results(allret);
+	free_ret(allret);
 }
 
 /* silly plugin loader to dlopen() all available plugins */
@@ -156,10 +176,12 @@ void load_plugins(void)
 		fname = (char *) malloc(NAME_MAX + strlen(ULOGD_PLUGIN_DIR) 
 				+ 3);
 		for (dent = readdir(ldir); dent; dent = readdir(ldir)) {
+			if (strncmp(dent->d_name,"ulogd", 5) == 0) {
 			DEBUGP("load_plugins: %s\n", dent->d_name);
 			sprintf(fname, "%s/%s", ULOGD_PLUGIN_DIR, dent->d_name);
 			if (!dlopen(fname, RTLD_NOW))
 				ulogd_error("load_plugins: %s", dlerror());
+			}
 		}
 		free(fname);
 	} else
@@ -167,20 +189,32 @@ void load_plugins(void)
 
 }
 
-main(int argc, char* argv[])
+int logfile_open(const char *name)
+{
+	logfile = fopen(name, "a");
+	if (!logfile) 
+	{
+		fprintf(stderr, "ERROR: unable to open logfile: %s\n", strerror(errno));
+		exit(2);
+	}
+	return 0;
+}
+
+int main(int argc, char* argv[])
 {
 	struct ipulog_handle *h;
 	unsigned char* buf;
 	size_t len;
 	ulog_packet_msg_t *upkt;
 
+	logfile_open(ULOGD_LOGFILE);
 	load_plugins();	
 	
 	/* allocate a receive buffer */
 	buf = (unsigned char *) malloc(MYBUFSIZ);
 	
 	/* create ipulog handle */
-	h = ipulog_create_handle(ipulog_group2gmask(32));
+	h = ipulog_create_handle(ipulog_group2gmask(ULOGD_NLGROUP));
 	if (!h)
 	{
 		/* if some error occurrs, print it to stderr */
@@ -188,17 +222,30 @@ main(int argc, char* argv[])
 		exit(1);
 	}
 
-	/* endless loop receiving packets and handling them over to
-	 * handle_packet */
-	while(1)
-	{
-		len = ipulog_read(h, buf, BUFSIZ, 1);
-		upkt = ipulog_get_packet(buf);	
-		DEBUGP("==> packet received\n");
-		handle_packet(upkt);
-	}
-	
-	/* just to give it a cleaner look */
-	ipulog_destroy_handle(h);
+	if (!fork())
+	{ 
 
+		/*
+		fclose(stdout);
+		fclose(stderr);
+		*/
+
+		/* endless loop receiving packets and handling them over to
+		 * handle_packet */
+		while(1)
+		{
+			len = ipulog_read(h, buf, BUFSIZ, 1);
+			upkt = ipulog_get_packet(buf);	
+			DEBUGP("==> packet received\n");
+			handle_packet(upkt);
+		}
+	
+		/* just to give it a cleaner look */
+		ipulog_destroy_handle(h);
+		free(buf);
+		fclose(logfile);
+	} else
+	{
+		exit(0);
+	}
 }
