@@ -23,6 +23,8 @@ X various command line options (we don't even have --version)
 - man pages
 - IPv6 support (core and extensions)
 X pcap output plugin (to use ethereal/tcpdump/... for the logs)
+- enable user to specify directory where to look for kernel include files
+- support for static linking
 
 conffile:
 - rewrite. This stuff is a real mess.
