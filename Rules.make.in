@@ -15,6 +15,9 @@ INCIPULOG=-I@top_srcdir@/libipulog/include
 INCCONFFILE=-I@top_srcdir@/conffile
 
 CC=@CC@
+LD=@LD@
+INSTALL=@INSTALL@
+
 CFLAGS=@CFLAGS@ @CPPFLAGS@ 
 CFLAGS+=-DULOGD_CONFIGFILE=\"$(ULOGD_CONFIGFILE)\"
 # doesn't work for subdirs

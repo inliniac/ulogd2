@@ -14,17 +14,17 @@ all: $(SHARED_LIBS)
 distrib:
 
 $(SHARED_LIBS): %.so: %_sh.o
-	ld -shared $(MYSQL_LDFLAGS) -o $@ $< -lc
+	$(LD) -shared $(MYSQL_LDFLAGS) -o $@ $< -lc
 
 %_sh.o: %.c
 	$(CC) $(MYSQL_CFLAGS) $(SH_CFLAGS) -o $@ -c $<
 	
 clean:
-	rm -f $(SHARED_LIBS) *.o
+	$(RM) $(SHARED_LIBS) *.o
 
 distclean:
-	rm -f Makefile
+	$(RM) Makefile
 
 install: all
-	@INSTALL@ -m 755 -d $(DESTDIR)$(ULOGD_LIB_PATH)
-	@INSTALL@ -m 755 *.so $(DESTDIR)$(ULOGD_LIB_PATH)
+	$(INSTALL) -m 755 -d $(DESTDIR)$(ULOGD_LIB_PATH)
+	$(INSTALL) -m 755 *.so $(DESTDIR)$(ULOGD_LIB_PATH)

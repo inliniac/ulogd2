@@ -4,6 +4,7 @@ AC_INIT(ulogd.c)
 dnl Checks for programs.
 AC_PROG_MAKE_SET
 AC_PROG_CC
+AC_CHECK_TOOL(LD, ld)
 AC_PROG_INSTALL
 
 dnl Checks for libraries.
