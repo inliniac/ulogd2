@@ -1,9 +1,12 @@
-Version 1.10 (2003-Sep-XX)
+Version 1.10 (2003-Oct-xx)
 - Change format of configuration file.  Now every plugin has it's own section
   in the config file, making the whole parsing procedure easier - and
   eliminating multiple loading of .so plugins. (Magnus Boden)
 - Make the config file format completely syntax compatible with .ini style files
--
+- Add a new 'SYSLOG' plugin for real syslogging
+
+Version 1.02 (2003-Oct-08)
+- fix printout of time information in ulogd_LOGEMU.c
 
 Version 1.01 (2003-Aug-23)
 - use $(LD) macro in order to provide cross-compiling/linking support

@@ -14,8 +14,14 @@ all: $(SHARED_LIBS)
 
 distrib:
 
+printpkt.o: printpkt.c
+	$(CC) $(SH_CFLAGS) -o $@ -c $<
+
 $(SHARED_LIBS): %.so: %_sh.o
 	$(LD) -shared -o $@ $< -lc
+
+ulogd_SYSLOG.so: printpkt.o ulogd_SYSLOG_sh.o 
+	$(LD) -shared -o $@ $^ -lc
 
 %_sh.o: %.c
 	$(CC) $(SH_CFLAGS) -o $@ -c $<

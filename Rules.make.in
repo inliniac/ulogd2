@@ -30,7 +30,7 @@ LIBS=@LIBS@
 
 
 # Names of the plugins to be compiled
-ULOGD_SL:=BASE OPRINT PWSNIFF LOGEMU LOCAL
+ULOGD_SL:=BASE OPRINT PWSNIFF LOGEMU LOCAL SYSLOG
 
 # mysql output support
 #ULOGD_SL+=MYSQL
