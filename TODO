@@ -19,7 +19,7 @@ X _fini() support for plugin destructors (needed for clean shutdown and
 X commandline option for "to fork or not to fork"
 X various command line options (we don't even have --version)
 - add support for capabilities to run as non-root
-- big endian fixes
+X big endian fixes
 - man pages
 - IPv6 support (core and extensions)
 X pcap output plugin (to use ethereal/tcpdump/... for the logs)
@@ -27,4 +27,4 @@ X pcap output plugin (to use ethereal/tcpdump/... for the logs)
 - support for static linking
 
 conffile:
-- rewrite. This stuff is a real mess.
+- rewrite. This stuff is a real mess. Anybody interested?
