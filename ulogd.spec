@@ -1,12 +1,12 @@
 Summary: ulogd - The userspace logging daemon for netfilter
 Name: ulogd
-Version: 0.98
-Release: 1cl
+Version: 1.00
+Release: 1gm
 License: GPL
 Group: Network
-Source: ftp://ftp.gnumonks.org/pub/netfilter/%{name}-%{version}.tar.gz
+Source: http://ftp.netfilter.org/pub/ulogd/%{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
-#Packager: Harald Welte <laforge@gnumonks.org>
+Packager: Harald Welte <laforge@gnumonks.org>
 BuildRequires: MySQL-devel postgresql-devel libpcap-devel
 #BuildRequires: mysql-devel
 
@@ -76,6 +76,10 @@ rm -rf %{buildroot}
 %{_libdir}/ulogd/ulogd_PGSQL.so
 
 %changelog
+* Wed Mar 05 2003 Harald Welte <laforge@gnumonks.org>
++ ulogd-1.00-1gm
+- updated to 1.00 release
+
 * Mon Sep 24 2001 Harald Welte <laforge@conectiva.com>
 + ulogd-0.97-1cl
 - updatd to 0.97 release (to fix endless-one-packet-loop bug)
