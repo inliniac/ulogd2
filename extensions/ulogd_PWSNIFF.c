@@ -1,4 +1,4 @@
-/* ulogd_PWSNIFF.c, Version $Revision: 1.8 $
+/* ulogd_PWSNIFF.c, Version $Revision: 1.9 $
  *
  * ulogd logging interpreter for POP3 / FTP like plaintext passwords.
  *
@@ -17,7 +17,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_PWSNIFF.c,v 1.8 2003/05/03 12:44:15 laforge Exp $
+ * $Id: ulogd_PWSNIFF.c,v 1.9 2003/08/23 13:02:11 laforge Exp $
  *
  */
 
@@ -140,7 +140,7 @@ static ulog_iret_t pwsniff_rets[] = {
 };
 static ulog_interpreter_t base_ip[] = { 
 
-	{ NULL, "pwsniff", 0, &_interp_pwsniff, 2, &pwsniff_rets },
+	{ NULL, "pwsniff", 0, &_interp_pwsniff, 2, pwsniff_rets },
 	{ NULL, "", 0, NULL, 0, NULL }, 
 };
 void _base_reg_ip(void)

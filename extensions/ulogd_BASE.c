@@ -1,4 +1,4 @@
-/* ulogd_MAC.c, Version $Revision: 1.18 $
+/* ulogd_MAC.c, Version $Revision: 1.19 $
  *
  * ulogd interpreter plugin for 
  * 	o MAC addresses
@@ -26,7 +26,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  
- * $Id: ulogd_BASE.c,v 1.18 2003/04/27 20:56:15 laforge Exp $
+ * $Id: ulogd_BASE.c,v 1.19 2003/08/23 13:02:11 laforge Exp $
  *
  */
 
@@ -52,7 +52,7 @@ static ulog_iret_t raw_rets[] = {
 	  { ui32: 0 } },
 };
 
-static ulog_iret_t *_interp_raw(struct ulog_interpreter *ip, 
+static ulog_iret_t *_interp_raw(ulog_interpreter_t *ip, 
 				ulog_packet_msg_t *pkt)
 {
 	unsigned char *p;
@@ -385,13 +385,13 @@ static ulog_iret_t *_interp_ahesp(struct ulog_interpreter *ip,
 
 
 static ulog_interpreter_t base_ip[] = {
-	{ NULL, "raw", 0, &_interp_raw, 3, &raw_rets },
-	{ NULL, "oob", 0, &_interp_oob, 6, &oob_rets },
-	{ NULL, "ip", 0, &_interp_iphdr, 10, &iphdr_rets },
-	{ NULL, "tcp", 0, &_interp_tcphdr, 12, &tcphdr_rets },
-	{ NULL, "icmp", 0, &_interp_icmp, 6, &icmphdr_rets },
-	{ NULL, "udp", 0, &_interp_udp, 3, &udphdr_rets },
-	{ NULL, "ahesp", 0, &_interp_ahesp, 1, &ahesphdr_rets },
+	{ NULL, "raw", 0, &_interp_raw, 3, raw_rets },
+	{ NULL, "oob", 0, &_interp_oob, 6, oob_rets },
+	{ NULL, "ip", 0, &_interp_iphdr, 10, iphdr_rets },
+	{ NULL, "tcp", 0, &_interp_tcphdr, 12, tcphdr_rets },
+	{ NULL, "icmp", 0, &_interp_icmp, 6, icmphdr_rets },
+	{ NULL, "udp", 0, &_interp_udp, 3, udphdr_rets },
+	{ NULL, "ahesp", 0, &_interp_ahesp, 1, ahesphdr_rets },
 	{ NULL, "", 0, NULL, 0, NULL }, 
 };
 

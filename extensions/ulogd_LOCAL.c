@@ -69,7 +69,7 @@ static ulog_iret_t local_rets[] = {
 
 static ulog_interpreter_t local_ip[] = { 
 
-    { NULL, "local", 0, &_interp_local, 2, &local_rets },
+    { NULL, "local", 0, &_interp_local, 2, local_rets },
     { NULL, "", 0, NULL, 0, NULL },
 };
 
@@ -93,7 +93,7 @@ void _init(void)
         exit(2);
     }
     /* strip off everything after first '.' */
-    if (tmp = strchr(hostname, '.'))
+    if ((tmp = strchr(hostname, '.')))
         *tmp = '\0';
 
     _local_reg_ip();
