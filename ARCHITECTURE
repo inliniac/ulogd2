@@ -59,4 +59,4 @@ Architecture of ulogd2
 
 - problems:
 	- multiple interpreters can return same value (i.e. sport/dport)
-
+	- some outputs/filters will require _ALL_ keys (e.g. OPRINT)

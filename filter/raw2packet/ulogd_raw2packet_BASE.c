@@ -401,8 +401,6 @@ static ulog_iret_t *_interp_ahesp(struct ulog_interpreter *ip,
 
 
 static ulog_interpreter_t base_ip[] = {
-	{ NULL, "raw", 0, &_interp_raw, 3, raw_rets },
-	{ NULL, "oob", 0, &_interp_oob, 6, oob_rets },
 	{ NULL, "ip", 0, &_interp_iphdr, 10, iphdr_rets },
 	{ NULL, "tcp", 0, &_interp_tcphdr, 17, tcphdr_rets },
 	{ NULL, "icmp", 0, &_interp_icmp, 7, icmphdr_rets },
@@ -411,18 +409,43 @@ static ulog_interpreter_t base_ip[] = {
 	{ NULL, "", 0, NULL, 0, NULL }, 
 };
 
-void _base_reg_ip(void)
+static struct ulogd_pluginstance *base_init(struct ulogd_plugin *pl)
 {
-	ulog_interpreter_t *ip = base_ip;
-	ulog_interpreter_t *p;
+	struct ulogd_pluginstance *bpi = malloc(sizeof(*bpi));
 
-	for (p = ip; p->interp; p++) {
-		register_interpreter(p);
-	}
+	if (!bpi)
+		return NULL;
 
+	bpi->plugin = pl;
+	bpi->input = FIXME;
+	bpi->output = FIXME;
+
+	return bpi;
 }
+
+static int base_fini(struct ulogd_pluginstance *upi)
+{
+	return 0;
+}
+
+static struct ulogd_plugin base_plugin = {
+	.name = "BASE",
+	.input = {
+		.keys =;
+		.num_keys = 1,
+		.type = ULOGD_DTYPE_RAW,
+		},
+	.output = {
+		.keys = &base_keys,
+		.num_keys = 39,
+		.type = ULOGD_DTYPE_PKT,
+		},
+	.interp = &base_interp,
+	.construct = &base_init,
+	.destructor = &base_fini,
+};
 
 void _init(void)
 {
-	_base_reg_ip();
+	ulogd_register_plugin(&base_plugin);
 }

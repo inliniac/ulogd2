@@ -12,7 +12,7 @@
  * $Id$
  */
 
-#include <libipulog/libipulog.h>
+#include <ulogd/linuxlist.h>
 #include <stdio.h>
 #include <signal.h>	/* need this because of extension-sighandler */
 
@@ -45,6 +45,8 @@
 #define ULOGD_RETF_NONE		0x0000
 #define ULOGD_RETF_VALID	0x0001	/* contains a valid result */
 #define ULOGD_RETF_FREE		0x0002	/* ptr needs to be free()d */
+#define ULOGD_RETF_NEEDED	0x0004	/* this parameter is actually needed
+					 * by some downstream plugin */
 
 
 /* maximum length of ulogd key */
@@ -58,11 +60,17 @@
 
 extern FILE *logfile;
 
-typedef struct ulog_iret {
+enum ulogd_dtype {
+	ULOGD_DTYPE_NULL,
+	ULOGD_DTYPE_RAW,
+	ULOGD_DTYPE_PACKET,
+	ULOGD_DTYPE_FLOW,
+};
+
+/* structure describing an input  / output parameter of a plugin */
+typedef struct ulogd_key {
 	/* next interpreter return (key) in the global list */
 	struct ulog_iret *next;
-	/* next interpreter in linked list for current result */
-	struct ulog_iret *cur_next;
 	/* length of the returned value (only for lengthed types */
 	u_int32_t len;
 	/* type of the returned value (ULOGD_IRET_...) */
@@ -70,52 +78,78 @@ typedef struct ulog_iret {
 	/* flags (i.e. free, ...) */
 	u_int16_t flags;
 	/* name of this key */
-	char key[ULOGD_MAX_KEYLEN];
-	/* and finally the returned value */
+	char name[ULOGD_MAX_KEYLEN];
+	/* IETF IPFIX attribute ID */
+	struct {
+		u_int32_t	vendor;
+		u_int16_t	field_id;
+	} ipfix;
+
 	union {
-		u_int8_t	b;
-		u_int8_t	ui8;
-		u_int16_t	ui16;
-		u_int32_t	ui32;
-		u_int64_t	ui64;
-		int8_t		i8;
-		int16_t		i16;
-		int32_t		i32;
-		int64_t		i64;
-		void		*ptr;
-	} value;
-} ulog_iret_t;
+		/* and finally the returned value */
+		union {
+			u_int8_t	b;
+			u_int8_t	ui8;
+			u_int16_t	ui16;
+			u_int32_t	ui32;
+			u_int64_t	ui64;
+			int8_t		i8;
+			int16_t		i16;
+			int32_t		i32;
+			int64_t		i64;
+			void		*ptr;
+		} value;
+		struct ulog_ket *source;
+	} u;
+} ulogd_iret_t;
 
-typedef struct ulog_interpreter {
-	/* next interpreter in old-style linked list */
-	struct ulog_interpreter *next;
-	/* name of this interpreter (predefined by plugin) */
+typedef struct ulogd_plugin {
+	/* global list of plugins */
+	struct list_head list;
+	/* name of this plugin (predefined by plugin) */
 	char name[ULOGD_MAX_KEYLEN];
-	/* ID for this interpreter (dynamically assigned) */
+	/* ID for this plugin (dynamically assigned) */
 	unsigned int id;
-	/* function to call for each packet */
-	ulog_iret_t* (*interp)(struct ulog_interpreter *ip, 
-				ulog_packet_msg_t *pkt);
-	/* number of keys this interpreter has */
-	unsigned int key_num;
-	/* keys of this particular interpreter */
-	ulog_iret_t *result;
-} ulog_interpreter_t;
+	struct {
+		/* possible input keys of this interpreter */
+		struct ulogd_key *keys;
+		/* number of keys this interpreter has */
+		unsigned int num_keys;
+		/* type */
+		enum ulogd_dtype type;
+	} input;
+	struct {
+		/* possible input keys of this interpreter */
+		struct ulogd_key *keys;
+		/* number of keys this interpreter has */
+		unsigned int num_keys;
+		/* type */
+		enum ulogd_dtype type;
+	} output;
 
-typedef struct ulog_output {
-	/* next output in the linked list */
-	struct ulog_output *next;
-	/* name of this ouput plugin */
-	char name[ULOGD_MAX_KEYLEN];
-	/* callback for initialization */
-	int (*init)(void);
-	/* callback for de-initialization */
-	void (*fini)(void);
-	/* callback function */
-	int (*output)(ulog_iret_t *ret);
-	/* callback function for signals (SIGHUP, ..) */
-	void (*signal)(int signal);
-} ulog_output_t;
+	/* function to call for each packet */
+	int (*interp)(struct ulogd_pluginstance *instance);
+	/* function to construct a new pluginstance */
+	struct ulogd_pluginstance *(*constructor)(struct ulogd_plugin *pl);
+	/* function to destruct an existing pluginstance */
+	int (*destructor)(struct ulogd_pluginstance *instance);
+	/* configuration parameters */
+	config_entry_t *configs;
+} ulogd_interpreter_t;
+
+/* an instance of a plugin, element in a stack */
+typedef struct ulogd_pluginstance {
+	/* local list of plugins in this stack */
+	struct list_head list;
+	/* plugin (master) */
+	struct ulogd_plugin *plugin;
+	/* per-instance input keys */
+	struct ulogd_input *input;
+	/* per-instance output keys */
+	struct ulogd_iret *output;
+	/* private data */
+	char private[0];
+} ulogd_pluginstance_t;
 
 /* entries of the key hash */
 struct ulogd_keyh_entry {
@@ -129,10 +163,7 @@ struct ulogd_keyh_entry {
  ***********************************************************************/
 
 /* register a new interpreter plugin */
-void register_interpreter(ulog_interpreter_t *me);
-
-/* register a new output target */
-void register_output(ulog_output_t *me);
+void ulogd_register_plugin(ulog_plugin_t *me);
 
 /* allocate a new ulog_iret_t */
 ulog_iret_t *alloc_ret(const u_int16_t type, const char*);
@@ -158,7 +189,8 @@ ulog_iret_t *keyh_getres(unsigned int id);
 extern struct ulogd_keyh_entry *ulogd_keyh;
 
 #define IS_VALID(x)	(x.flags & ULOGD_RETF_VALID)
-
 #define SET_VALID(x)	(x.flags |= ULOGD_RETF_VALID)
+#define IS_NEEDED(x)	(x.flags & ULOGD_RETF_NEEDED)
+#define SET_NEEDED(x)	(x.flags |= ULOGD_RETF_NEEDED)
 
 #endif /* _ULOGD_H */

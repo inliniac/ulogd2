@@ -1,6 +1,8 @@
 #ifndef ULOGD_SELECT_H
 #define ULOGD_SELECT_H
 
+#include <ulogd/linuxlist.h>
+
 #define ULOGD_FD_F_READ		0x0001
 #define ULOGD_FD_F_WRITE	0x0002
 

@@ -17,6 +17,11 @@
  * RMEM_DEFAULT size.  */
 #define ULOGD_BUFSIZE_DEFAULT	150000
 
+struct ulog_input {
+	struct ipulog_handle *libulog_h;
+	static unsigned char *libulog_buf;
+	static struct ulogd_fd ulog_fd;
+};
 
 /* configuration entries */
 static config_entry_t bufsiz_ce = { NULL, "bufsize", CONFIG_TYPE_INT,       
@@ -100,7 +105,7 @@ static struct ulogd_key output_keys[] = {
 	},
 };
 
-static int interp(struct ulogd_pluginstance *ip, ulog_packet_msg_t *pkt)
+static int interp_packet(struct ulogd_pluginstance *ip, ulog_packet_msg_t *pkt)
 {
 	unsigned char *p;
 	int i;
@@ -156,52 +161,10 @@ static int interp(struct ulogd_pluginstance *ip, ulog_packet_msg_t *pkt)
 	return ret;
 }
 
-struct ulog_input {
-	struct ipulog_handle *libulog_h;
-	static unsigned char *libulog_buf;
-	static struct ulogd_fd ulog_fd;
-};
-
-/* call all registered interpreters and hand the results over to 
- * propagate_results */
-static void handle_packet(ulog_packet_msg_t *pkt)
-{
-#if 0
-	ulog_iret_t *ret;
-        ulog_iret_t *allret = NULL;
-	ulog_interpreter_t *ip;
-
-	unsigned int i,j;
-
-	/* If there are no interpreters registered yet,
-	 * ignore this packet */
-	if (!ulogd_interh_ids) {
-		ulogd_log(ULOGD_NOTICE, 
-			  "packet received, but no interpreters found\n");
-		return;
-	}
-
-	for (i = 1; i <= ulogd_interh_ids; i++) {
-		ip = ulogd_interh[i];
-		/* call interpreter */
-		if ((ret = ((ip)->interp)(ip, pkt))) {
-			/* create references for result linked-list */
-			for (j = 0; j < ip->key_num; j++) {
-				if (IS_VALID(ip->result[j])) {
-					ip->result[j].cur_next = allret;
-					allret = &ip->result[j];
-				}
-			}
-		}
-	}
-	propagate_results(allret);
-	clean_results(ulogd_interpreters->result);
-#endif
-}
-
 static struct ulog_read_cb(int fd, void *param)
 {
-	struct ulog_input *u = (struct ulog_input *)param;
+	struct ulogd_pluginstance *upi = (struct ulogd_pluginstance *)param;
+	struct ulog_input *u = (struct ulog_input *)param->private;
 	ulog_packet_msg_t *upkt;
 	int len;
 
@@ -217,7 +180,7 @@ static struct ulog_read_cb(int fd, void *param)
 		while ((upkt = ipulog_get_packet(u->libulog_h,
 						 u->libulog_buf, len))) {
 			DEBUGP("==> ulog packet received\n");
-			handle_packet(upkt);
+			interp_packet(upi, upkt);
 		}
 	}
 	return 0;
@@ -248,7 +211,7 @@ static struct ulogd_pluginstance *init(struct ulogd_plugin *pl)
 
 	ui->ulog_fd.fd = ui->libulog_h->fd;
 	ui->ulog_fd.cb = &ulog_read_cb;
-	ui->ulog_fd.data = ui;
+	ui->ulog_fd.data = upi;
 
 	ulogd_register_fd(&ui->ulog_fd);
 
@@ -262,7 +225,6 @@ out_buf:
 
 static int fini(struct ulogd_pluginstance *pi)
 {
-
 }
 
 struct ulogd_plugin libulog_plugin = {
@@ -276,7 +238,6 @@ struct ulogd_plugin libulog_plugin = {
 			.num = 10,
 		},
 	.constructor = &init,
-	.interp = &input,
 	.destructor = &fini,
 	.configs = &rmem_ce,
 };

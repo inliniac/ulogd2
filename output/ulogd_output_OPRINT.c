@@ -43,11 +43,13 @@
         ((unsigned char *)&addr)[1], \
         ((unsigned char *)&addr)[0]
 
-static FILE *of = NULL;
+struct oprint_priv {
+	static FILE *of = NULL;
+};
 
-static int _output_print(ulog_iret_t *res)
+static int oprint_interp(struct ulogd_pluginstance *instance)
 {
-	ulog_iret_t *ret;
+	ulog_iret_t *ret = instance->input.keys;
 	
 	fprintf(of, "===>PACKET BOUNDARY\n");
 	for (ret = res; ret; ret = ret->cur_next) {
@@ -102,40 +104,60 @@ static void sighup_handler_print(int signal)
 	}
 }
 
-static int oprint_init(void)
+static struct ulogd_pluginstance *oprint_init(struct ulogd_plugin *pl)
 {
+	struct oprint_priv *op;
+	struct ulogd_pluginstance *opi = malloc(sizeof(*opi)+sizeof(*op));
+
+	if (!opi)
+		return NULL;
+
+	op = (struct oprint_priv *) opi->private;
+	opi->plugin = pl;
+	/* FIXME: opi->input */
+	opi->output = NULL;
+
 #ifdef DEBUG
-	of = stdout;
+	op->of = stdout;
 #else
 	config_parse_file("OPRINT", &outf_ce);
 
-	of = fopen(outf_ce.u.string, "a");
-	if (!of) {
+	op->of = fopen(outf_ce.u.string, "a");
+	if (!op->of) {
 		ulogd_log(ULOGD_FATAL, "can't open PKTLOG: %s\n", 
 			strerror(errno));
 		exit(2);
 	}		
 #endif
-	return 0;
+	return opi;
 }
 
-static void oprint_fini(void)
+static int oprint_fini(struct ulogd_pluginstance *pi)
 {
-	if (of != stdout)
-		fclose(of);
+	struct oprint_priv *op = (struct oprint_priv *) pi->priv;
 
-	return;
+	if (op->of != stdout)
+		fclose(op->of);
+
+	return 1;
 }
 
-static ulog_output_t oprint_op = {
-	.name = "oprint", 
-	.output = &_output_print, 
+static struct ulogd_plugin oprint_plugin = {
+	.name = "OPRINT", 
+	.input = {
+			.type = ULOGD_DTYPE_PKT,
+		},
+	.output = {
+			.type = ULOGD_DTYPE_NULL,
+		},
+	.interp = &oprint_interp,
+	.constructor = &oprint_init,
+	.destructor = &oprint_fini,
 	.signal = &sighup_handler_print,
-	.init = &oprint_init,
-	.fini = &oprint_fini,
+	.configs = &outf_ce,
 };
 
 void _init(void)
 {
-	register_output(&oprint_op);
+	ulogd_register_output(&oprint_plugin);
 }
