@@ -1,8 +1,8 @@
-/* ulogd_PWSNIFF.c, Version $Revision: 1.6 $
+/* ulogd_PWSNIFF.c, Version $Revision: 1.7 $
  *
  * ulogd logging interpreter for POP3 / FTP like plaintext passwords.
  *
- * (C) 2000-2001 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2000-2003 by Harald Welte <laforge@gnumonks.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 
@@ -17,7 +17,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_PWSNIFF.c,v 1.6 2002/12/09 14:42:43 laforge Exp $
+ * $Id: ulogd_PWSNIFF.c,v 1.7 2003/01/13 13:35:21 laforge Exp $
  *
  */
 
@@ -43,6 +43,8 @@
 static u_int16_t pwsniff_ports[] = {
 	__constant_htons(PORT_POP3),
 	__constant_htons(PORT_FTP),
+	/* feel free to include any other ports here, provided that their
+	 * user/password syntax is the same */
 };
 
 #define PWSNIFF_MAX_PORTS 2
@@ -75,7 +77,7 @@ static ulog_iret_t *_interp_pwsniff(ulog_interpreter_t *ip, ulog_packet_msg_t *p
 	if (iph->protocol != IPPROTO_TCP)
 		return NULL;
 	
-	for (i = 0; i <= PWSNIFF_MAX_PORTS; i++)
+	for (i = 0; i < PWSNIFF_MAX_PORTS; i++)
 	{
 		if (tcph->dest == pwsniff_ports[i]) {
 			cont = 1; 
