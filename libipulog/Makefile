@@ -1,14 +1,24 @@
-CC = gcc
-CFLAGS = -I./include # -g
+# Generated automatically from Makefile.in by configure.
+#
+
+include ../Rules.make
+CFLAGS+=-Iinclude -I/usr/src/linux/include
+
+libipulog.a: libipulog.o
+	ld -i $< -o $@
+
+distrib:
 
 ulog_test: ulog_test.c libipulog.a
 	$(CC) $(CFLAGS) ulog_test.c libipulog.a -o ulog_test
 
 libipulog.o: libipulog.c
-	$(CC) $(CFLAGS) -c libipulog.c -o libipulog.o
-
-libipulog.a: libipulog.o
-	ld -i libipulog.o -o libipulog.a
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
 	rm -f ulog_test libipulog.o libipulog.a
+
+distclean: clean
+	rm Makefile
+
+install: libipulog.a
