@@ -1,5 +1,5 @@
 /* 
- * libipulog.c, $Revision: 1.8 $
+ * libipulog.c, $Revision: 1.9 $
  *
  * netfilter ULOG userspace library.
  *
@@ -21,7 +21,7 @@
  * This library is still under development, so be aware of sudden interface
  * changes
  *
- * $Id: libipulog.c,v 1.8 2001/07/04 00:22:54 laforge Exp $
+ * $Id: libipulog.c,v 1.9 2001/09/01 11:53:41 laforge Exp $
  */
 
 #include <stdlib.h>
@@ -59,7 +59,7 @@ enum
 
 #define IPULOG_MAXERR IPULOG_ERR_INVNL
 
-static int ipulog_errno = IPULOG_ERR_NONE;
+int ipulog_errno = IPULOG_ERR_NONE;
 
 struct ipulog_errmap_t 
 {
@@ -118,15 +118,14 @@ ipulog_netlink_recvfrom(const struct ipulog_handle *h,
 	return status;
 }
 
-static char *ipulog_strerror(int errcode)
+/* public */
+
+char *ipulog_strerror(int errcode)
 {
 	if (errcode < 0 || errcode > IPULOG_MAXERR)
 		errcode = IPULOG_ERR_IMPL;
 	return ipulog_errmap[errcode].message;
 }
-
-
-/* public */
 
 /* convert a netlink group (1-32) to a group_mask suitable for create_handle */
 u_int32_t ipulog_group2gmask(u_int32_t group)

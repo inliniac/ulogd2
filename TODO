@@ -16,13 +16,13 @@ X syslog compatibility output plugin
 - autoconf-detection of ipt_ULOG.h
 - _fini() support for plugin destructors (needed for clean shutdown and 
   SIGHUP configfile reload
-- commandline option for "to fork or not to fork"
-- various command line options (we don't even have --version)
+X commandline option for "to fork or not to fork"
+X various command line options (we don't even have --version)
 - add support for capabilities to run as non-root
 - big endian fixes
 - man pages
 - IPv6 support (core and extensions)
-- pcap output plugin (to use ethereal/tcpdump/... for the logs)
+X pcap output plugin (to use ethereal/tcpdump/... for the logs)
 
 conffile:
 - rewrite. This stuff is a real mess.

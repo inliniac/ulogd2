@@ -1,6 +1,6 @@
-/* ulogd, Version $Revision: 1.24 $
+/* ulogd, Version $Revision: 1.25 $
  *
- * $Id: ulogd.c,v 1.24 2002/04/16 12:44:41 laforge Exp $
+ * $Id: ulogd.c,v 1.25 2002/06/13 12:57:25 laforge Exp $
  *
  * userspace logging daemon for the netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd.c,v 1.24 2002/04/16 12:44:41 laforge Exp $
+ * $Id: ulogd.c,v 1.25 2002/06/13 12:57:25 laforge Exp $
  *
  * Modifications:
  * 	14 Jun 2001 Martin Josefsson <gandalf@wlug.westbo.se>
@@ -544,6 +544,13 @@ static void sighup_handler(int signal)
 {
 	ulog_output_t *p;
 
+	if (logfile != stdout) {
+		fclose(logfile);
+		logfile = fopen(logf_ce.u.string, "a");
+		if (!logfile)
+			sigterm_handler(signal);
+	}
+
 	ulogd_log(ULOGD_NOTICE, "sighup received, calling plugin handlers\n");
 	
 	for (p = ulogd_outputs; p; p = p->next) {
@@ -639,6 +646,8 @@ int main(int argc, char* argv[])
 		if (logfile != stdout)
 			fclose(stdout);
 		fclose(stderr);
+		fclose(stdin);
+		setsid();
 	}
 
 	signal(SIGTERM, &sigterm_handler);
@@ -653,8 +662,9 @@ int main(int argc, char* argv[])
 
 		if (len <= 0) {
 			/* this is not supposed to happen */
-			ulogd_log(ULOGD_ERROR, "ipulog_read == %d!\n",
-				  len);
+			ulogd_log(ULOGD_ERROR, "ipulog_read == %d! "
+				  "ipulog_errno == %d, errno = %d\n",
+				  len, ipulog_errno, errno);
 		} else {
 			while (upkt = ipulog_get_packet(libulog_h,
 					       libulog_buf, len)) {

@@ -1,7 +1,7 @@
 #ifndef _LIBIPULOG_H
 #define _LIBIPULOG_H
 
-/* $Id: libipulog.h,v 1.3 2001/05/21 19:15:16 laforge Exp $ */
+/* $Id: libipulog.h,v 1.4 2001/07/03 14:45:16 laforge Exp $ */
 
 #include <errno.h>
 #include <unistd.h>
@@ -34,6 +34,8 @@ ssize_t ipulog_read(struct ipulog_handle *h,
 ulog_packet_msg_t *ipulog_get_packet(struct ipulog_handle *h,
 				     const unsigned char *buf,
 				     size_t len);
+
+char *ipulog_strerror(int errcode);
 
 void ipulog_perror(const char *s);
 
