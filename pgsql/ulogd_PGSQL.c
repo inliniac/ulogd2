@@ -45,25 +45,39 @@ static char *stmt_val;
 static char *stmt_ins;
 
 /* our configuration directives */
-static config_entry_t db_ce = { NULL, "db", CONFIG_TYPE_STRING,
-				CONFIG_OPT_MANDATORY, 0,
-				{ } };
+static config_entry_t db_ce = { 
+	.key = "db", 
+	.type = CONFIG_TYPE_STRING,
+	.options = CONFIG_OPT_MANDATORY,
+};
 
-static config_entry_t host_ce = { &db_ce, "host", CONFIG_TYPE_STRING,
-				CONFIG_OPT_MANDATORY, 0,
-				{ } };
+static config_entry_t host_ce = { 
+	.next = &db_ce, 
+	.key = "host", 
+	.type = CONFIG_TYPE_STRING,
+	.options = CONFIG_OPT_NONE,
+};
 
-static config_entry_t user_ce = { &host_ce, "user", CONFIG_TYPE_STRING,
-				CONFIG_OPT_MANDATORY, 0,
-				{ } };
+static config_entry_t user_ce = { 
+	.next = &host_ce, 
+	.key = "user", 
+	.type = CONFIG_TYPE_STRING,
+	.options = CONFIG_OPT_MANDATORY,
+};
 
-static config_entry_t pass_ce = { &user_ce, "pass", CONFIG_TYPE_STRING,
-				CONFIG_OPT_MANDATORY, 0,
-				{ } };
+static config_entry_t pass_ce = { 
+	.next = &user_ce, 
+	.key = "pass", 
+	.type = CONFIG_TYPE_STRING,
+	.options = CONFIG_OPT_NONE,
+};
 
-static config_entry_t table_ce = { &pass_ce, "table", CONFIG_TYPE_STRING,
-				CONFIG_OPT_MANDATORY, 0,
-				{ } };
+static config_entry_t table_ce = { 
+	.next = &pass_ce, 
+	.key = "table", 
+	.type = CONFIG_TYPE_STRING,
+	.options = CONFIG_OPT_MANDATORY,
+};
 
 /* our main output function, called by ulogd */
 static int pgsql_output(ulog_iret_t *result)
@@ -71,7 +85,9 @@ static int pgsql_output(ulog_iret_t *result)
 	struct _field *f;
 	ulog_iret_t *res;
 	PGresult   *pgres;
+#ifdef IP_AS_STRING
 	char *tmpstr;		/* need this for --log-ip-as-string */
+#endif
 
 	stmt_ins = stmt_val;
 
@@ -223,32 +239,32 @@ static int pgsql_get_columns(const char *table)
 {
 	PGresult *result;
 	char buf[ULOGD_MAX_KEYLEN];
-                char pgbuf[256];
+	char pgbuf[256];
 	char *underscore;
 	struct _field *f;
 	int id;
-                int intaux;
-                char *sql;
+	int intaux;
 
 	if (!dbh)
 		return 1;
 
-                strcpy(pgbuf,  "SELECT  a.attname FROM pg_class c, pg_attribute a WHERE c.relname ='");
-                strncat(pgbuf, table, strlen(table));
-                strcat(pgbuf, "' AND a.attnum>0 AND a.attrelid=c.oid ORDER BY a.attnum");
-                sql = (char *) malloc(strlen(pgbuf));
-                sql = pgbuf;
-                ulogd_log(ULOGD_DEBUG, sql);
-	result = PQexec(dbh,  sql);
-	if(!result) {
-                                ulogd_log(ULOGD_DEBUG, "\n result false");
+	strcpy(pgbuf, "SELECT  a.attname FROM pg_class c, pg_attribute a WHERE c.relname ='");
+	strncat(pgbuf, table, strlen(table));
+	strcat(pgbuf, "' AND a.attnum>0 AND a.attrelid=c.oid ORDER BY a.attnum");
+	ulogd_log(ULOGD_DEBUG, pgbuf);
+
+	result = PQexec(dbh, pgbuf);
+	if (!result) {
+		ulogd_log(ULOGD_DEBUG, "\n result false");
 		return 1;
-                }
-                if (PQresultStatus(result) != PGRES_TUPLES_OK) {
-                                ulogd_log(ULOGD_DEBUG, "\n pres_command_not_ok");
-                                return 1;
-                }
-                for (intaux=0; intaux<PQntuples(result); intaux++) {
+	}
+
+	if (PQresultStatus(result) != PGRES_TUPLES_OK) {
+		ulogd_log(ULOGD_DEBUG, "\n pres_command_not_ok");
+		return 1;
+	}
+
+	for (intaux=0; intaux<PQntuples(result); intaux++) {
 
 		/* replace all underscores with dots */
 		strncpy(buf, PQgetvalue(result, intaux, 0), ULOGD_MAX_KEYLEN);
@@ -276,41 +292,43 @@ static int pgsql_get_columns(const char *table)
 		fields = f;
 	}
 
-                PQclear(result);
+	PQclear(result);
 	return 0;
 }
 
-int exit_nicely(PGconn *conn)
+static int exit_nicely(PGconn *conn)
 {
-    PQfinish(conn);
-    return 0;;
+	PQfinish(conn);
+	return 0;;
 }
 
 /* make connection and select database */
 static int pgsql_open_db(char *server, char *user, char *pass, char *db)
 {
-               char connstr[80];
-               char * sql;
+	char connstr[80];
 
-                strcpy(connstr, " host=");
-                strcat(connstr, server);
-                strcat(connstr, " dbname=");
-                strcat(connstr, db);
-                strcat(connstr, " user=");
-                strcat(connstr, user);
+	if (server) {
+		strcpy(connstr, " host=");
+		strcat(connstr, server);
+	}
+
+	strcat(connstr, " dbname=");
+	strcat(connstr, db);
+	strcat(connstr, " user=");
+	strcat(connstr, user);
+
+	if (pass) {
 		strcat(connstr, " password=");
 		strcat(connstr, pass);
-                sql = (char *) malloc(strlen(connstr));
+	}
+	
+	dbh = PQconnectdb(connstr);
+	if (PQstatus(dbh)!=CONNECTION_OK) {
+		exit_nicely(dbh);
+		return 1;
+	}
 
-                sql = connstr;
-                dbh = PQconnectdb(sql);
-                if (PQstatus(dbh)!=CONNECTION_OK) {
-                                exit_nicely(dbh);
-                                return 1;
-                }
-
-
-        return 0;
+	return 0;
 }
 
 static int pgsql_init(void)
