@@ -53,7 +53,7 @@ install: all
 	@[ -d $(DESTDIR)@sbindir@ ] || mkdir -p $(DESTDIR)@sbindir@
 	@INSTALL@ -D -m 755 ulogd $(DESTDIR)@sbindir@/ulogd
 	@[ -d $(DESTDIR)@sysconfdir@ ] || mkdir -p $(DESTDIR)@sysconfdir@
-	@INSTALL@ -D -m 600 ulogd.conf $(DESTDIR)@sysconfdir@/ulogd.conf
+	@[ -f $(DESTDIR)@sysconfdir@/ulogd.conf ] || @INSTALL@ -D -m 600 ulogd.conf $(DESTDIR)@sysconfdir@/ulogd.conf
 	
 doc:
 	$(MAKE) -C $@
