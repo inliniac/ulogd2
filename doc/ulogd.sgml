@@ -1,12 +1,12 @@
 <!doctype linuxdoc system>
 
-<!-- $Id: ulogd.sgml,v 1.5 2001/05/20 15:07:45 laforge Exp $ -->
+<!-- $Id: ulogd.sgml,v 1.6 2002/06/13 12:56:16 laforge Exp $ -->
 
 <article>
 
 <title>ULOGD - the Userspace Logging Daemon</title>
 <author>Harald Welte &lt;laforge@gnumonks.org&gt</author>
-<date>Revision $Revision: 1.5 $, $Date: 2001/05/20 15:07:45 $</date>
+<date>Revision $Revision: 1.6 $, $Date: 2002/06/13 12:56:16 $</date>
 
 <abstract>
 This is the documentation for <tt>ulogd</tt>, the Userspace logging daemon.
@@ -18,7 +18,7 @@ ULOG target for netfilter.
 
 <sect>DESIGN
 
-<sect1>CONECEPT
+<sect1>CONCEPT
 <p>
 I want to provide a flexible, almost universal logging daemon for my netfilter 
 ULOG target. It is not optimized in any way, the goal is to keep as simple as 
