@@ -1,4 +1,4 @@
-/* ulogd_LOGEMU.c, Version $Revision: 1.3 $
+/* ulogd_LOGEMU.c, Version $Revision: 1.4 $
  *
  * ulogd output target for syslog logging emulation
  *
@@ -8,7 +8,7 @@
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  * This software is released under the terms of GNU GPL
  *
- * $Id: ulogd_LOGEMU.c,v 1.3 2001/02/04 13:39:31 laforge Exp $
+ * $Id: ulogd_LOGEMU.c,v 1.4 2001/03/25 18:25:01 laforge Exp $
  *
  */
 
@@ -27,11 +27,24 @@
 #define ULOGD_LOGEMU_DEFAULT	"/var/log/ulogd.syslogemu"
 #endif
 
+#ifndef ULOGD_LOGEMU_SYNC_DEFAULT
+#define ULOGD_LOGEMU_SYNC_DEFAULT	0
+#endif
+
 #define NIPQUAD(addr) \
 	((unsigned char *)&addr)[0], \
 	((unsigned char *)&addr)[1], \
         ((unsigned char *)&addr)[2], \
         ((unsigned char *)&addr)[3]
+
+static config_entry_t syslogf_ce = { NULL, "syslogfile", CONFIG_TYPE_STRING, 
+				  CONFIG_OPT_NONE, 0,
+				  { string: ULOGD_LOGEMU_DEFAULT } };
+
+static config_entry_t syslsync_ce = { &syslogf_ce, "syslogsync", 
+				      CONFIG_TYPE_INT, CONFIG_OPT_NONE, 0,
+				      { value: ULOGD_LOGEMU_SYNC_DEFAULT }
+				     };
 
 static FILE *of = NULL;
 
@@ -206,6 +219,10 @@ int _output_logemu(ulog_iret_t *res)
 			break;
 	}
 	fprintf(of,"\n");
+
+	if (syslsync_ce.u.value) 
+		fflush(of);
+
 	return 0;
 }
 
@@ -243,14 +260,10 @@ static void _logemu_reg_op(void)
 		register_output(p);
 }
 
-static config_entry_t syslogf_ce = { NULL, "syslogfile", CONFIG_TYPE_STRING, 
-				  CONFIG_OPT_NONE, 0,
-				  { string: ULOGD_LOGEMU_DEFAULT } };
-
 void _init(void)
 {
 	/* FIXME: error handling */
-	config_register_key(&syslogf_ce);
+	config_register_key(&syslsync_ce);
 	config_parse_file(0);
 
 	if (gethostname(hostname, sizeof(hostname)) < 0) {

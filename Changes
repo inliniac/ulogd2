@@ -5,6 +5,7 @@ Version 0.96
 - autoconf now includes /usr/src/linux/include, because most distros
   now have a glibc-provided /usr/include/linux :(
 - removed ./configure from CVS tree as it may cause inconsistencies
+- added support for synchronous write to LOGEMU (Michael Stolovitzsky)
 
 Version 0.95
 - libipulog problems of 0.94 fixed
