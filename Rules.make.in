@@ -19,7 +19,7 @@ CFLAGS=@CFLAGS@ @CPPFLAGS@
 CFLAGS+=-DULOGD_CONFIGFILE=\"$(ULOGD_CONFIGFILE)\"
 # doesn't work for subdirs
 #CFLAGS+=$(INCIPULOG) $(INCCONFFILE)
-CFLAGS+=-I/usr/src/linux/include
+CFLAGS+=-I/lib/modules/`uname -r`/build/include
 #CFLAGS+=@DEFS@
 #CFLAGS+=-g -DDEBUG -DDEBUG_MYSQL -DDEBUG_PGSQL
 
