@@ -1,4 +1,4 @@
-/* ulogd, Version $Revision: 1.5 $
+/* ulogd, Version $Revision: 1.6 $
  *
  * first try of a logging daemon for my netfilter ULOG target
  * for the linux 2.4 netfilter subsystem.
@@ -7,7 +7,7 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.c,v 1.5 2000/08/11 09:56:48 laforge Exp $
+ * $Id: ulogd.c,v 1.6 2000/08/14 08:28:24 laforge Exp $
  */
 
 #include <stdio.h>
@@ -17,26 +17,30 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <libipulog/libipulog.h>
+#include "conffile.h"
 #include "ulogd.h"
 
 #define MYBUFSIZ 2048
 
-
-#define DEBUGP ulogd_error
+#ifdef DEBUG
+#define DEBUGP(format, args...) fprintf(stderr, format, ## args)
+#else
+#define DEBUGP(format, args...) 
+#endif
 
 #ifndef ULOGD_PLUGIN_DIR
 #define ULOGD_PLUGIN_DIR	"/usr/local/lib/ulogd"
 #endif
 
-#ifndef ULOGD_LOGFILE
-#define ULOGD_LOGFILE		"/var/log/ulogd.log"
+#ifndef ULOGD_CONFIGFILE
+#define ULOGD_CONFIGFILE	"/etc/ulogd.conf"
 #endif
 
 #ifndef ULOGD_NLGROUP
 #define ULOGD_NLGROUP		32
 #endif
 
-FILE *logfile;
+FILE *logfile = NULL;
 
 /* linked list for all registered interpreters */
 static ulog_interpreter_t *ulogd_interpreters;
@@ -45,7 +49,7 @@ static ulog_interpreter_t *ulogd_interpreters;
 static ulog_output_t *ulogd_outputs;
 
 /* try to lookup a registered interpreter for a given name */
-ulog_interpreter_t *find_interpreter(const char *name)
+static ulog_interpreter_t *find_interpreter(const char *name)
 {
 	ulog_interpreter_t *ptr;
 
@@ -72,7 +76,7 @@ void register_interpreter(ulog_interpreter_t *me)
 }
 
 /* try to lookup a registered output plugin for a given name */
-ulog_output_t *find_output(const char *name)
+static ulog_output_t *find_output(const char *name)
 {
 	ulog_output_t *ptr;
 
@@ -132,7 +136,7 @@ void free_ret(ulog_iret_t *ret)
 
 /* this should pass the result(s) to one or more registered output plugins,
  * but is currently only printing them out */
-void propagate_results(ulog_iret_t *ret)
+static void propagate_results(ulog_iret_t *ret)
 {
 	ulog_output_t *p;
 
@@ -144,7 +148,7 @@ void propagate_results(ulog_iret_t *ret)
 
 /* call all registered interpreters and hand the results over to 
  * propagate_results */
-void handle_packet(ulog_packet_msg_t *pkt)
+static void handle_packet(ulog_packet_msg_t *pkt)
 {
 	ulog_interpreter_t *ptr;
 	ulog_iret_t *ret, *b;
@@ -167,13 +171,13 @@ void handle_packet(ulog_packet_msg_t *pkt)
 }
 
 /* silly plugin loader to dlopen() all available plugins */
-void load_plugins(void)
+static void load_plugins(char *dir)
 {
 	DIR *ldir;
 	struct dirent *dent;
 	char *fname;
 
-	ldir = opendir(ULOGD_PLUGIN_DIR);
+	ldir = opendir(dir);
 	if (ldir) {
 		fname = (char *) malloc(NAME_MAX + strlen(ULOGD_PLUGIN_DIR) 
 				+ 3);
@@ -187,11 +191,11 @@ void load_plugins(void)
 		}
 		free(fname);
 	} else
-		ulogd_error("no plugin directory\n");
+		ulogd_error("no plugin directory: %s\n", dir);
 
 }
 
-int logfile_open(const char *name)
+static int logfile_open(const char *name)
 {
 	logfile = fopen(name, "a");
 	if (!logfile) 
@@ -202,6 +206,55 @@ int logfile_open(const char *name)
 	return 0;
 }
 
+static int parse_conffile(char *file, int final)
+{
+	int err;
+	FILE *outfd;
+
+	err = config_parse_file(file, final);
+
+	if (logfile)
+		outfd = logfile;
+	else
+		outfd = stderr;
+
+	switch(err) {
+		case 0:
+			return 0;
+			break;
+		case -ERROPEN:
+			fprintf(outfd, "ERROR: unable to open configfile: %s\n",
+					ULOGD_CONFIGFILE);
+			break;
+		case -ERRMAND:
+			fprintf(outfd, "ERROR: mandatory option not found\n");
+			break;
+		case -ERRMULT:
+			fprintf(outfd, "ERROR: option occurred more than once\n");
+			break;
+		case -ERRUNKN:
+			fprintf(outfd, "ERROR: unknown config key\n");
+			break;
+	}
+	return 1;
+
+}
+
+static config_entry_t logf_ce = { NULL, "logfile", CONFIG_TYPE_STRING, 
+				  CONFIG_OPT_MANDATORY, 0, { "" } };
+				  
+static config_entry_t pldir_ce = { NULL, "plugindir", CONFIG_TYPE_STRING,
+				   CONFIG_OPT_MANDATORY, 0, { "" } };
+
+static int init_conffile(char *file)
+{
+	config_register_key(&logf_ce);
+	config_register_key(&pldir_ce);
+	
+	/* parse config file the first time (for logfile name, ...) */
+	return parse_conffile(file, 0);
+}
+
 int main(int argc, char* argv[])
 {
 	struct ipulog_handle *h;
@@ -209,9 +262,23 @@ int main(int argc, char* argv[])
 	size_t len;
 	ulog_packet_msg_t *upkt;
 
-	logfile_open(ULOGD_LOGFILE);
-	load_plugins();	
+	if (init_conffile(ULOGD_CONFIGFILE))
+	{
+		DEBUGP("ERROR during init_configfile\n");
+		exit(1);
+	}
+
 	
+	logfile_open(logf_ce.u.string);
+	load_plugins(pldir_ce.u.string);	
+
+	/* parse config file the second time (for plugin options) */
+	if (parse_conffile(ULOGD_CONFIGFILE, 1))
+	{
+		ulogd_error("ERROR during second parse_conffile\n");
+		exit(1);
+	}
+
 	/* allocate a receive buffer */
 	buf = (unsigned char *) malloc(MYBUFSIZ);
 	

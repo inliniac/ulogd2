@@ -1,7 +1,7 @@
 /* config file parser functions
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  *
- * $Id: conffile.h,v 1.1 2000/09/09 08:36:05 laforge Exp $
+ * $Id: conffile.h,v 1.2 2000/09/09 18:27:23 laforge Exp $
  * 
  * This code is distributed under the terms of GNU GPL */
 
@@ -17,7 +17,7 @@ enum {
 	ERROOM,		/* out of memory */
 	ERRMULT,	/* non-multiple option occured more  than once */
 	ERRMAND,	/* mandatory option not found */
-	ERRUNKN,	/* unknown key */
+	ERRUNKN,	/* unknown config key */
 };
 
 /* maximum line lenght of config file entries */
@@ -25,8 +25,9 @@ enum {
 
 /* maximum lenght of config key name */
 #define CONFIG_KEY_LEN		30
-#define CONFIG_VAL_STRING_LEN	225
 
+/* maximum lenght of string config value */
+#define CONFIG_VAL_STRING_LEN	225
 
 /* valid config types */
 #define CONFIG_TYPE_INT		0x0001
@@ -51,7 +52,7 @@ typedef struct config_entry {
 } config_entry_t;
 
 /* if an error occurs, config_errce is set to the erroneous ce */
-config_entry_t *config_errce = NULL;
+config_entry_t *config_errce;
 	
 int config_parse_file(const char *fname, int final);
 int config_register_key(config_entry_t *ce);

@@ -1,27 +1,30 @@
 /* config file parser functions
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  *
- * $Id: conffile.c,v 1.1 2000/09/09 08:36:05 laforge Exp $
+ * $Id: conffile.c,v 1.2 2000/09/09 18:27:23 laforge Exp $
  * 
  * This code is distributed under the terms of GNU GPL */
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "conffile.h"
 
 #ifdef DEBUG_CONF
 #define DEBUGC(format, args...) fprintf(stderr, format ## args)
 #else
-#define DEBUGC 
+#define DEBUGC(format, args...)
 #endif
 
 static config_entry_t *config = NULL;
+config_entry_t *config_errce = NULL;
 
 static char *get_word(const char *string)
 {
 	int len;
 	char *word, *space;
 	space = strchr(string, ' ');
+
 	if (!space) {
 		space = strchr(string, '\t');
 		if (!space)
@@ -88,7 +91,8 @@ int config_parse_file(const char *fname, int final)
 		word = get_word(line);
 		if (!word)
 			continue;
-		
+
+		/* if we do the final parse and word is not a config key */
 		if (final && !config_iskey(word)) {
 			err = -ERRUNKN;
 			config_errce = ce;
@@ -96,6 +100,7 @@ int config_parse_file(const char *fname, int final)
 		}
 
 		args = line + strlen(word) + 1;
+		*(args + strlen(args) - 1 ) = '\0';
 
 		for (ce = config; ce; ce = ce->next) {
 			if (strcmp(ce->key, word)) {
@@ -112,8 +117,8 @@ int config_parse_file(const char *fname, int final)
 			ce->hit++;
 			switch (ce->type) {
 				case CONFIG_TYPE_STRING:
-					if (strlen(args) <
-					    CONFIG_VAL_STRING_LEN) {
+					if (strlen(args) < 
+					    CONFIG_VAL_STRING_LEN ) {
 						strcpy(ce->u.string, args);
 					}
 					break;

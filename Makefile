@@ -19,10 +19,13 @@ $(SHARED_LIBS): %.so: %_sh.o
 	ld -shared -o $@ $<
 
 %_sh.o: %.c
-	gcc $(SH_CFLAGS) -o $@ -c $<
+	$(CC) $(SH_CFLAGS) -o $@ -c $<
 
-ulogd: ulogd.c $(LIBIPULOG) ulogd.h
-	$(CC) $(CFLAGS) -rdynamic -ldl -i ulogd.c $(LIBIPULOG)/libipulog.a -o ulogd
+conffile.o: conffile.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+ulogd: ulogd.c $(LIBIPULOG) ulogd.h conffile.o
+	$(CC) $(CFLAGS) -rdynamic -ldl -i ulogd.c conffile.o $(LIBIPULOG)/libipulog.a -o ulogd
 
 clean:
 	rm -f ulogd extensions/*.o extensions/*.so
