@@ -1,4 +1,4 @@
-/* ulogd_MAC.c, Version $Revision: 1.17 $
+/* ulogd_MAC.c, Version $Revision: 1.18 $
  *
  * ulogd interpreter plugin for 
  * 	o MAC addresses
@@ -26,18 +26,18 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  
- * $Id: ulogd_BASE.c,v 1.17 2003/04/27 07:43:37 laforge Exp $
+ * $Id: ulogd_BASE.c,v 1.18 2003/04/27 20:56:15 laforge Exp $
  *
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
-#include <linux/ip.h>
-#include <linux/in.h>
-#include <linux/tcp.h>
-#include <linux/icmp.h>
-#include <linux/udp.h>
+#include <netinet/ip.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <netinet/ip_icmp.h>
+#include <netinet/udp.h>
 #include <ulogd/ulogd.h>
 
 /***********************************************************************
