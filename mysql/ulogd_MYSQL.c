@@ -1,11 +1,11 @@
-/* ulogd_MYSQL.c, Version $Revision$
+/* ulogd_MYSQL.c, Version $Revision: 1.1 $
  *
  * ulogd output plugin for logging to a MySQL database
  *
  * (C) 2000 by Harald Welte <laforge@gnumonks.org> 
  * This software is distributed under the terms of GNU GPL 
  *
- * $Id$
+ * $Id: ulogd_MYSQL.c,v 1.1 2000/11/20 11:43:22 laforge Exp $
  *
  **/
 

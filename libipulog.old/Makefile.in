@@ -17,3 +17,5 @@ clean:
 
 distclean: clean
 	rm Makefile
+
+install: libipulog.a

@@ -7,16 +7,16 @@ include @top_srcdir@/Rules.make
 CFLAGS+=-I@top_srcdir@ -I@top_srcdir@/libipulog/include -I@top_srcdir@/conffile
 SH_CFLAGS:=$(CFLAGS) -fPIC
 
-SHARED_LIBS+=$(foreach T,$(ULOGD_SL),ulogd_$(T).so)
+SHARED_LIBS=ulogd_MYSQL.so
 
 all: $(SHARED_LIBS)
 
 $(SHARED_LIBS): %.so: %_sh.o
-	ld -shared -o $@ $<
+	ld -shared $(MYSQL_LDFLAGS) -o $@ $<
 
 %_sh.o: %.c
-	$(CC) $(SH_CFLAGS) -o $@ -c $<
-
+	$(CC) $(MYSQL_CFLAGS) $(SH_CFLAGS) -o $@ -c $<
+	
 clean:
 	rm -f $(SHARED_LIBS) *.o
 
@@ -24,5 +24,3 @@ distclean:
 	rm -f Makefile
 
 install: all
-	@INSTALL@ -m 755 -d $(ULOGD_LIB_PATH)
-	@INSTALL@ -m 644 *.so $(ULOGD_LIB_PATH)

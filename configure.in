@@ -23,4 +23,80 @@ dnl Checks for library functions.
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(socket strerror)
 
-AC_OUTPUT(extensions/Makefile doc/Makefile conffile/Makefile libipulog/Makefile Makefile Rules.make)
+DATABASE_DIR=""
+DATABASE_LIB=""
+DATABASE_LIB_DIR=""
+
+DATABASE_DRIVERS=""
+
+dnl
+dnl test for MySQL
+dnl
+AC_ARG_WITH(mysql,
+ --with-mysql=<directory>	use mysql backend in <directoty>,[
+if test $withval != yes
+then
+        dir=$withval
+else
+        dir="/usr/local"
+fi
+mysqldir=""
+AC_MSG_CHECKING(for MySQL files)
+for d in $dir /usr /usr/local /usr/local/mysql /opt/mysql /opt/packages/mysql
+do
+        if test -f $d/lib/mysql/libmysqlclient.a
+        then
+                AC_MSG_RESULT(found mysql in $d)
+                mysqldir=$d
+                mysqldir_suffix=/mysql
+                break
+        fi
+        if test -f $d/lib/libmysqlclient.a
+        then
+                AC_MSG_RESULT(found mysql in $d)
+                mysqldir=$d
+                mysqldir_suffix=
+                break
+        fi
+done
+
+if test x$mysqldir = x
+then
+        AC_MSG_WARN(MySQL backend not used)
+else
+        AC_DEFINE(HAVE_MYSQL)
+        MYSQLINCLUDES=${mysqldir}/include${mysqldir_suffix}
+        MYSQLLIBS=${mysqldir}/lib${mysqldir_suffix}
+
+	DATABASE_DIR="${DATABASE_DIR} mysql"
+
+	DATABASE_LIB="${DATABASE_LIB} -lmysqlclient " 
+	DATABASE_LIB_DIR="${DATABASE_LIB_DIR} -L${MYSQLLIBS} "
+
+	DATABASE_DRIVERS="${DATABASE_DRIVERS} ../mysql/mysql_driver.o "
+
+	DB_DEF="${DB_DEF} -DHAVE_MYSQL "
+
+
+	AC_SUBST(MYSQLINCLUDES)
+
+        if test -f $MYSQLLIBS/libmystrings.a
+        then
+                DATABASE_LIB="${DATABASE_LIB} -lmystrings "
+        else
+                MYSQLEXTRALIBS=
+        fi
+fi      
+])      
+
+AC_SUBST(DATABASE_DIR)
+AC_SUBST(DATABASE_LIB)
+AC_SUBST(DATABASE_LIB_DIR)
+AC_SUBST(DB_DEF)
+
+AC_SUBST(DATABASE_DRIVERS)
+
+AM_CONDITIONAL(HAVE_MYSQL, test x$mysqldir != x)
+
+
+AC_OUTPUT(extensions/Makefile doc/Makefile conffile/Makefile libipulog/Makefile mysql/Makefile Makefile Rules.make)

@@ -5,9 +5,10 @@ CFLAGS+=-I@top_srcdir@/libipulog/include -I@top_srcdir@/conffile
 
 SUBDIRS=conffile libipulog extensions doc
 
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-sysconfdir=@sysconfdir@
+ifeq (x@MYSQLINCLUDES@,x)
+else
+SUBDIRS+=mysql
+endif
 
 #  Normally You should not need to change anything below
 
@@ -29,8 +30,7 @@ distclean: clean
 	rm -f Makefile config.cache config.log config.status Rules.make 
 
 install: all
-	@INSTALL@ -m 755 -d @libdir@/ulogd
-	@INSTALL@ -m 644 extensions/*.so @libdir@/ulogd
+	@for d in $(SUBDIRS); do if ! make -C $$d $@; then exit 1; fi; done
 	@INSTALL@ -m 755 ulogd @sbindir@/ulogd
 	@INSTALL@ -m 600 ulogd.conf @sysconfdir@/ulogd.conf
 	
