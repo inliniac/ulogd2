@@ -1,6 +1,6 @@
 #ifndef _ULOGD_H
 #define _ULOGD_H
-/* ulogd, Version $Revision: 1.9 $
+/* ulogd, Version $Revision: 1.10 $
  *
  * userspace logging daemon for netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -9,7 +9,7 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.h,v 1.9 2000/11/16 21:15:30 laforge Exp $
+ * $Id: ulogd.h,v 1.10 2000/11/20 11:43:22 laforge Exp $
  */
 
 #include <libipulog/libipulog.h>
@@ -131,7 +131,10 @@ void register_output(ulog_output_t *me);
 ulog_iret_t *alloc_ret(const u_int16_t type, const char*);
 
 /* write a message to the daemons' logfile */
-void ulogd_log(int level, const char *message, ...);
+void __ulogd_log(int level, char *file, int line, const char *message, ...);
+/* macro for logging including filename and line number */
+#define ulogd_log(level, format, ...) \
+	__ulogd_log(level, __FILE__, __LINE__, ## format)
 /* backwards compatibility */
 #define ulogd_error(format, args...) ulogd_log(ULOGD_ERROR, format, ## args)
 

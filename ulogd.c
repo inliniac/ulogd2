@@ -1,4 +1,4 @@
-/* ulogd, Version $Revision: 1.13 $
+/* ulogd, Version $Revision: 1.14 $
  *
  * userspace logging daemon for the netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -7,7 +7,7 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.c,v 1.13 2000/11/20 11:43:22 laforge Exp $
+ * $Id: ulogd.c,v 1.14 2001/01/29 11:45:22 laforge Exp $
  */
 
 #include <stdio.h>
@@ -15,6 +15,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <time.h>
+#include <signal.h>
 #include <dlfcn.h>
 #include <sys/types.h>
 #include <dirent.h>
@@ -46,9 +47,11 @@
 #define ULOGD_CONFIGFILE	"/etc/ulogd.conf"
 #endif
 
-
-FILE *logfile = NULL;
-int loglevel = 1;
+/* global variables */
+static struct ipulog_handle *libulog_h;	/* our libipulog handle */
+static unsigned char* libulog_buf;	/* the receive buffer */
+static FILE *logfile = NULL;		/* logfile pointer */
+static int loglevel = 1;		/* current loglevel */
 
 /* linked list for all registered interpreters */
 static ulog_interpreter_t *ulogd_interpreters;
@@ -319,10 +322,10 @@ void register_output(ulog_output_t *me)
 
 /***********************************************************************
  * MAIN PROGRAM
- ***********************************************************************
+ ***********************************************************************/
 
 /* log message to the logfile */
-void ulogd_log(int level, const char *format, ...)
+void __ulogd_log(int level, char *file, int line, const char *format, ...)
 {
 	char *timestr;
 	va_list ap;
@@ -343,10 +346,13 @@ void ulogd_log(int level, const char *format, ...)
 	tm = time(NULL);
 	timestr = ctime(&tm);
 	timestr[strlen(timestr)-1] = '\0';
-	fprintf(outfd, "%s <%1.1d> %s:%d ", timestr, level, __FILE__, __LINE__);
+	fprintf(outfd, "%s <%1.1d> %s:%d ", timestr, level, file, line);
 	
 	vfprintf(outfd, format, ap);
 	va_end(ap);
+
+	/* flush glibc's buffer */
+	fflush(outfd);
 }
 
 /* propagate results to all registered output plugins */
@@ -381,6 +387,14 @@ static void handle_packet(ulog_packet_msg_t *pkt)
 	ulog_interpreter_t *ip;
 
 	unsigned int i,j;
+
+	/* If there are no interpreters registered yet,
+	 * ignore this packet */
+	if (!ulogd_interh_ids) {
+		ulogd_log(ULOGD_NOTICE, 
+			  "packet received, but no interpreters found\n");
+		return;
+	}
 
 	for (i = 1; i <= ulogd_interh_ids; i++) {
 		ip = ulogd_interh[i];
@@ -483,10 +497,18 @@ static int init_conffile(char *file)
 	return parse_conffile(0);
 }
 
+static void sigterm_handler(int signal)
+{
+	ulogd_log(ULOGD_NOTICE, "sigterm received, exiting\n");
+
+	ipulog_destroy_handle(libulog_h);
+	free(libulog_buf);
+	fclose(logfile);
+	exit(0);
+}
+
 int main(int argc, char* argv[])
 {
-	struct ipulog_handle *h;
-	unsigned char* buf;
 	size_t len;
 	ulog_packet_msg_t *upkt;
 
@@ -510,11 +532,13 @@ int main(int argc, char* argv[])
 #endif
 
 	/* allocate a receive buffer */
-	buf = (unsigned char *) malloc(MYBUFSIZ);
+	libulog_buf = (unsigned char *) malloc(MYBUFSIZ);
 	
 	/* create ipulog handle */
-	h = ipulog_create_handle(ipulog_group2gmask(nlgroup_ce.u.value));
-	if (!h) {
+	libulog_h = 
+		ipulog_create_handle(ipulog_group2gmask(nlgroup_ce.u.value));
+
+	if (!libulog_h) {
 		/* if some error occurrs, print it to stderr */
 		ulogd_log(ULOGD_FATAL, "unable to create ipulogd handle\n");
 		ipulog_perror(NULL);
@@ -527,21 +551,24 @@ int main(int argc, char* argv[])
 		fclose(stdout);
 		fclose(stderr);
 #endif
+		signal(SIGTERM, &sigterm_handler);
+
+		ulogd_log(ULOGD_NOTICE, 
+			  "initialization finished, entering main loop\n");
 
 		/* endless loop receiving packets and handling them over to
 		 * handle_packet */
-		while(1) {
-			len = ipulog_read(h, buf, MYBUFSIZ, 1);
-			while(upkt = ipulog_get_packet(h, buf, len)) {
+		while(len = ipulog_read(libulog_h, libulog_buf, MYBUFSIZ, 1)) {
+			while(upkt = ipulog_get_packet(libulog_h,
+						       libulog_buf, len)) {
 				DEBUGP("==> packet received\n");
 				handle_packet(upkt);
 			}
 		}
-	
-		/* just to give it a cleaner look */
-		ipulog_destroy_handle(h);
-		free(buf);
-		fclose(logfile);
+
+		/* hackish, but result is the same */
+		sigterm_handler(SIGHUP);	
+
 #ifndef DEBUG
 	} else {
 		exit(0);
