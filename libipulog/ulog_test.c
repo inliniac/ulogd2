@@ -1,4 +1,4 @@
-/* ulog_test, Version $Revision$
+/* ulog_test, $Revision$
  *
  * small testing program for libipulog, part of the netfilter ULOG target
  * for the linux 2.4 netfilter subsystem.
@@ -7,7 +7,7 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id$
+ * $Id: ulog_test.c,v 1.1 2000/07/30 19:34:05 laforge Exp laforge $
  */
 
 #include <stdio.h>
@@ -22,7 +22,8 @@ void handle_packet(ulog_packet_msg_t *pkt)
 	unsigned char *p;
 	int i;
 	
-	printf("Hook=%u Mark=%u len=%d ", pkt->hook, pkt->mark, pkt->data_len);
+	printf("Hook=%u Mark=%lu len=%d ",
+	       pkt->hook, pkt->mark, pkt->data_len);
 	if (strlen(pkt->prefix))
 		printf("Prefix=%s ", pkt->prefix);
 	
@@ -37,18 +38,24 @@ void handle_packet(ulog_packet_msg_t *pkt)
 
 }
 
-main()
+int main(int argc, char *argv[])
 {
 	struct ipulog_handle *h;
 	unsigned char* buf;
 	size_t len;
 	ulog_packet_msg_t *upkt;
-	
+	int i;
+
+	if (argc != 4) {
+		fprintf(stderr, "Usage: %s count group timeout\n", argv[0]);
+		exit(1);
+	}
+
 	/* allocate a receive buffer */
 	buf = (unsigned char *) malloc(MYBUFSIZ);
 	
 	/* create ipulog handle */
-	h = ipulog_create_handle(ipulog_group2gmask(32));
+	h = ipulog_create_handle(ipulog_group2gmask(atoi(argv[2])));
 	if (!h)
 	{
 		/* if some error occurrs, print it to stderr */
@@ -56,17 +63,21 @@ main()
 		exit(1);
 	}
 
-	/* endless loop receiving packets and handling them over to
-	 * handle_packet */
-	while(1)
-	{
+	alarm(atoi(argv[3]));
+
+	/* loop receiving packets and handling them over to handle_packet */
+	for (i = 0; i < atoi(argv[1]); i++) {
 		len = ipulog_read(h, buf, BUFSIZ, 1);
+		if (len < 0) {
+			ipulog_perror("ulog_test: short read");
+			exit(1);
+		}
 		upkt = ipulog_get_packet(buf);	
-		printf("got %d bytes\n", len);
+		printf("%d: ", len);
 		handle_packet(upkt);
 	}
 	
 	/* just to give it a cleaner look */
 	ipulog_destroy_handle(h);
-
+	return 0;
 }
