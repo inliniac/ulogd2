@@ -139,6 +139,8 @@ typedef struct ulogd_plugin {
 
 /* an instance of a plugin, element in a stack */
 typedef struct ulogd_pluginstance {
+	/* global list of pluginstance stacks */
+	struct list_head stack_list;
 	/* local list of plugins in this stack */
 	struct list_head list;
 	/* plugin (master) */

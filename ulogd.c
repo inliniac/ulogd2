@@ -2,10 +2,9 @@
  *
  * $Id$
  *
- * userspace logging daemon for the iptables ULOG target
- * of the linux 2.4 netfilter subsystem.
+ * unified network logging daemon for Linux.
  *
- * (C) 2000-2003 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2000-2004 by Harald Welte <laforge@gnumonks.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 
@@ -38,6 +37,10 @@
  *
  * 	22 Jul 2004 Harald Welte <laforge@gnumonks.org>
  * 		- major restructuring for flow accounting / ipfix work
+ *
+ * 	03 Oct 2004 Harald Welte <laforge@gnumonks.org>
+ * 		- further unification towars generic network event logging
+ * 		  and support for lnstat
  */
 
 #define ULOGD_VERSION	"2.00alpha"
@@ -84,10 +87,11 @@ static int loglevel = 1;		/* current loglevel */
 static char *ulogd_configfile = ULOGD_CONFIGFILE;
 
 /* linked list for all registered interpreters */
-static ulog_interpreter_t *ulogd_interpreters;
+//static ulog_interpreter_t *ulogd_interpreters;
 
-/* linked list for all registered output targets */
-static ulog_output_t *ulogd_outputs;
+/* linked list for all registered plugins */
+static ulog_output_t *ulogd_plugins;
+LIST_HEAD(ulogd_pi_stacks);
 
 /***********************************************************************
  * INTERPRETER AND KEY HASH FUNCTIONS 			(new in 0.9)
@@ -326,11 +330,11 @@ void register_interpreter(ulog_interpreter_t *me)
 }
 
 /***********************************************************************
- * OUTPUT MANAGEMENT 
+ * PLUGIN MANAGEMENT 
  ***********************************************************************/
 
-/* try to lookup a registered output plugin for a given name */
-static ulog_output_t *find_output(const char *name)
+/* try to lookup a registered plugin for a given name */
+static ulog_plugin_t *find_plugin(const char *name)
 {
 	ulog_output_t *ptr;
 
@@ -342,17 +346,17 @@ static ulog_output_t *find_output(const char *name)
 	return NULL;
 }
 
-/* the function called by all output plugins for registering themselves */
-void register_output(ulog_output_t *me)
+/* the function called by all plugins for registering themselves */
+void register_plugin(ulog_plugin_t *me)
 {
-	if (find_output(me->name)) {
+	if (find_plugin(me->name)) {
 		ulogd_log(ULOGD_NOTICE, "output `%s' already registered\n",
 				me->name);
 		exit(EXIT_FAILURE);
 	}
-	ulogd_log(ULOGD_NOTICE, "registering output `%s'\n", me->name);
-	me->next = ulogd_outputs;
-	ulogd_outputs = me;
+	ulogd_log(ULOGD_NOTICE, "registering plugin `%s'\n", me->name);
+	me->next = ulogd_plugins;
+	ulogd_plugins = me;
 }
 
 /***********************************************************************
@@ -415,6 +419,19 @@ static void clean_results(ulog_iret_t *ret)
 	}
 }
 
+
+
+static int ulogd_pluginstance_t *ulogd_pluginsance_alloc(int len)
+{
+	ulogd_pluginstance_t *pi = malloc(sizeof(ulogd_pluginstance_t)+len);
+	if (!pi)
+		return NULL;
+	memset(pi, 0, sizeof(ulogd_pluginstance_t)+len);
+	INIT_LIST_HEAD(&pi->list);
+	
+	return pi;
+}
+
 /* plugin loader to dlopen() a plugins */
 static int load_plugin(char *file)
 {
@@ -423,6 +440,43 @@ static int load_plugin(char *file)
 			  dlerror());
 		return 1;
 	}
+	return 0;
+}
+
+/* create a new stack of plugins */
+static int create_stack(char *option)
+{
+	ulogd_pluginstance_t *stack = NULL;
+	char *buf = strdup(option);
+	char *tok;
+
+	if (!buf) {
+		ulogd_log(ULOGD_EROR, "");
+		return 1;
+	}
+
+	ulogd_log(ULOGD_DEBUG, "building new pluginstance stack:\n");
+
+	for (tok = strtok(buf, ":\n"); tok; tok = strtok(NULL, ":\n")) {
+		ulogd_pluginstance_t *pi = ulogd_pluginstance_alloc(0);
+		ulogd_plugin_t *pl = find_plugin(tok);
+		if (!pl) {
+			ulogd_log(ULOGD_ERROR, "can't find requested plugin "
+				  "%s\n", );
+			return 1;
+		}
+		pi->plugin = pl;
+		ulogd_log(ULOGD_DEBUG, "pushing `%s' on stack\n", pl->name);
+
+		/* FIXME: allocate input and output keys */
+
+		if (!stack)
+			stack = pi;
+		else
+			list_add(&pi->list, &stack->list);
+	}
+	/* add head of pluginstance stack to list of stacks */
+	list_add(&stack->stack_list, &ulogd_pi_stacks);
 	return 0;
 }
 
@@ -484,17 +538,38 @@ static int parse_conffile(const char *section, config_entry_t *ce)
 }
 
 /* configuration directives of the main program */
-static config_entry_t logf_ce = { NULL, "logfile", CONFIG_TYPE_STRING, 
-				  CONFIG_OPT_NONE, 0, 
-				  { string: ULOGD_LOGFILE_DEFAULT } };
+static config_entry_t logf_ce = {
+	.next = NULL,
+	.key = "logfile",
+	.type = CONFIG_TYPE_STRING, 
+	.options = CONFIG_OPT_NONE,
+	.u.string = ULOGD_LOGFILE_DEFAULT,
+};
 
-static config_entry_t plugin_ce = { &logf_ce, "plugin", CONFIG_TYPE_CALLBACK,
-				    CONFIG_OPT_MULTI, 0, 
-				    { parser: &load_plugin } };
+static config_entry_t plugin_ce = { 
+	.next = &logf_ce,
+	.key = "plugin",
+	.type = CONFIG_TYPE_CALLBACK,
+	.options = CONFIG_OPT_MULTI,
+	.u.parser: &load_plugin,
+};
 
-static config_entry_t loglevel_ce = { &logf_ce, "loglevel", CONFIG_TYPE_INT,
-				      CONFIG_OPT_NONE, 0, 
-				      { value: 1 } };
+static config_entry_t loglevel_ce = { 
+	.next = &logf_ce,
+	.key = "loglevel", 
+	.type = CONFIG_TYPE_INT,
+	.options = CONFIG_OPT_NONE,
+	.u.value = 1,
+};
+
+static config_entry_t stack_ce = { 
+	.next = &loglevel_ce,
+	.key = "stack",
+	.type = CONFIG_TYPE_CALLBACK,
+	.options = CONFIG_OPT_NONE,
+	.u.parser = &create_stack,
+};
+					
 
 static void sigterm_handler(int signal)
 {
