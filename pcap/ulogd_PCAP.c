@@ -1,4 +1,4 @@
-/* ulogd_PCAP.c, Version $Revision: 1.1 $
+/* ulogd_PCAP.c, Version $Revision: 1.2 $
  *
  * ulogd output target for writing pcap-style files (like tcpdump)
  *
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_PCAP.c,v 1.1 2002/07/30 08:00:47 laforge Exp $
+ * $Id: ulogd_PCAP.c,v 1.2 2002/12/09 14:42:44 laforge Exp $
  *
  */
 
@@ -88,7 +88,8 @@ int _output_pcap(ulog_iret_t *res)
 	pchdr.len = GET_VALUE(2).ui32;
 
 	if (GET_FLAGS(3) & ULOGD_RETF_VALID
-	    && GET_FLAGS(4) & ULOGD_RETF_VALID) {
+	    && GET_FLAGS(4) & ULOGD_RETF_VALID
+	    && GET_VALUE(3).ui32 != 0) {
 		pchdr.ts.tv_sec = GET_VALUE(3).ui32;
 		pchdr.ts.tv_usec = GET_VALUE(4).ui32;
 	} else {
