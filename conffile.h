@@ -1,7 +1,7 @@
 /* config file parser functions
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  *
- * $Id: conffile.h,v 1.2 2000/09/09 18:27:23 laforge Exp $
+ * $Id: conffile.h,v 1.3 2000/09/09 18:35:26 laforge Exp $
  * 
  * This code is distributed under the terms of GNU GPL */
 
@@ -35,6 +35,7 @@ enum {
 #define CONFIG_TYPE_CALLBACK	0x0003
 
 /* valid config options */
+#define CONFIG_OPT_NONE		0x0000
 #define CONFIG_OPT_MANDATORY	0x0001
 #define CONFIG_OPT_MULTI	0x0002
 
@@ -53,8 +54,12 @@ typedef struct config_entry {
 
 /* if an error occurs, config_errce is set to the erroneous ce */
 config_entry_t *config_errce;
-	
+
+/* parse the config file "fname", presume all config keys are registered
+ * if final==1 	*/
 int config_parse_file(const char *fname, int final);
+
+/* register a linked list of config entries */
 int config_register_key(config_entry_t *ce);
 
 #endif /* ifndef _CONFFILE_H */

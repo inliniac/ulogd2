@@ -1,6 +1,6 @@
 #ifndef _ULOGD_H
 #define _ULOGD_H
-/* ulogd, Version $Revision: 1.3 $
+/* ulogd, Version $Revision: 1.4 $
  *
  * first try of a logging daemon for my netfilter ULOG target
  * for the linux 2.4 netfilter subsystem.
@@ -9,7 +9,7 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.h,v 1.3 2000/08/02 12:20:55 laforge Exp $
+ * $Id: ulogd.h,v 1.4 2000/08/14 08:28:24 laforge Exp $
  */
 
 #include <libipulog/libipulog.h>
@@ -43,7 +43,8 @@
 
 #define ULOGD_MAX_KEYLEN 32
 
-#define ulogd_error(format, args...) fprintf(logfile, format, ## args)
+#define ulogd_error(format, args...) ulogd_log(8, format, ## args)
+
 extern FILE *logfile;
 
 typedef struct ulog_iret {
@@ -77,8 +78,11 @@ typedef struct ulog_output {
 	int* (*output)(ulog_iret_t *ret);
 } ulog_output_t;
 
+/* public interface */
 void register_interpreter(ulog_interpreter_t *me);
 void register_output(ulog_output_t *me);
-
 ulog_iret_t *alloc_ret(const u_int16_t type, const char*);
+
+/* write a message to the daemons' logfile */
+void ulogd_log(int level, const char *message);
 #endif

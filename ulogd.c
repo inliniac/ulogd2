@@ -1,4 +1,4 @@
-/* ulogd, Version $Revision: 1.6 $
+/* ulogd, Version $Revision: 1.7 $
  *
  * first try of a logging daemon for my netfilter ULOG target
  * for the linux 2.4 netfilter subsystem.
@@ -7,7 +7,7 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.c,v 1.6 2000/08/14 08:28:24 laforge Exp $
+ * $Id: ulogd.c,v 1.7 2000/09/09 18:35:26 laforge Exp $
  */
 
 #include <stdio.h>
@@ -28,17 +28,22 @@
 #define DEBUGP(format, args...) 
 #endif
 
-#ifndef ULOGD_PLUGIN_DIR
-#define ULOGD_PLUGIN_DIR	"/usr/local/lib/ulogd"
+/* default config parameters, if not changed in configfile */
+#ifndef ULOGD_PLUGINDIR_DEFAULT
+#define ULOGD_PLUGINDIR_DEFAULT	"/usr/local/lib/ulogd"
+#endif
+#ifndef ULOGD_LOGFILE_DEFAULT
+#define ULOGD_LOGFILE_DEFAULT	"/var/log/ulogd.log"
+#endif
+#ifndef ULOGD_NLGROUP_DEFAULT
+#define ULOGD_NLGROUP_DEFAULT	32
 #endif
 
+/* where to look for the config file */
 #ifndef ULOGD_CONFIGFILE
 #define ULOGD_CONFIGFILE	"/etc/ulogd.conf"
 #endif
 
-#ifndef ULOGD_NLGROUP
-#define ULOGD_NLGROUP		32
-#endif
 
 FILE *logfile = NULL;
 
@@ -133,7 +138,14 @@ void free_ret(ulog_iret_t *ret)
 	}
 }
 
+void ulogd_log(int level, const char *message)
+{
+	char *timestr;
 
+	timestr = ctime(time());
+	fprintf(logfile, "%s <%1.1d> %s\n", timestr, level, message);
+
+}
 /* this should pass the result(s) to one or more registered output plugins,
  * but is currently only printing them out */
 static void propagate_results(ulog_iret_t *ret)
@@ -179,19 +191,19 @@ static void load_plugins(char *dir)
 
 	ldir = opendir(dir);
 	if (ldir) {
-		fname = (char *) malloc(NAME_MAX + strlen(ULOGD_PLUGIN_DIR) 
+		fname = (char *) malloc(NAME_MAX + strlen(dir) 
 				+ 3);
 		for (dent = readdir(ldir); dent; dent = readdir(ldir)) {
 			if (strncmp(dent->d_name,"ulogd", 5) == 0) {
 			DEBUGP("load_plugins: %s\n", dent->d_name);
-			sprintf(fname, "%s/%s", ULOGD_PLUGIN_DIR, dent->d_name);
+			sprintf(fname, "%s/%s", dir, dent->d_name);
 			if (!dlopen(fname, RTLD_NOW))
 				ulogd_error("load_plugins: %s", dlerror());
 			}
 		}
 		free(fname);
 	} else
-		ulogd_error("no plugin directory: %s\n", dir);
+		ulogd_error("No plugin directory: %s\n", dir);
 
 }
 
@@ -200,7 +212,8 @@ static int logfile_open(const char *name)
 	logfile = fopen(name, "a");
 	if (!logfile) 
 	{
-		fprintf(stderr, "ERROR: unable to open logfile: %s\n", strerror(errno));
+		fprintf(stderr, "ERROR: unable to open logfile %s: %s\n", 
+			name, strerror(errno));
 		exit(2);
 	}
 	return 0;
@@ -241,15 +254,23 @@ static int parse_conffile(char *file, int final)
 }
 
 static config_entry_t logf_ce = { NULL, "logfile", CONFIG_TYPE_STRING, 
-				  CONFIG_OPT_MANDATORY, 0, { "" } };
+				  CONFIG_OPT_NONE, 0, 
+				  { string: ULOGD_LOGFILE_DEFAULT } };
 				  
 static config_entry_t pldir_ce = { NULL, "plugindir", CONFIG_TYPE_STRING,
-				   CONFIG_OPT_MANDATORY, 0, { "" } };
+				   CONFIG_OPT_NONE, 0, 
+				   { string: ULOGD_PLUGINDIR_DEFAULT } };
 
+static config_entry_t nlgroup_ce = { NULL, "nlgroup", CONFIG_TYPE_INT,
+				     CONFIG_OPT_NONE, 0,
+				     { value: ULOGD_NLGROUP_DEFAULT } };
 static int init_conffile(char *file)
 {
+	/* linke them together */
+	logf_ce.next = &pldir_ce;
+	pldir_ce.next = &nlgroup_ce;
+
 	config_register_key(&logf_ce);
-	config_register_key(&pldir_ce);
 	
 	/* parse config file the first time (for logfile name, ...) */
 	return parse_conffile(file, 0);
@@ -283,7 +304,7 @@ int main(int argc, char* argv[])
 	buf = (unsigned char *) malloc(MYBUFSIZ);
 	
 	/* create ipulog handle */
-	h = ipulog_create_handle(ipulog_group2gmask(ULOGD_NLGROUP));
+	h = ipulog_create_handle(ipulog_group2gmask(nlgroup_ce.u.value));
 	if (!h)
 	{
 		/* if some error occurrs, print it to stderr */

@@ -1,7 +1,7 @@
 /* config file parser functions
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  *
- * $Id: conffile.c,v 1.2 2000/09/09 18:27:23 laforge Exp $
+ * $Id: conffile.c,v 1.3 2000/09/09 18:35:26 laforge Exp $
  * 
  * This code is distributed under the terms of GNU GPL */
 
@@ -11,12 +11,13 @@
 #include "conffile.h"
 
 #ifdef DEBUG_CONF
-#define DEBUGC(format, args...) fprintf(stderr, format ## args)
+#define DEBUGC(format, args...) fprintf(stderr, format, ## args)
 #else
 #define DEBUGC(format, args...)
 #endif
 
 static config_entry_t *config = NULL;
+
 config_entry_t *config_errce = NULL;
 
 static char *get_word(const char *string)
@@ -58,11 +59,23 @@ static int config_iskey(char *name)
 	return 1;
 }
 
+/***********************************************************************
+ * PUBLIC INTERFACE
+ ***********************************************************************/
+
 int config_register_key(config_entry_t *ce)
 {
-	ce->next = config;
-	ce->hit = 0;
+	config_entry_t *myentry;
+
+	if (!ce)
+		return 1;
+
+	/* prepend our list to the global config list */
+	for (myentry = ce; myentry->next; myentry = myentry->next) {
+	}
+	myentry->next = config;
 	config = ce;
+
 	return 0;
 }
 
@@ -83,8 +96,9 @@ int config_parse_file(const char *fname, int final)
 		return -ERROPEN;
 	}
 	
-	while (line = fgets(line, LINE_LEN, cfile))
+	while (fgets(line, LINE_LEN, cfile))
 	{
+		DEBUGC("line read\n");
 		if (*line == '#')
 			continue;
 
@@ -93,7 +107,7 @@ int config_parse_file(const char *fname, int final)
 			continue;
 
 		/* if we do the final parse and word is not a config key */
-		if (final && !config_iskey(word)) {
+		if (final && config_iskey(word)) {
 			err = -ERRUNKN;
 			config_errce = ce;
 			goto cpf_error;
@@ -103,6 +117,7 @@ int config_parse_file(const char *fname, int final)
 		*(args + strlen(args) - 1 ) = '\0';
 
 		for (ce = config; ce; ce = ce->next) {
+			DEBUGC("parse main loop\n");
 			if (strcmp(ce->key, word)) {
 				continue;
 			}
@@ -114,7 +129,8 @@ int config_parse_file(const char *fname, int final)
 				err = -ERRMULT;
 				goto cpf_error;
 			}
-			ce->hit++;
+			if (final) 
+				ce->hit++;
 			switch (ce->type) {
 				case CONFIG_TYPE_STRING:
 					if (strlen(args) < 
@@ -135,6 +151,7 @@ int config_parse_file(const char *fname, int final)
 
 
 	for (ce = config; ce; ce = ce->next) {
+		DEBUGC("ce post loop, ce=%s\n", ce->key);
 		if ((ce->options & CONFIG_OPT_MANDATORY) && (ce->hit == 0)) {
 			DEBUGC("mandatory config directive %s not found\n",
 				ce->key);
