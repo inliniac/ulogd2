@@ -1,6 +1,6 @@
-/* ulogd, Version $Revision: 1.34 $
+/* ulogd, Version $Revision: 1.35 $
  *
- * $Id: ulogd.c,v 1.34 2003/03/05 23:03:49 laforge Exp $
+ * $Id: ulogd.c,v 1.35 2003/05/04 10:00:10 laforge Exp $
  *
  * userspace logging daemon for the iptables ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd.c,v 1.34 2003/03/05 23:03:49 laforge Exp $
+ * $Id: ulogd.c,v 1.35 2003/05/04 10:00:10 laforge Exp $
  *
  * Modifications:
  * 	14 Jun 2001 Martin Josefsson <gandalf@wlug.westbo.se>
@@ -31,7 +31,7 @@
  * 		- added support for logging to stdout
  */
 
-#define ULOGD_VERSION	"1.00"
+#define ULOGD_VERSION	"1.01"
 
 #include <unistd.h>
 #include <stdio.h>

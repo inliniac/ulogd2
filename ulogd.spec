@@ -1,6 +1,6 @@
 Summary: ulogd - The userspace logging daemon for netfilter
 Name: ulogd
-Version: 1.00
+Version: 1.01
 Release: 1gm
 License: GPL
 Group: Network
@@ -76,6 +76,10 @@ rm -rf %{buildroot}
 %{_libdir}/ulogd/ulogd_PGSQL.so
 
 %changelog
+* Sat Aug 25 2003 Harald Welte <laforge@gnumonks.org>
++ ulogd-1.00-1gm
+- updated to 1.01 release
+
 * Wed Mar 05 2003 Harald Welte <laforge@gnumonks.org>
 + ulogd-1.00-1gm
 - updated to 1.00 release

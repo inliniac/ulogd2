@@ -1,16 +1,16 @@
 <!doctype linuxdoc system>
 
-<!-- $Id: ulogd.sgml,v 1.7 2003/02/08 12:21:36 laforge Exp $ -->
+<!-- $Id: ulogd.sgml,v 1.8 2003/03/05 22:46:04 laforge Exp $ -->
 
 <article>
 
 <title>ULOGD - the Userspace Logging Daemon</title>
 <author>Harald Welte &lt;laforge@gnumonks.org&gt</author>
-<date>Revision $Revision: 1.7 $, $Date: 2003/02/08 12:21:36 $</date>
+<date>Revision $Revision: 1.8 $, $Date: 2003/03/05 22:46:04 $</date>
 
 <abstract>
 This is the documentation for <tt>ulogd</tt>, the Userspace logging daemon.
-ulogd makes use of the Linux >= 2.4.x packet filter subsystem (iptables) and
+ulogd makes use of the Linux &gt;= 2.4.x packet filter subsystem (iptables) and
 the ULOG target for iptables
 </abstract>
 
@@ -198,9 +198,14 @@ exceptional conditions, 7=error conditions, 8=fatal errors, program abort.
 <tag>plugin</tag>
 This option is followed by a filename of a ulogd plugin, which ulogd shold load
 upon initialization. This option may appear more than once.
+<tag>rmem</tag>
+Size of the netlink socket receive memory.  You should set this to at least the
+size of the kernel buffer (nlbufsiz parameter of the ipt_ULOG module).  Please
+note that there is a maximum limit in /proc/sys/net/core/rmem_max which you
+cannot exceed by increasing the ``rmem'' parameter.  You may need to raise the
+system-wide maximum limit before.
 <tag>bufsize</tag>
-Size of the receive buffer. You should set this to at least the size of the
-kernel buffer (nlbufsiz parameter of the ipt_ULOG module).
+Size of the receive buffer. You should set this to at least the socket receive buffer (rmem).
 </descrip>
 <sect2>ulogd commandline option reference
 <p>

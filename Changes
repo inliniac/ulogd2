@@ -1,3 +1,11 @@
+Version 1.01 (2003-Aug-23)
+- use $(LD) macro in order to provide cross-compiling/linking support
+- add 'rmem' configuration key to set the netlink socket rmem buffsize
+- don't use kernel header files for IP/TCP header definitions
+- various cosmetic cleanup to compile with -Wall
+- fix usage of libmysqlclient: call mysql_init() before mysql_real_connect
+- don't have LOGEMU read the system time, ulogd_LOCAL.so does this already
+
 Version 1.00 (2003-Mar-06)
 - update documentation to reflect recent additions
 - renamed LOCALTIME plugin to LOCAL plugin, since it now also returns
