@@ -1,0 +1,17 @@
+Version 0.91
+- changes for new kernel ULOG. Includes support for multilink netlink
+  messages.
+
+Version 0.9
+- configuration file routines
+- plugins are able to register new configfile keys
+- new MYSQL plugin
+
+Version 0.3
+
+- new PWSNIFF interpreter plugin
+- verbose error reporting
+
+Version 0.2
+
+- real daemon, we are forking now

@@ -1,4 +1,4 @@
-/* ulogd, Version $Revision: 1.12 $
+/* ulogd, Version $Revision: 1.13 $
  *
  * userspace logging daemon for the netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -7,7 +7,7 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.c,v 1.12 2000/11/16 21:15:30 laforge Exp $
+ * $Id: ulogd.c,v 1.13 2000/11/20 11:43:22 laforge Exp $
  */
 
 #include <stdio.h>
@@ -22,8 +22,10 @@
 #include "conffile.h"
 #include "ulogd.h"
 
-/* Size of the netlink receive buffer */
-#define MYBUFSIZ 2048
+/* Size of the netlink receive buffer. If you have _big_ in-kernel
+ * queues, you may have to increase this number. 
+ * ( --qthreshold 100 * 1500 bytes/packet = 150kB */
+#define MYBUFSIZ 65535
 
 #ifdef DEBUG
 #define DEBUGP(format, args...) fprintf(stderr, format, ## args)
@@ -530,9 +532,10 @@ int main(int argc, char* argv[])
 		 * handle_packet */
 		while(1) {
 			len = ipulog_read(h, buf, MYBUFSIZ, 1);
-			upkt = ipulog_get_packet(buf);	
-			DEBUGP("==> packet received\n");
-			handle_packet(upkt);
+			while(upkt = ipulog_get_packet(h, buf, len)) {
+				DEBUGP("==> packet received\n");
+				handle_packet(upkt);
+			}
 		}
 	
 		/* just to give it a cleaner look */

@@ -1,12 +1,12 @@
 <!doctype linuxdoc system>
 
-<!-- $Id: ulogd.sgml,v 1.1 2000/11/20 11:43:22 laforge Exp $ -->
+<!-- $Id: ulogd.sgml,v 1.2 2000/11/20 19:40:14 laforge Exp $ -->
 
 <article>
 
 <title>ULOGD - the Userspace Logging Daemon</title>
 <author>Harald Welte &lt;laforge@gnumonks.org&gt</author>
-<date>Revision $Revision: 1.1 $, $Date: 2000/11/20 11:43:22 $</date>
+<date>Revision $Revision: 1.2 $, $Date: 2000/11/20 19:40:14 $</date>
 
 <abstract>
 This is the documentation for <tt>ulogd</tt>, the Userspace logging daemon.
@@ -114,6 +114,16 @@ example:
 <tscreen><verb>
 iptables -A FORWARD -j ULOG --ulog-nlgroup 32 --prefix foo 
 </verb></tscreen>
+<p>
+To increase logging performance, try to use the
+<tscreen><verb>
+--ulog-qthreshold N
+</verb></tscreen>
+option (where 1 &lt; N &lt;= 50). The number you specify is the amout of packets
+batched together in one multipart netlink message. If you set this to 20, the
+kernel schedules ulogd only once every 20 packets. All 20 packets are then 
+processed by ulogd. This reduces the number of context switches between kernel
+and userspace.
 <p>
 Of course you can combine the ULOG target with the different netfilter match modules.
 For a more detailed description, have a look at the netfilter HOWTO's, available on 

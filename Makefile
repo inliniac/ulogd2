@@ -7,8 +7,10 @@ ULOGD_SL:=BASE OPRINT PWSNIFF LOGEMU #MYSQL
 
 #  Normally You should not need to change anything below
 #
+ULOGD_VERSION=0.91
+
 CC = gcc
-CFLAGS = -I. -Wall $(INCIPULOG) -O2
+CFLAGS = -I. -Wall $(INCIPULOG) -O2 -DULOGD_VERSION=\"$(ULOGD_VERSION)\" 
 CFLAGS+=-g -DDEBUG
 
 SH_CFLAGS:=$(CFLAGS) -fPIC
