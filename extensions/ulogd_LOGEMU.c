@@ -1,4 +1,4 @@
-/* ulogd_LOGEMU.c, Version $Revision: 1.11 $
+/* ulogd_LOGEMU.c, Version $Revision: 1.12 $
  *
  * ulogd output target for syslog logging emulation
  *
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_LOGEMU.c,v 1.11 2002/12/09 15:03:51 laforge Exp $
+ * $Id: ulogd_LOGEMU.c,v 1.12 2003/01/13 13:36:26 laforge Exp $
  *
  */
 
@@ -70,8 +70,9 @@ struct intr_id {
 	unsigned int id;		
 };
 
-#define INTR_IDS 	34
+#define INTR_IDS 	35
 static struct intr_id intr_ids[INTR_IDS] = {
+	{ "oob.time.sec", 0 },
 	{ "oob.prefix", 0 },
 	{ "oob.in", 0 },
 	{ "oob.out", 0 },
@@ -117,8 +118,7 @@ int _output_logemu(ulog_iret_t *res)
 	char *tmp;
 	time_t now;
 
-	/* get time */
-	time(&now);
+	now = (time_t) GET_VALUE(1).ui32;
 	timestr = ctime(&now) + 4;
 
 	/* truncate time */
@@ -132,72 +132,73 @@ int _output_logemu(ulog_iret_t *res)
 	/* print time and hostname */
 	fprintf(of, "%.15s %s", timestr, hostname);
 
-	if (*(char *) GET_VALUE(0).ptr)
-		fprintf(of, " %s", (char *) GET_VALUE(0).ptr);
+
+	if (*(char *) GET_VALUE(1).ptr)
+		fprintf(of, " %s", (char *) GET_VALUE(1).ptr);
 
 	fprintf(of," IN=%s OUT=%s ", 
-		(char *) GET_VALUE(1).ptr, 
-		(char *) GET_VALUE(2).ptr);
+		(char *) GET_VALUE(2).ptr, 
+		(char *) GET_VALUE(3).ptr);
 
 	/* FIXME: configurable */
 	fprintf(of, "MAC=%s ",
-		(GET_FLAGS(3) & ULOGD_RETF_VALID) ? (char *) GET_VALUE(3).ptr : "");
+		(GET_FLAGS(4) & ULOGD_RETF_VALID) ? (char *) GET_VALUE(4).ptr : "");
 
 	fprintf(of, "SRC=%s ", inet_ntoa((struct in_addr)
-					 {htonl(GET_VALUE(4).ui32)}));
-	fprintf(of, "DST=%s ", inet_ntoa((struct in_addr)
 					 {htonl(GET_VALUE(5).ui32)}));
+	fprintf(of, "DST=%s ", inet_ntoa((struct in_addr)
+					 {htonl(GET_VALUE(6).ui32)}));
 
 	fprintf(of, "LEN=%u TOS=%02X PREC=0x%02X TTL=%u ID=%u ", 
-			GET_VALUE(6).ui16, GET_VALUE(7).ui8 & IPTOS_TOS_MASK, 
-			GET_VALUE(7).ui8 & IPTOS_PREC_MASK, GET_VALUE(8).ui8,
-			GET_VALUE(9).ui16);
+			GET_VALUE(7).ui16, GET_VALUE(8).ui8 & IPTOS_TOS_MASK, 
+			GET_VALUE(8).ui8 & IPTOS_PREC_MASK, GET_VALUE(9).ui8,
+			GET_VALUE(10).ui16);
 
 	if (GET_VALUE(10).ui16 & IP_RF) 
 		fprintf(of, "CE ");
 
-	if (GET_VALUE(10).ui16 & IP_DF)
+	if (GET_VALUE(11).ui16 & IP_DF)
 		fprintf(of, "DF ");
 
-	if (GET_VALUE(10).ui16 & IP_MF)
+	if (GET_VALUE(11).ui16 & IP_MF)
 		fprintf(of, "MF ");
 
-	if (GET_VALUE(10).ui16 & IP_OFFMASK)
-		fprintf(of, "FRAG:%u ", GET_VALUE(10).ui16 & IP_OFFMASK);
+	if (GET_VALUE(11).ui16 & IP_OFFMASK)
+		fprintf(of, "FRAG:%u ", GET_VALUE(11).ui16 & IP_OFFMASK);
 
-	switch (GET_VALUE(11).ui8) {
+	switch (GET_VALUE(12).ui8) {
 
 		case IPPROTO_TCP:
 			fprintf(of, "PROTO=TCP ");
-			fprintf(of, "SPT=%u DPT=%u ", GET_VALUE(12).ui16,
-				GET_VALUE(13).ui16);
+			fprintf(of, "SPT=%u DPT=%u ", GET_VALUE(13).ui16,
+				GET_VALUE(14).ui16);
 			/* FIXME: config */
-			fprintf(of, "SEQ=%u ACK=%u ", GET_VALUE(14).ui32,
-				GET_VALUE(15).ui32);
+			fprintf(of, "SEQ=%u ACK=%u ", GET_VALUE(15).ui32,
+				GET_VALUE(16).ui32);
 
-			fprintf(of, "WINDOW=%u ", GET_VALUE(16).ui16);
+			fprintf(of, "WINDOW=%u ", GET_VALUE(17).ui16);
 
 //			fprintf(of, "RES=0x%02x ", 
 		
-			if (GET_VALUE(17).b)
+			if (GET_VALUE(18).b)
 				fprintf(of, "URG ");
 
-			if (GET_VALUE(18).b)
+			if (GET_VALUE(19).b)
 				fprintf(of, "ACK ");
 
-			if (GET_VALUE(19).b)
+			if (GET_VALUE(20).b)
 				fprintf(of, "PSH ");
 
-			if (GET_VALUE(20).b)
+			if (GET_VALUE(21).b)
 				fprintf(of, "RST ");
 
-			if (GET_VALUE(21).b)
+			if (GET_VALUE(22).b)
 				fprintf(of, "SYN ");
 
-			if (GET_VALUE(22).b)
+			if (GET_VALUE(23).b)
 				fprintf(of, "FIN ");
 
-			fprintf(of, "URGP=%u ", GET_VALUE(23).ui16);
+			fprintf(of, "URGP=%u ", GET_VALUE(24).ui16);
 
 			break;
 		case IPPROTO_UDP:
@@ -205,34 +206,34 @@ int _output_logemu(ulog_iret_t *res)
 			fprintf(of, "PROTO=UDP ");
 
 			fprintf(of, "SPT=%u DPT=%u LEN=%u ", 
-				GET_VALUE(24).ui16, GET_VALUE(25).ui16, 
-				GET_VALUE(26).ui16);
+				GET_VALUE(25).ui16, GET_VALUE(26).ui16, 
+				GET_VALUE(27).ui16);
 			break;
 		case IPPROTO_ICMP:
 
 			fprintf(of, "PROTO=ICMP ");
 
-			fprintf(of, "TYPE=%u CODE=%u ", GET_VALUE(27).ui8,
-				GET_VALUE(28).ui8);
+			fprintf(of, "TYPE=%u CODE=%u ", GET_VALUE(28).ui8,
+				GET_VALUE(29).ui8);
 
-			switch (GET_VALUE(27).ui8) {
+			switch (GET_VALUE(28).ui8) {
 				case ICMP_ECHO:
 				case ICMP_ECHOREPLY:
 					fprintf(of, "ID=%u SEQ=%u ", 
-						GET_VALUE(29).ui16,
-						GET_VALUE(30).ui16);
+						GET_VALUE(30).ui16,
+						GET_VALUE(31).ui16);
 					break;
 				case ICMP_PARAMETERPROB:
 					fprintf(of, "PARAMETER=%u ",
-						GET_VALUE(31).ui32 >> 24);
+						GET_VALUE(32).ui32 >> 24);
 					break;
 				case ICMP_REDIRECT:
-					fprintf(of, "GATEWAY=%s ", inet_ntoa((struct in_addr) {htonl(GET_VALUE(31).ui32)}));
+					fprintf(of, "GATEWAY=%s ", inet_ntoa((struct in_addr) {htonl(GET_VALUE(32).ui32)}));
 					break;
 				case ICMP_DEST_UNREACH:
-					if (GET_VALUE(28).ui8 == ICMP_FRAG_NEEDED)
+					if (GET_VALUE(29).ui8 == ICMP_FRAG_NEEDED)
 						fprintf(of, "MTU=%u ", 
-							GET_VALUE(32).ui16);
+							GET_VALUE(33).ui16);
 					break;
 			}
 			break;
