@@ -1,6 +1,6 @@
-/* ulogd, Version $Revision: 1.25 $
+/* ulogd, Version $Revision: 1.26 $
  *
- * $Id: ulogd.c,v 1.25 2002/06/13 12:57:25 laforge Exp $
+ * $Id: ulogd.c,v 1.26 2002/07/30 07:04:12 laforge Exp $
  *
  * userspace logging daemon for the netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd.c,v 1.25 2002/06/13 12:57:25 laforge Exp $
+ * $Id: ulogd.c,v 1.26 2002/07/30 07:04:12 laforge Exp $
  *
  * Modifications:
  * 	14 Jun 2001 Martin Josefsson <gandalf@wlug.westbo.se>
@@ -51,7 +51,7 @@
 /* Size of the netlink receive buffer. If you have _big_ in-kernel
  * queues, you may have to increase this number. 
  * ( --qthreshold 100 * 1500 bytes/packet = 150kB */
-#define MYBUFSIZ 65535
+#define ULOGD_BUFSIZE_DEFAULT 65535
 
 #ifdef DEBUG
 #define DEBUGP(format, args...) fprintf(stderr, format, ## args)
@@ -506,7 +506,11 @@ static config_entry_t logf_ce = { NULL, "logfile", CONFIG_TYPE_STRING,
 				  CONFIG_OPT_NONE, 0, 
 				  { string: ULOGD_LOGFILE_DEFAULT } };
 
-static config_entry_t plugin_ce = { &logf_ce, "plugin", CONFIG_TYPE_CALLBACK,
+static config_entry_t bufsiz_ce = { &logf_ce, "bufsize", CONFIG_TYPE_INT,       
+				   CONFIG_OPT_NONE, 0,
+				   { value: ULOGD_BUFSIZE_DEFAULT } }; 
+
+static config_entry_t plugin_ce = { &bufsiz_ce, "plugin", CONFIG_TYPE_CALLBACK,
 				    CONFIG_OPT_MULTI, 0, 
 				    { parser: &load_plugin } };
 
@@ -626,7 +630,14 @@ int main(int argc, char* argv[])
 #endif
 
 	/* allocate a receive buffer */
-	libulog_buf = (unsigned char *) malloc(MYBUFSIZ);
+	libulog_buf = (unsigned char *) malloc(bufsiz_ce.u.value);
+
+	if (!libulog_buf) {
+		ulogd_log(ULOGD_FATAL, "unable to allocate receive buffer"
+			  "of %d bytes\n", bufsiz_ce.u.value);
+		ipulog_perror(NULL);
+		exit(1);
+	}
 	
 	/* create ipulog handle */
 	libulog_h = 
