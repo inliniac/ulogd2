@@ -25,4 +25,4 @@ distclean:
 
 install: all
 	@INSTALL@ -m 755 -d $(ULOGD_LIB_PATH)
-	@INSTALL@ -m 644 *.so $(ULOGD_LIB_PATH)
+	@INSTALL@ -m 755 *.so $(ULOGD_LIB_PATH)
