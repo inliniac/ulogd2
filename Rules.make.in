@@ -3,6 +3,7 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 sysconfdir=@sysconfdir@
+sbindir=@sbindir@
 
 ULOGD_CONFIGFILE=@sysconfdir@/ulogd.conf
 
@@ -26,7 +27,7 @@ LIBS=@LIBS@
 
 
 # Names of the plugins to be compiled
-ULOGD_SL:=BASE OPRINT PWSNIFF LOGEMU LOCALTIME
+ULOGD_SL:=BASE OPRINT PWSNIFF LOGEMU LOCAL
 
 # mysql output support
 #ULOGD_SL+=MYSQL

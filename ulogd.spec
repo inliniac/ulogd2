@@ -59,7 +59,7 @@ rm -rf %{buildroot}
 %{_sysconfdir}/rc.d/init.d/ulogd
 %dir %{_libdir}/ulogd
 %{_libdir}/ulogd/ulogd_BASE.so
-%{_libdir}/ulogd/ulogd_LOCALTIME.so
+%{_libdir}/ulogd/ulogd_LOCAL.so
 %{_libdir}/ulogd/ulogd_LOGEMU.so
 %{_libdir}/ulogd/ulogd_OPRINT.so
 %{_libdir}/ulogd/ulogd_PWSNIFF.so
