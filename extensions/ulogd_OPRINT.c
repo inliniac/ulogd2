@@ -1,11 +1,11 @@
-/* ulogd_MAC.c, Version $Revision: 1.2 $
+/* ulogd_MAC.c, Version $Revision: 1.3 $
  *
  * ulogd output target for logging to a file 
  *
- * (C) 2000 by Harald Welte <laforge@sunbeam.franken.de>
+ * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  * This software is released under the terms of GNU GPL
  *
- * $Id: ulogd_OPRINT.c,v 1.2 2000/08/14 08:28:24 laforge Exp $
+ * $Id: ulogd_OPRINT.c,v 1.3 2000/09/12 14:29:37 laforge Exp $
  *
  */
 

@@ -1,7 +1,7 @@
 /* config file parser functions
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  *
- * $Id: conffile.c,v 1.4 2000/09/09 21:55:46 laforge Exp $
+ * $Id: conffile.c,v 1.5 2000/09/12 14:29:36 laforge Exp $
  * 
  * This code is distributed under the terms of GNU GPL */
 
@@ -125,8 +125,8 @@ int config_parse_file(int final)
 
 		/* if we do the final parse and word is not a config key */
 		if (final && config_iskey(word)) {
+			DEBUGC("final and key '%s' not found\n", word);
 			err = -ERRUNKN;
-			config_errce = ce;
 			goto cpf_error;
 		}
 

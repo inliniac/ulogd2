@@ -1,11 +1,11 @@
-/* ulogd_PWSNIFF.c, Version $Revision: 1.3 $
+/* ulogd_PWSNIFF.c, Version $Revision: 1.1 $
  *
  * ulogd logging interpreter for POP3 / FTP like plaintext passwords.
  *
- * (C) 2000 by Harald Welte <laforge@sunbeam.franken.de>
+ * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  * This software is released under the terms of GNU GPL
  *
- * $Id: ulogd_PWSNIFF.c,v 1.3 2000/08/14 08:28:24 laforge Exp $
+ * $Id: ulogd_PWSNIFF.c,v 1.1 2000/08/17 08:03:22 laforge Exp $
  *
  */
 
@@ -58,6 +58,7 @@ static ulog_iret_t *_interp_pwsniff(ulog_packet_msg_t *pkt)
 	int len, pw_len, i, cont = 0;
 
 	len = pw_len = 0;
+	begp = pw_begp = NULL;
 
 	if (iph->protocol != IPPROTO_TCP)
 		return NULL;
