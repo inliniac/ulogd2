@@ -9,6 +9,7 @@ Version 0.96
 - better commented example configuration file
 - Makefiles now know DESTDIR (for RPM packaging)
 - documentation now built at release-time, not compile time
+- support for logfile-rotating, using new SIGHUP handler
 
 Version 0.95
 - libipulog problems of 0.94 fixed

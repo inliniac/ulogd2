@@ -1,11 +1,11 @@
-/* ulogd_MYSQL.c, Version $Revision: 1.3 $
+/* ulogd_MYSQL.c, Version $Revision: 1.4 $
  *
  * ulogd output plugin for logging to a MySQL database
  *
  * (C) 2000 by Harald Welte <laforge@gnumonks.org> 
  * This software is distributed under the terms of GNU GPL 
  *
- * $Id: ulogd_MYSQL.c,v 1.3 2001/05/17 15:06:58 laforge Exp $
+ * $Id: ulogd_MYSQL.c,v 1.4 2001/05/20 13:51:46 laforge Exp $
  *
  * 15 May 2001, Alex Janssen <alex@ynfonatic.de>:
  *      Added a compability option for older MySQL-servers, which
@@ -308,7 +308,7 @@ static int _mysql_open_db(char *server, char *user, char *pass, char *db)
 	return 0;
 }
 
-static ulog_output_t _mysql_plugin = { NULL, "mysql", &_mysql_output };
+static ulog_output_t _mysql_plugin = { NULL, "mysql", &_mysql_output, NULL };
 
 void _init(void) 
 {

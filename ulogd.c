@@ -1,4 +1,6 @@
-/* ulogd, Version $Revision: 1.15 $
+/* ulogd, Version $Revision: 1.16 $
+ *
+ * $Id: ulogd.c,v 1.16 2001/05/26 23:19:28 laforge Exp $
  *
  * userspace logging daemon for the netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -7,7 +9,9 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.c,v 1.15 2001/02/04 10:15:19 laforge Exp $
+ * Modifications:
+ * 	14 Jun 2001 Martin Josefsson <gandalf@wlug.westbo.se>
+ * 		- added SIGHUP handler for logfile cycling
  */
 
 #include <stdio.h>
@@ -510,6 +514,18 @@ static void sigterm_handler(int signal)
 	exit(0);
 }
 
+static void sighup_handler(int signal)
+{
+	ulog_output_t *p;
+
+	ulogd_log(ULOGD_NOTICE, "sighup received, calling plugin handlers\n");
+	
+	for (p = ulogd_outputs; p; p = p->next) {
+		if (p->sighup)
+			(*p->sighup)(SIGHUP);
+	}
+}
+
 int main(int argc, char* argv[])
 {
 	size_t len;
@@ -555,6 +571,7 @@ int main(int argc, char* argv[])
 		fclose(stderr);
 #endif
 		signal(SIGTERM, &sigterm_handler);
+		signal(SIGHUP, &sighup_handler);
 
 		ulogd_log(ULOGD_NOTICE, 
 			  "initialization finished, entering main loop\n");
@@ -570,7 +587,7 @@ int main(int argc, char* argv[])
 		}
 
 		/* hackish, but result is the same */
-		sigterm_handler(SIGHUP);	
+		sigterm_handler(SIGTERM);	
 
 #ifndef DEBUG
 	} else {

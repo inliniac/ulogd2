@@ -1,6 +1,6 @@
 #ifndef _ULOGD_H
 #define _ULOGD_H
-/* ulogd, Version $Revision: 1.12 $
+/* ulogd, Version $Revision: 1.13 $
  *
  * userspace logging daemon for netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -9,7 +9,7 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.h,v 1.12 2001/02/04 13:07:22 laforge Exp $
+ * $Id: ulogd.h,v 1.13 2001/05/26 23:19:28 laforge Exp $
  */
 
 #include <libipulog/libipulog.h>
@@ -108,6 +108,8 @@ typedef struct ulog_output {
 	char name[ULOGD_MAX_KEYLEN];
 	/* callback function */
 	int (*output)(ulog_iret_t *ret);
+	/* callback function for signals (SIGHUP, ..) */
+	int (*signal)(int signal);
 } ulog_output_t;
 
 /* entries of the key hash */

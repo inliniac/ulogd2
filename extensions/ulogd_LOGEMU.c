@@ -1,4 +1,4 @@
-/* ulogd_LOGEMU.c, Version $Revision: 1.4 $
+/* ulogd_LOGEMU.c, Version $Revision: 1.5 $
  *
  * ulogd output target for syslog logging emulation
  *
@@ -8,7 +8,7 @@
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  * This software is released under the terms of GNU GPL
  *
- * $Id: ulogd_LOGEMU.c,v 1.4 2001/03/25 18:25:01 laforge Exp $
+ * $Id: ulogd_LOGEMU.c,v 1.5 2001/05/20 15:07:45 laforge Exp $
  *
  */
 
@@ -245,9 +245,28 @@ static int get_ids(void)
 	return 0;
 }
 
+void sighup_handler_logemu(int signal)
+{
+	switch (signal) {
+	case SIGHUP:
+		ulogd_log(ULOGD_NOTICE, "syslogemu: reopening logfile\n");
+		fclose(of);
+		of = fopen(syslogf_ce.u.string, "a");
+		if (!of) {
+			ulogd_log(ULOGD_FATAL, "can't open syslogemu: %s\n",
+				strerror(errno));
+			exit(2);
+		}
+		break;
+	default:
+		break;
+	}
+}
+		
+
 static ulog_output_t logemu_op[] = {
-	{ NULL, "syslogemu", &_output_logemu },
-	{ NULL, "", NULL },
+	{ NULL, "syslogemu", &_output_logemu, &sighup_handler_logemu },
+	{ NULL, "", NULL, NULL },
 };
 
 /* register output plugin with ulogd */

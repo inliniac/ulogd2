@@ -1,11 +1,11 @@
-/* ulogd_MAC.c, Version $Revision: 1.5 $
+/* ulogd_MAC.c, Version $Revision: 1.6 $
  *
  * ulogd output target for logging to a file 
  *
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  * This software is released under the terms of GNU GPL
  *
- * $Id: ulogd_OPRINT.c,v 1.5 2000/11/16 17:20:52 laforge Exp $
+ * $Id: ulogd_OPRINT.c,v 1.6 2000/11/20 11:43:22 laforge Exp $
  *
  */
 
@@ -67,9 +67,32 @@ int _output_print(ulog_iret_t *res)
 	return 0;
 }
 
+static config_entry_t outf_ce = { NULL, "dumpfile", CONFIG_TYPE_STRING, 
+				  CONFIG_OPT_NONE, 0,
+				  { string: ULOGD_OPRINT_DEFAULT } };
+
+void sighup_handler_print(int signal)
+{
+
+	switch (signal) {
+	case SIGHUP:
+		ulogd_log(ULOGD_NOTICE, "PKTLOG: reopening logfile\n");
+		fclose(of);
+		of = fopen(outf_ce.u.string, "a");
+		if (!of) {
+			ulogd_log(ULOGD_FATAL, "can't open PKTLOG: %s\n",
+				strerror(errno));
+			exit(2);
+		}
+		break;
+	default:
+		break;
+	}
+}
+
 static ulog_output_t base_op[] = {
-	{ NULL, "oprint", &_output_print },
-	{ NULL, "", NULL },
+	{ NULL, "oprint", &_output_print, &sighup_handler_print },
+	{ NULL, "", NULL, NULL },
 };
 
 
@@ -82,9 +105,6 @@ static void _base_reg_op(void)
 		register_output(p);
 }
 
-static config_entry_t outf_ce = { NULL, "dumpfile", CONFIG_TYPE_STRING, 
-				  CONFIG_OPT_NONE, 0,
-				  { string: ULOGD_OPRINT_DEFAULT } };
 void _init(void)
 {
 #ifdef DEBUG
