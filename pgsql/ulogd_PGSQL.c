@@ -1,4 +1,4 @@
-/* ulogd_PGSQL.c, Version $Revision: 1.4 $
+/* ulogd_PGSQL.c, Version $Revision: 1.5 $
  *
  * ulogd output plugin for logging to a PGSQL database
  *
@@ -14,7 +14,7 @@
 #include <string.h>
 #include <ulogd/ulogd.h>
 #include <ulogd/conffile.h>
-#include <postgresql/libpq-fe.h>
+#include <libpq-fe.h>
 
 
 #ifdef DEBUG_PGSQL
