@@ -5,7 +5,7 @@ include ../Rules.make
 CFLAGS+=-Iinclude -I/usr/src/linux/include
 
 libipulog.a: libipulog.o
-	ld -i $< -o $@
+	$(LD) -i $< -o $@
 
 distrib:
 
@@ -16,9 +16,9 @@ libipulog.o: libipulog.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f ulog_test libipulog.o libipulog.a
+	$(RM) ulog_test libipulog.o libipulog.a
 
 distclean: clean
-	rm Makefile
+	$(RM) Makefile
 
 install: libipulog.a
