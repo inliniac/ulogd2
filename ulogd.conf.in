@@ -1,5 +1,5 @@
 # Example configuration for ulogd
-# $Id: ulogd.conf,v 1.7 2002/07/30 07:04:12 laforge Exp $
+# $Id: ulogd.conf,v 1.8 2002/07/30 07:15:54 laforge Exp $
 #
 
 ######################################################################
@@ -33,7 +33,7 @@ bufsize 65535
 #
 # ulogd_BASE.so - interpreter plugin for basic IPv4 header fields
 # 		  you will always need this
-plugin /usr/local/lib/ulogd/ulogd_BASE.so
+plugin @libdir@/ulogd_BASE.so
 
 
 #
@@ -44,7 +44,7 @@ syslogfile /var/log/ulogd.syslogemu
 # do we want to fflush() the file after each write?
 syslogsync 1
 # load the plugin
-plugin /usr/local/lib/ulogd/ulogd_LOGEMU.so
+plugin @libdir@/ulogd_LOGEMU.so
 
 
 # 
@@ -53,7 +53,7 @@ plugin /usr/local/lib/ulogd/ulogd_LOGEMU.so
 # where to write the log
 dumpfile /var/log/ulogd.pktlog
 # load the plugin (remove the '#'if you want to enable it
-#plugin /usr/local/lib/ulogd/ulogd_OPRINT.so
+#plugin @libdir@/ulogd_OPRINT.so
 
 
 #
@@ -66,7 +66,7 @@ mysqluser laforge
 mysqldb ulogd
 mysqlhost localhost
 # load the plugin (remove the '#' if you want to enable it)
-#plugin /usr/local/lib/ulogd/ulogd_MYSQL.so
+#plugin @libdir@/ulogd_MYSQL.so
 
 
 #
@@ -79,4 +79,8 @@ pgsqluser postgres
 pgsqldb ulogd
 pgsqlhost localhost
 #load the plugin (remove the '#' if you want to enable it)
-#plugin /usr/local/lib/ulogd/ulogd_PGSQL.so
+#plugin @libdir@/ulogd_PGSQL.so
+
+pcapfile /var/log/ulogd.pcap
+pcapsync 1
+#plugin @libdir@/ulogd_PCAP.so

@@ -31,12 +31,17 @@ distrib:
 recurse: 
 	@for d in $(SUBDIRS); do if ! make -C $$d; then exit 1; fi; done
 
-ulogd: ulogd.c $(LIBIPULOG) include/ulogd/ulogd.h conffile/conffile.o $(LIBIPULOG)/libipulog.a
+ulogd: ulogd.c $(LIBIPULOG) include/ulogd/ulogd.h conffile/conffile.o $(LIBIPULOG)/libipulog.a ulogd.conf
 	$(CC) $(CFLAGS) -rdynamic $< conffile/conffile.o $(LIBIPULOG)/libipulog.a -o $@ $(LIBS)
+
+edit = sed -e 's,@libdir\@,$(ULOGD_LIB_PATH),g'
+
+ulogd.conf: ulogd.conf.in
+	$(edit) ulogd.conf.in > ulogd.conf
 
 clean:
 #	rm -f ulogd *.o extensions/*.o extensions/*.so conffile/*.o
-	rm -f ulogd ulogd.o
+	rm -f ulogd ulogd.o ulogd.conf
 	@for d in $(SUBDIRS); do if ! make -C $$d $@; then exit 1; fi; done
 
 distclean: clean
