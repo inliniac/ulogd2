@@ -1,5 +1,5 @@
 /* 
- * libipulog.c, $Revision: 1.6 $
+ * libipulog.c, $Revision: 1.7 $
  *
  * netfilter ULOG userspace library.
  *
@@ -9,7 +9,7 @@
  * This library is still under development, so be aware of sudden interface
  * changes
  *
- * $Id: libipulog.c,v 1.6 2001/01/30 09:28:04 laforge Exp $
+ * $Id: libipulog.c,v 1.7 2001/02/03 18:38:31 laforge Exp $
  */
 
 #include <stdlib.h>
@@ -68,7 +68,8 @@ struct ipulog_errmap_t
 	{ IPULOG_ERR_INVNL, "Invalid netlink message" },
 };
 
-static ssize_t ipulog_netlink_recvfrom(const struct ipulog_handle *h,
+static ssize_t 
+ipulog_netlink_recvfrom(const struct ipulog_handle *h,
 			unsigned char *buf, size_t len)
 {
 	int addrlen, status;

@@ -1,6 +1,6 @@
-/* ulogd, Version $Revision: 1.20 $
+/* ulogd, Version $Revision: 1.21 $
  *
- * $Id: ulogd.c,v 1.20 2001/07/03 14:37:10 laforge Exp $
+ * $Id: ulogd.c,v 1.21 2001/07/03 14:44:25 laforge Exp $
  *
  * userspace logging daemon for the netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -528,7 +528,7 @@ static void sighup_handler(int signal)
 
 int main(int argc, char* argv[])
 {
-	size_t len;
+	int len;
 	ulog_packet_msg_t *upkt;
 
 	if (init_conffile(ULOGD_CONFIGFILE)) {
