@@ -1,5 +1,5 @@
 Userspace logging facility for netfilter / linux 2.4
-$Id: README,v 1.5 2001/05/20 13:51:46 laforge Exp $
+$Id: README,v 1.6 2001/05/20 15:01:35 laforge Exp $
 
 Project Homepage: http://www.gnumonks.org/projects/
 Mailinglist: http://lists.gnumonks.org/mailman/listinfo/ulogd/
@@ -38,7 +38,9 @@ logging to a file) are included.
 
 ===> USAGE
 
-YOU MUST INSTALL THE ulog-patch from netfilter patch-o-matic FIRST !!
+The kernel part of the userspace logging facility (ipt_ULOG.o) is included
+in kernels >= 2.4.18-pre8.  If you are running older kernel versions, you MUST
+install the ulog-patch from netfilter patch-o-matic FIRST !!
 
 Please go to the netfilter homepage (http://netfilter.gnumonks.org/)
 and download the latest iptables package.  There is a system called
@@ -75,14 +77,14 @@ group 32. All packets get tagged with the ulog prefix "inp"
 
 iptables -A INPUT -j ULOG -p tcp --dport 80 --ulog-nlgroup 32 --ulog-prefix inp
 
-In the latest Version (0.2) I added another parameter (--ulog-cprange). 
+Since version 0.2,  I added another parameter (--ulog-cprange). 
 Using this parameter You are able to specify how much octets of the 
 packet should be copied from the kernel to userspace. 
 Setting --ulog-cprange to 0 does always copy the whole packet. Default is 0
 
 ===> COPYRIGHT + CREDITS
 
-The code is (C) 2000 by Harald Welte <laforge@gnumonks.org>
+The code is (C) 2000-2002 by Harald Welte <laforge@gnumonks.org>
 
 Thanks also to the valuable Contributions of Daniel Stone, Alexander
 Janssen and Michael Stolovitzsky.

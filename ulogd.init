@@ -10,7 +10,7 @@
 
 function start()
 {
-	gprintf "Starting %s: " "ulogd"
+	printf "Starting %s: " "ulogd"
 	daemon /usr/sbin/ulogd
 	echo
 	touch /var/lock/subsys/ulogd
@@ -19,8 +19,8 @@ function start()
 
 function stop()
 {
-	gprintf "Stopping %s: " "ulogd"
-	killprocparent ulogd
+	printf "Stopping %s: " "ulogd"
+	killproc ulogd
 	echo
 	rm -f /var/lock/subsys/ulogd
 }
@@ -28,7 +28,7 @@ function stop()
 
 function reload()
 {
-	pid=`pidoffather ulogd`
+	pid=`pidof ulogd`
 	if [ "x$pid" != "x" ]; then
 		kill -HUP $pid 2>/dev/null
 	fi
@@ -54,7 +54,7 @@ case "$1" in
 	status ulogd
 	;;
   *)
-	gprintf "Usage: %s {start|stop|status|restart|reload}\n" "ulogd"
+	printf "Usage: %s {start|stop|status|restart|reload}\n" "ulogd"
 	exit 1
 esac
 

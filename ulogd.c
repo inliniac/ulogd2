@@ -1,6 +1,6 @@
-/* ulogd, Version $Revision: 1.22 $
+/* ulogd, Version $Revision: 1.23 $
  *
- * $Id: ulogd.c,v 1.22 2001/07/04 00:22:54 laforge Exp $
+ * $Id: ulogd.c,v 1.23 2001/09/01 11:56:27 laforge Exp $
  *
  * userspace logging daemon for the netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -20,13 +20,18 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd.c,v 1.16 2001/05/26 23:19:28 laforge Exp $
+ * $Id: ulogd.c,v 1.23 2001/09/01 11:56:27 laforge Exp $
  *
  * Modifications:
  * 	14 Jun 2001 Martin Josefsson <gandalf@wlug.westbo.se>
  * 		- added SIGHUP handler for logfile cycling
+ *
+ * 	10 Feb 2002 Alessandro Bono <a.bono@libero.it>
+ * 		- added support for non-fork mode
+ * 		- added support for logging to stdout
  */
 
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,6 +41,7 @@
 #include <dlfcn.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <getopt.h>
 #include <libipulog/libipulog.h>
 #include "conffile.h"
 #include "ulogd.h"
@@ -446,11 +452,15 @@ static int load_plugin(char *file)
 /* open the logfile */
 static int logfile_open(const char *name)
 {
-	logfile = fopen(name, "a");
-	if (!logfile) {
-		fprintf(stderr, "ERROR: unable to open logfile %s: %s\n", 
-			name, strerror(errno));
-		exit(2);
+	if (!strcmp(name,"stdout")) {
+		logfile = stdout;
+	else {
+		logfile = fopen(name, "a");
+		if (!logfile) {
+			fprintf(stderr, "ERROR: can't open logfile %s: %s\n", 
+				name, strerror(errno));
+			exit(2);
+		}
 	}
 	return 0;
 }
@@ -523,7 +533,8 @@ static void sigterm_handler(int signal)
 
 	ipulog_destroy_handle(libulog_h);
 	free(libulog_buf);
-	fclose(logfile);
+	if (logfile != stdout)
+		fclose(logfile);
 	exit(0);
 }
 
@@ -539,10 +550,45 @@ static void sighup_handler(int signal)
 	}
 }
 
+static struct option opts[] = {
+	{ "version", 0, NULL, 'V' },
+	{ "daemon", 0, NULL, 'd' },
+	{ "help", 0, NULL, 'h' },
+	{ 0 }
+};
+
 int main(int argc, char* argv[])
 {
 	int len;
+	char argch;
+	int daemonize = 0;
 	ulog_packet_msg_t *upkt;
+
+	while ((argch = getopt_long(argc, argv, "Vdh::", opts, NULL)) != -1) {
+		switch (argch) {
+		default:
+		case '?':
+			if (isprint(optopt))
+				fprintf(stderr, "Unknown option `-%c'.\n", optopt);
+			else
+				fprintf(stderr, "Unknown option character `\\x%x'.\n", optopt);
+
+			print_usage();
+			exit(1);
+			break;
+		case 'h':
+			print_usage();
+			exit(0);
+			break;
+		case 'd':
+			daemonize = 1;
+			break;
+		case 'V':
+			printf("ulogd Version %s\n");
+			printf("Copyright (C) 2000-2002 Harald Welte\n");
+			break
+		}
+	}
 
 	if (init_conffile(ULOGD_CONFIGFILE)) {
 		ulogd_log(ULOGD_FATAL, "parse_conffile error\n");
@@ -577,41 +623,38 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 
-#ifndef DEBUG
-	if (!fork()) { 
-
-		fclose(stdout);
+	if (daemonize){
+		if (fork()) {
+			exit(0);
+		}
+		if (logfile != stdout)
+			fclose(stdout);
 		fclose(stderr);
-#endif
-		signal(SIGTERM, &sigterm_handler);
-		signal(SIGHUP, &sighup_handler);
+	}
 
-		ulogd_log(ULOGD_NOTICE, 
-			  "initialization finished, entering main loop\n");
+	signal(SIGTERM, &sigterm_handler);
+	signal(SIGHUP, &sighup_handler);
 
-		/* endless loop receiving packets and handling them over to
-		 * handle_packet */
-		while (len = ipulog_read(libulog_h, libulog_buf, MYBUFSIZ, 1)) {
+	ulogd_log(ULOGD_NOTICE, 
+		  "initialization finished, entering main loop\n");
 
-			if (len <= 0) {
-				/* this is not supposed to happen */
-				ulogd_log(ULOGD_ERROR, "ipulog_read == %d!\n",
-					  len);
-			} else {
-				while (upkt = ipulog_get_packet(libulog_h,
-						       libulog_buf, len)) {
-					DEBUGP("==> packet received\n");
-					handle_packet(upkt);
-				}
+	/* endless loop receiving packets and handling them over to
+	 * handle_packet */
+	while (len = ipulog_read(libulog_h, libulog_buf, MYBUFSIZ, 1)) {
+
+		if (len <= 0) {
+			/* this is not supposed to happen */
+			ulogd_log(ULOGD_ERROR, "ipulog_read == %d!\n",
+				  len);
+		} else {
+			while (upkt = ipulog_get_packet(libulog_h,
+					       libulog_buf, len)) {
+				DEBUGP("==> packet received\n");
+				handle_packet(upkt);
 			}
 		}
-
-		/* hackish, but result is the same */
-		sigterm_handler(SIGTERM);	
-
-#ifndef DEBUG
-	} else {
-		exit(0);
 	}
-#endif
+
+	/* hackish, but result is the same */
+	sigterm_handler(SIGTERM);	
 }
