@@ -17,7 +17,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_LOGEMU.c,v 1.15 2003/09/28 15:19:26 laforge Exp $
+ * $Id: printpkt.c,v 1.1 2003/10/10 15:56:37 laforge Exp $
  *
  */
 
@@ -222,6 +222,14 @@ int printpkt_print(ulog_iret_t *res, char *buf, int prefix)
 				buf_cur += sprintf(buf_cur, "MTU=%u ", 
 						   GET_VALUE(33).ui16);
 			break;
+		}
+		break;
+	case IPPROTO_ESP:
+	case IPPROTO_AH:
+		buf_cur += sprintf(buf_cur, "PROTO=%s ", GET_VALUE(12).ui8 == IPPROTO_ESP ? "ESP" : "AH");
+		/* FIXME: "INCOMPLETE [%u bytes]" in case of short pkt */
+		if (intr_ids[34].id > 0) {
+			buf_cur += sprintf(buf_cur, "SPI=0x%x ", GET_VALUE(34).ui32);
 		}
 		break;
 	default:
