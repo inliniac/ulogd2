@@ -108,6 +108,7 @@ else
 fi      
 ])      
 
+
 dnl
 dnl Check whether the user wants log IP-addresses as strings rather
 dnl than as unsigned long-integers to his MySQL-database. Since this
@@ -123,6 +124,56 @@ AC_ARG_WITH(mysql-log-ip-as-string,
    AC_MSG_WARN(the use of --with-mysql-log-ip-as-string is discouraged)
 ])
 
+
+dnl
+dnl test for PostgreSQL
+dnl
+AC_ARG_WITH(pgsql,
+ --with-pgsql=<directory>		pgsql installed in <directoty>,[
+if test $withval != yes
+then
+        dir=$withval
+else
+        dir="/usr/local"
+fi
+pgsqldir=""
+AC_MSG_CHECKING(for PGSQL files)
+for d in $dir /usr /usr/local /usr/local/pgsql /opt/pgsql /opt/packages/pgsql
+do
+        if test -f $d/lib/pgsql/libpq.so
+        then
+                AC_MSG_RESULT(found pgsql in $d)
+                pgsqldir=$d
+                break
+        fi
+        if test -f $d/lib/libpq.so
+        then
+                AC_MSG_RESULT(found pgsql in $d)
+                pgsqldir=$d
+                break
+        fi
+done
+
+if test x$pgsqldir = x
+then
+        AC_MSG_WARN(PGSQL backend not used)
+else
+        AC_DEFINE(HAVE_PGSQL)
+        PGSQLINCLUDES=${pgsqldir}/include
+        PGSQLLIBS=${pgsqldir}/lib
+
+	DATABASE_DIR="${DATABASE_DIR} pgsql"
+
+	DATABASE_LIB="${DATABASE_LIB} -lpq " 
+	DATABASE_LIB_DIR="${DATABASE_LIB_DIR} -L${PGSQLLIBS} "
+
+	DB_DEF="${DB_DEF} -DHAVE_PGSQL "
+
+	AC_SUBST(PGSQLINCLUDES)
+
+fi      
+])      
+
 AC_SUBST(DATABASE_DIR)
 AC_SUBST(DATABASE_LIB)
 AC_SUBST(DATABASE_LIB_DIR)
@@ -132,6 +183,6 @@ AC_SUBST(EXTRA_MYSQL_DEF)
 AC_SUBST(DATABASE_DRIVERS)
 
 AM_CONDITIONAL(HAVE_MYSQL, test x$mysqldir != x)
+AM_CONDITIONAL(HAVE_PGSQL, test x$pgsqldir != x)
 
-
-AC_OUTPUT(extensions/Makefile doc/Makefile conffile/Makefile libipulog/Makefile mysql/Makefile Makefile Rules.make)
+AC_OUTPUT(extensions/Makefile doc/Makefile conffile/Makefile libipulog/Makefile mysql/Makefile pgsql/Makefile Makefile Rules.make)

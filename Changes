@@ -1,5 +1,6 @@
 Version 0.98
 - Fix MAC address printing if there is none (by Andrej Ota)
+- Add PostgreSQL support by Jakab Laszlo
 
 Version 0.97
 - added error handling after ipulog_read() to prevent endless loops
