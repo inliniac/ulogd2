@@ -1,12 +1,12 @@
 <!doctype linuxdoc system>
 
-<!-- $Id: ulogd.sgml,v 1.4 2001/05/20 13:50:05 laforge Exp $ -->
+<!-- $Id: ulogd.sgml,v 1.5 2001/05/20 15:07:45 laforge Exp $ -->
 
 <article>
 
 <title>ULOGD - the Userspace Logging Daemon</title>
 <author>Harald Welte &lt;laforge@gnumonks.org&gt</author>
-<date>Revision $Revision: 1.4 $, $Date: 2001/05/20 13:50:05 $</date>
+<date>Revision $Revision: 1.5 $, $Date: 2001/05/20 15:07:45 $</date>
 
 <abstract>
 This is the documentation for <tt>ulogd</tt>, the Userspace logging daemon.
@@ -69,20 +69,22 @@ traversed if we really want to access each element of the list.
 <p>
 <sect1>Linux kernel
 <p>
-First you will need a recent 2.4.x kernel. At the time this document was
-written, 2.4.0-test11-pre5 was the latest development version. Ulogd should
-work with all kernels &gt;= 2.4.0-test4.
+First you will need a recent 2.4.x kernel.  If you have a kernel &gt;=
+2.4.18-pre8, it already has the kernel suport for ULOG (ipt_ULOG.o).
+<p>
+If you have an older kernel version (between 2.4.0 and 2.4.18-pre6), you
+can use the patch-o-matic system of netfilter/iptables, as described in
+the following section.
 
-<sect1>netfilter / iptables
+<sect1>ipt_ULOG from netfilter/iptables patch-o-matic
 <p>
-In addition you need the latest iptables package, or even better: the latest
-CVS snapshot. A description how to obtain this is provided on the netfilter
-homepage <URL URL="http://netfilter.kernelnotes.org">.
+You only need to read this chapter if you have a 2.4.x kernel &lt;=
+2.4.18-pre6.
 <p>
-ulogd is based on a special netfilter extension, called the netfilter ULOG
-target module. You have to patch this extension into your kernel, as it
-has not been integrated into the main kernel yet. To make this as easy
-as possible, netfilter provides the 'patch-o-matic' subsystem. 
+In order to put the ipt_ULOG module into your kernel source,you need the latest
+iptables package, or even better: the latest CVS snapshot. A description how to
+obtain this is provided on the netfilter
+homepage <URL URL="http://netfilter.gnumonks.org">.
 <p>
 To run patch-o-matic, just type 
 <tscreen><verb>
