@@ -1,3 +1,7 @@
+Version 0.95
+- libipulog problems of 0.94 fixed
+- 1.0 now really soon
+
 Version 0.94
 - fixed stupid build problem because of missing libipulog
   (i'll never try to be intelligent again ;))
