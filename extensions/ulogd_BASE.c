@@ -1,11 +1,11 @@
-/* ulogd_MAC.c, Version $Revision: 1.2 $
+/* ulogd_MAC.c, Version $Revision: 1.3 $
  *
  * ulogd logging interpreter for MAC addresses, TIME, etc.
  *
  * (C) 2000 by Harald Welte <laforge@sunbeam.franken.de>
  * This software is released under the terms of GNU GPL
  *
- * $Id: ulogd_BASE.c,v 1.2 2000/08/02 12:15:44 laforge Exp $
+ * $Id: ulogd_BASE.c,v 1.3 2000/08/14 08:28:24 laforge Exp $
  *
  */
 
@@ -25,8 +25,7 @@ ulog_iret_t *_interp_mac(ulog_packet_msg_t *pkt)
 	char *buf;
 	ulog_iret_t *ret;
 	
-	if (pkt->mac_len)
-	{
+	if (pkt->mac_len) {
 		buf = (char *) malloc(3 * pkt->mac_len + 1);
 		*buf = 0;
 

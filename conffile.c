@@ -1,7 +1,7 @@
 /* config file parser functions
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  *
- * $Id: conffile.c,v 1.3 2000/09/09 18:35:26 laforge Exp $
+ * $Id: conffile.c,v 1.4 2000/09/09 21:55:46 laforge Exp $
  * 
  * This code is distributed under the terms of GNU GPL */
 
@@ -20,14 +20,16 @@ static config_entry_t *config = NULL;
 
 config_entry_t *config_errce = NULL;
 
+static char *fname = NULL;
+
 static char *get_word(const char *string)
 {
 	int len;
 	char *word, *space;
-	space = strchr(string, ' ');
+	space = strrchr(string, ' ');
 
 	if (!space) {
-		space = strchr(string, '\t');
+		space = strrchr(string, '\t');
 		if (!space)
 			return NULL;
 	}
@@ -41,7 +43,7 @@ static char *get_word(const char *string)
 
 	strncpy(word, string, len);
 
-	if (*(word + len) == '\n')
+//	if (*(word + len) == '\n')
 		*(word + len) = '\0';
 
 	return word;
@@ -79,7 +81,22 @@ int config_register_key(config_entry_t *ce)
 	return 0;
 }
 
-int config_parse_file(const char *fname, int final)
+int config_register_file(const char *file)
+{
+	/* FIXME: stat of file */
+	if (fname)
+		return 1;
+
+	fname = (char *) malloc(strlen(file)+1);
+	if (!fname)
+		return -ERROOM;
+
+	strcpy(fname, file);
+
+	return 0;
+}
+
+int config_parse_file(int final)
 {
 	FILE *cfile;
 	char *line, *word, *args;

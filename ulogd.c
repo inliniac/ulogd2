@@ -1,4 +1,4 @@
-/* ulogd, Version $Revision: 1.8 $
+/* ulogd, Version $Revision: 1.9 $
  *
  * first try of a logging daemon for my netfilter ULOG target
  * for the linux 2.4 netfilter subsystem.
@@ -7,7 +7,7 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.c,v 1.8 2000/09/09 21:55:46 laforge Exp $
+ * $Id: ulogd.c,v 1.9 2000/09/12 13:43:34 laforge Exp $
  */
 
 #include <stdio.h>
@@ -77,7 +77,7 @@ void register_interpreter(ulog_interpreter_t *me)
 				me->name);
 		exit(1);
 	}
-	DEBUGP("registering interpreter `%s'\n", me->name);
+	ulogd_log(ULOGD_NOTICE, "registering interpreter `%s'\n", me->name);
 	me->next = ulogd_interpreters;
 	ulogd_interpreters = me;
 }
@@ -103,7 +103,7 @@ void register_output(ulog_output_t *me)
 				me->name);
 		exit(1);
 	}
-	DEBUGP("registering output `%s'\n", me->name);
+	ulogd_log(ULOGD_NOTICE, "registering output `%s'\n", me->name);
 	me->next = ulogd_outputs;
 	ulogd_outputs = me;
 }
@@ -145,14 +145,20 @@ void ulogd_log(int level, const char *format, ...)
 	char *timestr;
 	va_list ap;
 	time_t tm;
+	FILE *outfd;
+
+	if (logfile)
+		outfd = logfile;
+	else
+		outfd = stderr;
 
 	va_start(ap, format);
 
 	tm = time(NULL);
 	timestr = ctime(&tm);
-	fprintf(logfile, "%s <%1.1d>", timestr, level);
+	fprintf(outfd, "%s <%1.1d>", timestr, level);
 	
-	vfprintf(logfile, format, ap);
+	vfprintf(outfd, format, ap);
 	va_end(ap);
 }
 /* this should pass the result(s) to one or more registered output plugins,
@@ -161,8 +167,7 @@ static void propagate_results(ulog_iret_t *ret)
 {
 	ulog_output_t *p;
 
-	for (p = ulogd_outputs; p; p = p->next)
-	{
+	for (p = ulogd_outputs; p; p = p->next) {
 		(*p->output)(ret);
 	}
 }
@@ -219,8 +224,7 @@ static void load_plugins(char *dir)
 static int logfile_open(const char *name)
 {
 	logfile = fopen(name, "a");
-	if (!logfile) 
-	{
+	if (!logfile) {
 		fprintf(stderr, "ERROR: unable to open logfile %s: %s\n", 
 			name, strerror(errno));
 		exit(2);
@@ -228,34 +232,29 @@ static int logfile_open(const char *name)
 	return 0;
 }
 
-static int parse_conffile(char *file, int final)
+static int parse_conffile(int final)
 {
 	int err;
-	FILE *outfd;
 
-	err = config_parse_file(file, final);
-
-	if (logfile)
-		outfd = logfile;
-	else
-		outfd = stderr;
+	err = config_parse_file(final);
 
 	switch(err) {
 		case 0:
 			return 0;
 			break;
 		case -ERROPEN:
-			fprintf(outfd, "ERROR: unable to open configfile: %s\n",
+			ulogd_error("ERROR: unable to open configfile: %s\n",
 					ULOGD_CONFIGFILE);
 			break;
 		case -ERRMAND:
-			fprintf(outfd, "ERROR: mandatory option not found\n");
+			ulogd_error("ERROR: mandatory option not found\n");
 			break;
 		case -ERRMULT:
-			fprintf(outfd, "ERROR: option occurred more than once\n");
+			ulogd_error("ERROR: option occurred more than once\n");
 			break;
 		case -ERRUNKN:
-			fprintf(outfd, "ERROR: unknown config key\n");
+			ulogd_error("ERROR: unknown config key, %s\n",
+				config_errce->key);
 			break;
 	}
 	return 1;
@@ -275,14 +274,17 @@ static config_entry_t nlgroup_ce = { NULL, "nlgroup", CONFIG_TYPE_INT,
 				     { value: ULOGD_NLGROUP_DEFAULT } };
 static int init_conffile(char *file)
 {
-	/* linke them together */
+	if (config_register_file(file))
+		return 1;
+
+	/* link them together */
 	logf_ce.next = &pldir_ce;
 	pldir_ce.next = &nlgroup_ce;
 
 	config_register_key(&logf_ce);
 	
 	/* parse config file the first time (for logfile name, ...) */
-	return parse_conffile(file, 0);
+	return parse_conffile(0);
 }
 
 int main(int argc, char* argv[])
@@ -292,19 +294,15 @@ int main(int argc, char* argv[])
 	size_t len;
 	ulog_packet_msg_t *upkt;
 
-	if (init_conffile(ULOGD_CONFIGFILE))
-	{
-		DEBUGP("ERROR during init_configfile\n");
+	if (init_conffile(ULOGD_CONFIGFILE)) {
 		exit(1);
 	}
-
 	
 	logfile_open(logf_ce.u.string);
 	load_plugins(pldir_ce.u.string);	
 
 	/* parse config file the second time (for plugin options) */
-	if (parse_conffile(ULOGD_CONFIGFILE, 1))
-	{
+	if (parse_conffile(1)) {
 		ulogd_error("ERROR during second parse_conffile\n");
 		exit(1);
 	}
@@ -314,16 +312,14 @@ int main(int argc, char* argv[])
 	
 	/* create ipulog handle */
 	h = ipulog_create_handle(ipulog_group2gmask(nlgroup_ce.u.value));
-	if (!h)
-	{
+	if (!h) {
 		/* if some error occurrs, print it to stderr */
 		ipulog_perror(NULL);
 		exit(1);
 	}
 
 #ifndef DEBUG
-	if (!fork())
-	{ 
+	if (!fork()) { 
 
 		fclose(stdout);
 		fclose(stderr);
@@ -331,8 +327,7 @@ int main(int argc, char* argv[])
 
 		/* endless loop receiving packets and handling them over to
 		 * handle_packet */
-		while(1)
-		{
+		while(1) {
 			len = ipulog_read(h, buf, MYBUFSIZ, 1);
 			upkt = ipulog_get_packet(buf);	
 			DEBUGP("==> packet received\n");
@@ -344,8 +339,7 @@ int main(int argc, char* argv[])
 		free(buf);
 		fclose(logfile);
 #ifndef DEBUG
-	} else
-	{
+	} else {
 		exit(0);
 	}
 #endif

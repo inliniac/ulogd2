@@ -1,18 +1,19 @@
-/* ulogd_MAC.c, Version $Revision: 1.1 $
+/* ulogd_MAC.c, Version $Revision: 1.2 $
  *
  * ulogd output target for logging to a file 
  *
  * (C) 2000 by Harald Welte <laforge@sunbeam.franken.de>
  * This software is released under the terms of GNU GPL
  *
- * $Id: ulogd_OPRINT.c,v 1.1 2000/08/02 12:16:00 laforge Exp $
+ * $Id: ulogd_OPRINT.c,v 1.2 2000/08/14 08:28:24 laforge Exp $
  *
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ulogd.h>
+#include "ulogd.h"
+#include "conffile.h"
 
 #define NIPQUAD(addr) \
 	((unsigned char *)&addr)[0], \
@@ -26,8 +27,6 @@
         ((unsigned char *)&addr)[1], \
         ((unsigned char *)&addr)[0]
 
-#define ULOGD_OPRINT_FILE	"/var/log/ulogd.pktlog"
-
 static FILE *of = NULL;
 
 int _output_print(ulog_iret_t *res)
@@ -35,8 +34,7 @@ int _output_print(ulog_iret_t *res)
 	ulog_iret_t *ret;
 	
 	fprintf(of, "===>PACKET BOUNDARY\n");
-	for (ret = res; ret; ret = ret->next)
-	{
+	for (ret = res; ret; ret = ret->next) {
 		fprintf(of,"%s=", ret->key);
 		switch (ret->type) {
 			case ULOGD_RET_STRING:
@@ -74,12 +72,12 @@ int _output_print(ulog_iret_t *res)
 }
 
 static ulog_output_t base_op[] = {
-	{ NULL, "print.console", &_output_print },
+	{ NULL, "print", &_output_print },
 	{ NULL, "", NULL },
 };
 
 
-void _base_reg_op(void)
+static void _base_reg_op(void)
 {
 	ulog_output_t *op = base_op;
 	ulog_output_t *p;
@@ -88,12 +86,18 @@ void _base_reg_op(void)
 		register_output(p);
 }
 
+static config_entry_t outf_ce = { NULL, "dumpfile", CONFIG_TYPE_STRING, 
+				  CONFIG_OPT_NONE, 0,
+				  { string: "/var/log/ulogd.pktlog" } };
 void _init(void)
 {
 #ifdef DEBUG
 	of = stdout;
 #else
-	of = fopen(ULOGD_OPRINT_FILE, "a");
+	config_register_key(&outf_ce);
+	config_parse_file(0);
+
+	of = fopen(outf_ce.u.string, "a");
 	if (!of) {
 		ulogd_error("ulogd_OPRINT: can't open PKTLOG: %s\n", strerror(errno));
 		exit(2);
