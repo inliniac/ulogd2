@@ -1,4 +1,4 @@
-/* ulogd_MYSQL.c, Version $Revision: 1.12 $
+/* ulogd_MYSQL.c, Version $Revision: 1.13 $
  *
  * ulogd output plugin for logging to a MySQL database
  *
@@ -17,7 +17,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  * 
- * $Id: ulogd_MYSQL.c,v 1.12 2003/08/23 11:47:32 laforge Exp $
+ * $Id: ulogd_MYSQL.c,v 1.13 2003/08/23 17:37:53 laforge Exp $
  *
  * 15 May 2001, Alex Janssen <alex@ynfonatic.de>:
  *      Added a compability option for older MySQL-servers, which
@@ -65,23 +65,23 @@ static char *stmt_val;
 static char *stmt_ins;
 
 /* our configuration directives */
-static config_entry_t db_ce = { NULL, "mysqldb", CONFIG_TYPE_STRING,
+static config_entry_t db_ce = { NULL, "db", CONFIG_TYPE_STRING,
 				CONFIG_OPT_MANDATORY, 0,
 				{ } };
 
-static config_entry_t host_ce = { &db_ce, "mysqlhost", CONFIG_TYPE_STRING,
+static config_entry_t host_ce = { &db_ce, "host", CONFIG_TYPE_STRING,
 				CONFIG_OPT_MANDATORY, 0,
 				{ } };
 
-static config_entry_t user_ce = { &host_ce, "mysqluser", CONFIG_TYPE_STRING,
+static config_entry_t user_ce = { &host_ce, "user", CONFIG_TYPE_STRING,
 				CONFIG_OPT_MANDATORY, 0,
 				{ } };
 
-static config_entry_t pass_ce = { &user_ce, "mysqlpass", CONFIG_TYPE_STRING,
+static config_entry_t pass_ce = { &user_ce, "pass", CONFIG_TYPE_STRING,
 				CONFIG_OPT_MANDATORY, 0,
 				{ } };
 
-static config_entry_t table_ce = { &pass_ce, "mysqltable", CONFIG_TYPE_STRING,
+static config_entry_t table_ce = { &pass_ce, "table", CONFIG_TYPE_STRING,
 				CONFIG_OPT_MANDATORY, 0,
 				{ } };
 
@@ -310,11 +310,8 @@ static ulog_output_t _mysql_plugin = { NULL, "mysql", &_mysql_output, NULL };
 
 void _init(void) 
 {
-	/* register our configfile options here */
-	config_register_key(&table_ce);
-
 	/* have the opts parsed */
-	config_parse_file(0);
+	config_parse_file("MYSQL", &table_ce);
 
 	if (_mysql_open_db(host_ce.u.string, user_ce.u.string, 
 			   pass_ce.u.string, db_ce.u.string)) {

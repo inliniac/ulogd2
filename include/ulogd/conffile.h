@@ -2,7 +2,7 @@
  *
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  *
- * $Id: conffile.h,v 1.1 2000/11/20 11:43:22 laforge Exp $
+ * $Id: conffile.h,v 1.2 2001/05/26 23:19:28 laforge Exp $
  * 
  * This code is distributed under the terms of GNU GPL */
 
@@ -19,6 +19,7 @@ enum {
 	ERRMULT,	/* non-multiple option occured more  than once */
 	ERRMAND,	/* mandatory option not found */
 	ERRUNKN,	/* unknown config key */
+	ERRSECTION,	/* section not found */
 };
 
 /* maximum line lenght of config file entries */
@@ -59,11 +60,7 @@ extern config_entry_t *config_errce;
 /* tell us the name of the config file */
 int config_register_file(const char *file);
 
-/* parse the config file , presume all config keys are registered
- * if final==1 	*/
-int config_parse_file(int final);
-
-/* register a linked list of config entries */
-int config_register_key(config_entry_t *ce);
+/* parse the config file */
+int config_parse_file(const char *section, config_entry_t *keys);
 
 #endif /* ifndef _CONFFILE_H */

@@ -20,11 +20,11 @@ X commandline option for "to fork or not to fork"
 X various command line options (we don't even have --version)
 - add support for capabilities to run as non-root
 X big endian fixes
-- man pages
+X man pages
 - IPv6 support (core and extensions)
 X pcap output plugin (to use ethereal/tcpdump/... for the logs)
 - enable user to specify directory where to look for kernel include files
 - support for static linking
 
 conffile:
-- rewrite. This stuff is a real mess. Anybody interested?
+- rewrite parser. This stuff is a real mess. Anybody interested?

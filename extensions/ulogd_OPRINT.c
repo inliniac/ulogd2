@@ -1,4 +1,4 @@
-/* ulogd_MAC.c, Version $Revision: 1.8 $
+/* ulogd_MAC.c, Version $Revision: 1.9 $
  *
  * ulogd output target for logging to a file 
  *
@@ -17,7 +17,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_OPRINT.c,v 1.8 2001/09/01 11:51:54 laforge Exp $
+ * $Id: ulogd_OPRINT.c,v 1.9 2002/12/09 14:42:43 laforge Exp $
  *
  */
 
@@ -79,7 +79,7 @@ int _output_print(ulog_iret_t *res)
 	return 0;
 }
 
-static config_entry_t outf_ce = { NULL, "dumpfile", CONFIG_TYPE_STRING, 
+static config_entry_t outf_ce = { NULL, "file", CONFIG_TYPE_STRING, 
 				  CONFIG_OPT_NONE, 0,
 				  { string: ULOGD_OPRINT_DEFAULT } };
 
@@ -122,8 +122,7 @@ void _init(void)
 #ifdef DEBUG
 	of = stdout;
 #else
-	config_register_key(&outf_ce);
-	config_parse_file(0);
+	config_parse_file("OPRINT", &outf_ce);
 
 	of = fopen(outf_ce.u.string, "a");
 	if (!of) {

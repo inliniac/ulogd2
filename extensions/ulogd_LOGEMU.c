@@ -1,4 +1,4 @@
-/* ulogd_LOGEMU.c, Version $Revision: 1.13 $
+/* ulogd_LOGEMU.c, Version $Revision: 1.14 $
  *
  * ulogd output target for syslog logging emulation
  *
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_LOGEMU.c,v 1.13 2003/08/23 11:47:09 laforge Exp $
+ * $Id: ulogd_LOGEMU.c,v 1.14 2003/09/12 09:00:21 laforge Exp $
  *
  */
 
@@ -52,11 +52,11 @@
         ((unsigned char *)&addr)[2], \
         ((unsigned char *)&addr)[3]
 
-static config_entry_t syslogf_ce = { NULL, "syslogfile", CONFIG_TYPE_STRING, 
+static config_entry_t syslogf_ce = { NULL, "file", CONFIG_TYPE_STRING, 
 				  CONFIG_OPT_NONE, 0,
 				  { string: ULOGD_LOGEMU_DEFAULT } };
 
-static config_entry_t syslsync_ce = { &syslogf_ce, "syslogsync", 
+static config_entry_t syslsync_ce = { &syslogf_ce, "sync", 
 				      CONFIG_TYPE_INT, CONFIG_OPT_NONE, 0,
 				      { value: ULOGD_LOGEMU_SYNC_DEFAULT }
 				     };
@@ -305,8 +305,7 @@ static void _logemu_reg_op(void)
 void _init(void)
 {
 	/* FIXME: error handling */
-	config_register_key(&syslsync_ce);
-	config_parse_file(0);
+	config_parse_file("LOGEMU", &syslsync_ce);
 
 	if (gethostname(hostname, sizeof(hostname)) < 0) {
 		ulogd_log(ULOGD_FATAL, "can't gethostname(): %s\n",

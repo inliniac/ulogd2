@@ -1,12 +1,12 @@
 <!doctype linuxdoc system>
 
-<!-- $Id: ulogd.sgml,v 1.8 2003/03/05 22:46:04 laforge Exp $ -->
+<!-- $Id: ulogd.sgml,v 1.9 2003/08/23 17:52:37 laforge Exp $ -->
 
 <article>
 
 <title>ULOGD - the Userspace Logging Daemon</title>
 <author>Harald Welte &lt;laforge@gnumonks.org&gt</author>
-<date>Revision $Revision: 1.8 $, $Date: 2003/03/05 22:46:04 $</date>
+<date>Revision $Revision: 1.9 $, $Date: 2003/08/23 17:52:37 $</date>
 
 <abstract>
 This is the documentation for <tt>ulogd</tt>, the Userspace logging daemon.
@@ -281,9 +281,9 @@ as possible. Logging is done to a seperate textfile instead of syslog, though.
 <p>
 The module defines the following configuration directives:
 <descrip>
-<tag>syslogfile</tag>The filename where it should log to. The default is
+<tag>file</tag>The filename where it should log to. The default is
 <tt>/var/log/ulogd.syslogemu</tt>
-<tag>syslogsync</tag>Set this to 1 if you want to have your logfile written
+<tag>sync</tag>Set this to 1 if you want to have your logfile written
 synchronously. This may reduce performance, but makes your log-lines appear
 immediately.  The default is <tt>0</tt>
 </descrip>
@@ -310,15 +310,15 @@ the fields you are not interested in, and create the table.  <p>
 
 The module defines the following configuration directives:
 <descrip>
-<tag>mysqltable</tag>
+<tag>table</tag>
 Name of the table to which ulogd should log
-<tag>mysqldb</tag>
+<tag>ldb</tag>
 Name of the mysql database
-<tag>mysqlhost</tag>
+<tag>host</tag>
 Name of the mysql database host
-<tag>mysqluser</tag>
+<tag>user</tag>
 Name of the mysql user
-<tag>mysqlpass</tag>
+<tag>pass</tag>
 Password for mysql
 </descrip>
 
@@ -344,15 +344,15 @@ the fields you are not interested in, and create the table.  <p>
 
 The module defines the following configuration directives:
 <descrip>
-<tag>pgsqltable</tag>
+<tag>table</tag>
 Name of the table to which ulogd should log
-<tag>pgsqldb</tag>
+<tag>db</tag>
 Name of the mysql database
-<tag>pgsqlhost</tag>
+<tag>host</tag>
 Name of the mysql database host
-<tag>pgsqluser</tag>
+<tag>user</tag>
 Name of the mysql user
-<tag>pgsqlpass</tag>
+<tag>pass</tag>
 Password for mysql
 </descrip>
 
@@ -364,10 +364,10 @@ or ethereal.
 
 The module defines the following configuration directives:
 <descrip>
-<tag>pcapfile</tag>
+<tag>file</tag>
 The filename where it should log to.  The default is:
 <tt>/var/log/ulogd.pcap</tt>
-<tag>pcapsync</tag>
+<tag>sync</tag>
 Set this to <tt>1</tt> if you want to have your pcap logfile written
 synchronously.  This may reduce performance, but makes your packets appear
 immediately in the file on disk.  The default is <tt>0</tt>

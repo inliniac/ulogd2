@@ -1,4 +1,4 @@
-/* ulogd_PCAP.c, Version $Revision: 1.4 $
+/* ulogd_PCAP.c, Version $Revision: 1.5 $
  *
  * ulogd output target for writing pcap-style files (like tcpdump)
  *
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_PCAP.c,v 1.4 2003/04/27 07:43:37 laforge Exp $
+ * $Id: ulogd_PCAP.c,v 1.5 2003/08/23 17:25:59 laforge Exp $
  *
  */
 
@@ -49,11 +49,11 @@
         ((unsigned char *)&addr)[2], \
         ((unsigned char *)&addr)[3]
 
-static config_entry_t pcapf_ce = { NULL, "pcapfile", CONFIG_TYPE_STRING, 
+static config_entry_t pcapf_ce = { NULL, "file", CONFIG_TYPE_STRING, 
 				  CONFIG_OPT_NONE, 0,
 				  { string: ULOGD_PCAP_DEFAULT } };
 
-static config_entry_t pcapsync_ce = { &pcapf_ce, "pcapsync", 
+static config_entry_t pcapsync_ce = { &pcapf_ce, "sync", 
 				      CONFIG_TYPE_INT, CONFIG_OPT_NONE, 0,
 				      { value: ULOGD_PCAP_SYNC_DEFAULT }
 				     };
@@ -209,8 +209,7 @@ static void _logemu_reg_op(void)
 void _init(void)
 {
 	/* FIXME: error handling */
-	config_register_key(&pcapsync_ce);
-	config_parse_file(0);
+	config_parse_file("PCAP", &pcapsync_ce);
 
 #ifdef DEBUG_PCAP
 	of = stdout;

@@ -2,7 +2,7 @@
  *
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  *
- * $Id: conffile.c,v 1.3 2001/05/26 23:19:28 laforge Exp $
+ * $Id: conffile.c,v 1.4 2001/09/01 11:51:53 laforge Exp $
  * 
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 
@@ -28,9 +28,6 @@
 #else
 #define DEBUGC(format, args...)
 #endif
-
-/* linked list of all registered configuration directives */
-static config_entry_t *config = NULL;
 
 /* points to config entry with error */
 config_entry_t *config_errce = NULL;
@@ -93,6 +90,7 @@ static char *get_word(char *line, char *not, char *buf)
 	return stop;
 }
 
+#if 0
 /* do we have a config directive for this name */
 static int config_iskey(char *name)
 {
@@ -105,27 +103,11 @@ static int config_iskey(char *name)
 
 	return 1;
 }
+#endif
 
 /***********************************************************************
  * PUBLIC INTERFACE
  ***********************************************************************/
-
-/* register linked list of config directives with us */
-int config_register_key(config_entry_t *ce)
-{
-	config_entry_t *myentry;
-
-	if (!ce)
-		return 1;
-
-	/* prepend our list to the global config list */
-	for (myentry = ce; myentry->next; myentry = myentry->next) {
-	}
-	myentry->next = config;
-	config = ce;
-
-	return 0;
-}
 
 /* register config file with us */
 int config_register_file(const char *file)
@@ -144,23 +126,45 @@ int config_register_file(const char *file)
 }
 
 /* parse config file */
-int config_parse_file(int final)
+int config_parse_file(const char *section, config_entry_t *keys)
 {
 	FILE *cfile;
-	char *line, *args;
+	char *args;
 	config_entry_t *ce;
 	int err = 0;
+	int found = 0;
+	char linebuf[LINE_LEN+1];
+	char *line = linebuf;
 
-	line = (char *) malloc(LINE_LEN+1);	
-	if (!line) 
-		return -ERROOM;
-	
 	cfile = fopen(fname, "r");
-	if (!cfile) {
-		free(line);
+	if (!cfile)
 		return -ERROPEN;
+
+	DEBUGC("prasing section [%s]\n", section);
+
+	/* Search for correct section */
+	while (fgets(line, LINE_LEN, cfile)) {
+		char wordbuf[LINE_LEN];
+		char *wordend;
+
+		if (*line == '#')
+			continue;
+
+		if (!(wordend = get_word(line, " \t\n[]", (char *) wordbuf)))
+			continue;
+		DEBUGC("word: \"%s\"\n", wordbuf);
+		if (!strcmp(wordbuf, section)) {
+			found = 1;
+			break;
+		}
 	}
-	
+
+	if (!found) {
+		fclose(cfile);
+		return -ERRSECTION;
+	}
+
+	/* Parse this section until next section */
 	while (fgets(line, LINE_LEN, cfile))
 	{
 		char wordbuf[LINE_LEN];
@@ -170,25 +174,22 @@ int config_parse_file(int final)
 		if (*line == '#')
 			continue;
 
-		if (!(wordend = get_word(line, " \t\n", (char *) &wordbuf)))
+		if (!(wordend = get_word(line, " =\t\n", (char *) &wordbuf)))
 			continue;
-#if 0
-		/* if we do the final parse and word is not a config key */
-		if (final && config_iskey(word)) {
-			DEBUGC("final and key '%s' not found\n", word);
-			err = -ERRUNKN;
-			goto cpf_error;
+
+		if (wordbuf[0] == '[' ) {
+			DEBUGC("Next section '%s' encountered\n", wordbuf);
+			break;
 		}
-#endif
 
 		DEBUGC("parse_file: entering main loop\n");
-		for (ce = config; ce; ce = ce->next) {
+		for (ce = keys; ce; ce = ce->next) {
 			DEBUGC("parse main loop, key: %s\n", ce->key);
 			if (strcmp(ce->key, (char *) &wordbuf)) {
 				continue;
 			}
 
-			wordend = get_word(wordend, " \t\n", (char *) &wordbuf);
+			wordend = get_word(wordend, " =\t\n", (char *) &wordbuf);
 			args = (char *)&wordbuf;
 
 			if (ce->hit && !(ce->options & CONFIG_OPT_MULTI))
@@ -198,8 +199,8 @@ int config_parse_file(int final)
 				err = -ERRMULT;
 				goto cpf_error;
 			}
-			if (final) 
-				ce->hit++;
+			ce->hit++;
+
 			switch (ce->type) {
 				case CONFIG_TYPE_STRING:
 					if (strlen(args) < 
@@ -221,10 +222,10 @@ int config_parse_file(int final)
 	}
 
 
-	for (ce = config; ce; ce = ce->next) {
+	for (ce = keys; ce; ce = ce->next) {
 		DEBUGC("ce post loop, ce=%s\n", ce->key);
-		if ((ce->options & CONFIG_OPT_MANDATORY) && (ce->hit == 0) && final) {
-			DEBUGC("mandatory config directive %s not found\n",
+		if ((ce->options & CONFIG_OPT_MANDATORY) && (ce->hit == 0)) {
+			DEBUGC("Mandatory config directive \"%s\" not found\n",
 				ce->key);
 			config_errce = ce;
 			err = -ERRMAND;
@@ -234,7 +235,6 @@ int config_parse_file(int final)
 	}
 
 cpf_error:
-	free(line);
 	fclose(cfile);
 	return err;
 }

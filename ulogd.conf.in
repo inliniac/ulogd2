@@ -1,26 +1,27 @@
 # Example configuration for ulogd
-# $Id: ulogd.conf.in,v 1.1 2003/04/27 07:47:26 laforge Exp $
+# $Id: ulogd.conf.in,v 1.2 2003/05/04 10:00:10 laforge Exp $
 #
 
+[global]
 ######################################################################
 # GLOBAL OPTIONS
 ######################################################################
 
 # netlink multicast group (the same as the iptables --ulog-nlgroup param)
-nlgroup 1
+nlgroup=1
 
 # logfile for status messages
-logfile /var/log/ulogd.log
+logfile="/var/log/ulogd.log"
 
 # loglevel: debug(1), info(3), notice(5), error(7) or fatal(8)
-loglevel 5
+loglevel=5
 
 # socket receive buffer size (should be at least the size of the
 # in-kernel buffer (ipt_ULOG.o 'nlbufsiz' parameter)
-rmem 131071
+rmem=131071
 
 # libipulog/ulogd receive buffer size, should be > rmem
-bufsize 150000
+bufsize=150000
 
 ######################################################################
 # PLUGIN OPTIONS
@@ -29,61 +30,46 @@ bufsize 150000
 # We have to configure and load all the plugins we want to use
 
 # general rules:
-# 1. specify the options FIRST, then load the plugin
-# 2. interpreter plugins have to precede output plugins
+# 1. load the plugins _first_ from the global section
+# 2. options for each plugin in seperate section below
 
 
 #
 # ulogd_BASE.so - interpreter plugin for basic IPv4 header fields
 # 		  you will always need this
-plugin @libdir@/ulogd_BASE.so
+plugin="@libdir@/ulogd_BASE.so"
 
 
-#
-# ulogd_LOGEMU.so - simple syslog emulation target
-#
-# where to write to
-syslogfile /var/log/ulogd.syslogemu
-# do we want to fflush() the file after each write?
-syslogsync 1
-# load the plugin
-plugin @libdir@/ulogd_LOGEMU.so
+# output plugins. 
+plugin="@libdir@/ulogd_LOGEMU.so"
+#plugin="@libdir@/ulogd_OPRINT.so"
+#plugin="@libdir@/ulogd_MYSQL.so"
+#plugin="@libdir@/ulogd_PGSQL.so"
+#plugin="@libdir@/ulogd_PCAP.so"
 
 
-# 
-# ulogd_OPRINT.so: file for packet dumping
-#
-# where to write the log
-dumpfile /var/log/ulogd.pktlog
-# load the plugin (remove the '#'if you want to enable it
-#plugin @libdir@/ulogd_OPRINT.so
+[LOGEMU]
+file="/var/log/ulogd.syslogemu"
+sync=1
 
+[OPRINT]
+file="/var/log/ulogd.pktlog"
 
-#
-# ulogd_MYSQL.so: optional logging into a MySQL database
-#
-# database information
-mysqltable ulog
-mysqlpass changeme
-mysqluser laforge
-mysqldb ulogd
-mysqlhost localhost
-# load the plugin (remove the '#' if you want to enable it)
-#plugin @libdir@/ulogd_MYSQL.so
+[MYSQL]
+table="ulog"
+pass="changeme"
+user="laforge"
+db="ulogd"
+host="localhost"
 
+[PGSQL]
+table="ulog"
+pass="changeme"
+user="postgres"
+db="ulogd"
+host="localhost"
 
-#
-# ulogd_PGSQL.so: optional logging into a PostgreSQL database
-#
-# database information
-pgsqltable ulog
-pgsqlpass
-pgsqluser postgres
-pgsqldb ulogd
-pgsqlhost localhost
-#load the plugin (remove the '#' if you want to enable it)
-#plugin @libdir@/ulogd_PGSQL.so
+[PCAP]
+file="/var/log/ulogd.pcap"
+sync=1
 
-pcapfile /var/log/ulogd.pcap
-pcapsync 1
-#plugin @libdir@/ulogd_PCAP.so

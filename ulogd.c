@@ -1,6 +1,6 @@
-/* ulogd, Version $Revision: 1.35 $
+/* ulogd, Version $Revision: 1.36 $
  *
- * $Id: ulogd.c,v 1.35 2003/05/04 10:00:10 laforge Exp $
+ * $Id: ulogd.c,v 1.36 2003/08/23 17:52:37 laforge Exp $
  *
  * userspace logging daemon for the iptables ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd.c,v 1.35 2003/05/04 10:00:10 laforge Exp $
+ * $Id: ulogd.c,v 1.36 2003/08/23 17:52:37 laforge Exp $
  *
  * Modifications:
  * 	14 Jun 2001 Martin Josefsson <gandalf@wlug.westbo.se>
@@ -29,9 +29,12 @@
  * 	10 Feb 2002 Alessandro Bono <a.bono@libero.it>
  * 		- added support for non-fork mode
  * 		- added support for logging to stdout
+ *
+ * 	09 Sep 2003 Magnus Boden <sarek@ozaba.cx>
+ * 		- added support for more flexible multi-section conffile
  */
 
-#define ULOGD_VERSION	"1.01"
+#define ULOGD_VERSION	"1.10"
 
 #include <unistd.h>
 #include <stdio.h>
@@ -481,11 +484,11 @@ static int logfile_open(const char *name)
 }
 
 /* wrapper to handle conffile error codes */
-static int parse_conffile(int final)
+static int parse_conffile(const char *section, config_entry_t *ce)
 {
 	int err;
 
-	err = config_parse_file(final);
+	err = config_parse_file(section, ce);
 
 	switch(err) {
 		case 0:
@@ -498,16 +501,22 @@ static int parse_conffile(int final)
 			break;
 		case -ERRMAND:
 			ulogd_log(ULOGD_ERROR,
-				"mandatory option not found\n");
+				"mandatory option \"%s\" not found\n",
+				config_errce->key);
 			break;
 		case -ERRMULT:
 			ulogd_log(ULOGD_ERROR,
-				"option occurred more than once\n");
+				"option \"%s\" occurred more than once\n",
+				config_errce->key);
 			break;
 		case -ERRUNKN:
 			ulogd_log(ULOGD_ERROR,
-				"unknown config key\n");
-/*				config_errce->key); */
+				"unknown config key \"%s\"\n",
+				config_errce->key);
+			break;
+		case -ERRSECTION:
+			ulogd_log(ULOGD_ERROR,
+				"section \"%s\" not found\n", section);
 			break;
 	}
 	return 1;
@@ -537,17 +546,6 @@ static config_entry_t loglevel_ce = { &nlgroup_ce, "loglevel", CONFIG_TYPE_INT,
 static config_entry_t rmem_ce = { &loglevel_ce, "rmem", CONFIG_TYPE_INT,
 				  CONFIG_OPT_NONE, 0, 
 				  { value: ULOGD_RMEM_DEFAULT } };
-
-static int init_conffile(char *file)
-{
-	if (config_register_file(file))
-		return 1;
-
-	config_register_key(&rmem_ce);
-	
-	/* parse config file the first time (for logfile name, ...) */
-	return parse_conffile(0);
-}
 
 static void sigterm_handler(int signal)
 {
@@ -638,18 +636,19 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	if (init_conffile(ulogd_configfile)) {
-		ulogd_log(ULOGD_FATAL, "parse_conffile error\n");
+	if (config_register_file(ulogd_configfile)) {
+		ulogd_log(ULOGD_FATAL, "error registering configfile \"%s\"\n",
+			  ulogd_configfile);
 		exit(1);
 	}
 	
-	logfile_open(logf_ce.u.string);
-
-	/* parse config file the second time (for plugin options) */
-	if (parse_conffile(1)) {
+	/* parse config file */
+	if (parse_conffile("global", &rmem_ce)) {
 		ulogd_log(ULOGD_FATAL, "parse_conffile\n");
 		exit(1);
 	}
+
+	logfile_open(logf_ce.u.string);
 
 #ifdef DEBUG
 	/* dump key and interpreter hash */

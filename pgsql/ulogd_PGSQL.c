@@ -1,4 +1,4 @@
-/* ulogd_PGSQL.c, Version $Revision: 1.6 $
+/* ulogd_PGSQL.c, Version $Revision: 1.7 $
  *
  * ulogd output plugin for logging to a PGSQL database
  *
@@ -45,23 +45,23 @@ static char *stmt_val;
 static char *stmt_ins;
 
 /* our configuration directives */
-static config_entry_t db_ce = { NULL, "pgsqldb", CONFIG_TYPE_STRING,
+static config_entry_t db_ce = { NULL, "db", CONFIG_TYPE_STRING,
 				CONFIG_OPT_MANDATORY, 0,
 				{ } };
 
-static config_entry_t host_ce = { &db_ce, "pgsqlhost", CONFIG_TYPE_STRING,
+static config_entry_t host_ce = { &db_ce, "host", CONFIG_TYPE_STRING,
 				CONFIG_OPT_MANDATORY, 0,
 				{ } };
 
-static config_entry_t user_ce = { &host_ce, "pgsqluser", CONFIG_TYPE_STRING,
+static config_entry_t user_ce = { &host_ce, "user", CONFIG_TYPE_STRING,
 				CONFIG_OPT_MANDATORY, 0,
 				{ } };
 
-static config_entry_t pass_ce = { &user_ce, "pgsqlpass", CONFIG_TYPE_STRING,
+static config_entry_t pass_ce = { &user_ce, "pass", CONFIG_TYPE_STRING,
 				CONFIG_OPT_MANDATORY, 0,
 				{ } };
 
-static config_entry_t table_ce = { &pass_ce, "pgsqltable", CONFIG_TYPE_STRING,
+static config_entry_t table_ce = { &pass_ce, "table", CONFIG_TYPE_STRING,
 				CONFIG_OPT_MANDATORY, 0,
 				{ } };
 
@@ -317,11 +317,8 @@ static ulog_output_t _pgsql_plugin = { NULL, "pgsql", &_pgsql_output, NULL };
 
 void _init(void)
 {
-	/* register our configfile options here */
-	config_register_key(&table_ce);
-
 	/* have the opts parsed */
-	config_parse_file(0);
+	config_parse_file("PGSQL", &table_ca);
 
 	if (_pgsql_open_db(host_ce.u.string, user_ce.u.string,
 			   pass_ce.u.string, db_ce.u.string)) {
