@@ -51,8 +51,7 @@ do
                 mysqldir=$d
                 mysqldir_suffix=/mysql
                 break
-        fi
-        if test -f $d/lib/libmysqlclient.so
+        elif test -f $d/lib/libmysqlclient.so
         then
                 AC_MSG_RESULT(found mysql in $d)
                 mysqldir=$d
@@ -146,8 +145,7 @@ do
                 AC_MSG_RESULT(found pgsql in $d)
                 pgsqldir=$d
                 break
-        fi
-        if test -f $d/lib/libpq.so
+        elif test -f $d/lib/libpq.so
         then
                 AC_MSG_RESULT(found pgsql in $d)
                 pgsqldir=$d
@@ -163,8 +161,7 @@ else
 	if test -f ${pgsqldir}/include/libpq-fe.h
 	then
 		PGSQLINCLUDES=${pgsqldir}/include
-	fi
-	if test -f ${pgsqldir}/include/postgresql/libpq-fe.h
+	elif test -f ${pgsqldir}/include/postgresql/libpq-fe.h
 	then
 		PGSQLINCLUDES=${pgsqldir}/include/postgresql
 	fi
