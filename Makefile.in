@@ -31,7 +31,7 @@ distrib:
 recurse: 
 	@for d in $(SUBDIRS); do if ! make -C $$d; then exit 1; fi; done
 
-ulogd: ulogd.c $(LIBIPULOG) ulogd.h conffile/conffile.o $(LIBIPULOG)/libipulog.a
+ulogd: ulogd.c $(LIBIPULOG) include/ulogd/ulogd.h conffile/conffile.o $(LIBIPULOG)/libipulog.a
 	$(CC) $(CFLAGS) -rdynamic $< conffile/conffile.o $(LIBIPULOG)/libipulog.a -o $@ $(LIBS)
 
 clean:
