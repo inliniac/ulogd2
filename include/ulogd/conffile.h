@@ -2,7 +2,7 @@
  *
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  *
- * $Id: conffile.h,v 1.2 2001/05/26 23:19:28 laforge Exp $
+ * $Id$
  * 
  * This code is distributed under the terms of GNU GPL */
 
@@ -41,8 +41,7 @@ enum {
 #define CONFIG_OPT_MANDATORY	0x0001
 #define CONFIG_OPT_MULTI	0x0002
 
-typedef struct config_entry {
-	struct config_entry *next;	/* the next one in linked list */
+struct config_entry {
 	char key[CONFIG_KEY_LEN];	/* name of config directive */
 	u_int8_t type;			/* type; see above */
 	u_int8_t options;		/* options; see above  */
@@ -52,15 +51,20 @@ typedef struct config_entry {
 		int value;
 		int (*parser)(char *argstr);
 	} u;
-} config_entry_t;
+};
+
+struct config_keyset {
+	unsigned int num_ces;
+	struct config_entry ces[];
+};
 
 /* if an error occurs, config_errce is set to the erroneous ce */
-extern config_entry_t *config_errce;
+extern struct config_entry *config_errce;
 
 /* tell us the name of the config file */
 int config_register_file(const char *file);
 
 /* parse the config file */
-int config_parse_file(const char *section, config_entry_t *keys);
+int config_parse_file(const char *section, struct config_keyset *kset);
 
 #endif /* ifndef _CONFFILE_H */

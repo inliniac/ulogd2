@@ -1,8 +1,8 @@
 /* config file parser functions
  *
- * (C) 2000 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2000-2004 by Harald Welte <laforge@gnumonks.org>
  *
- * $Id: conffile.c,v 1.4 2001/09/01 11:51:53 laforge Exp $
+ * $Id$
  * 
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 
@@ -30,7 +30,7 @@
 #endif
 
 /* points to config entry with error */
-config_entry_t *config_errce = NULL;
+struct config_entry *config_errce = NULL;
 
 /* Filename of the config file */
 static char *fname = NULL;
@@ -90,21 +90,6 @@ static char *get_word(char *line, char *not, char *buf)
 	return stop;
 }
 
-#if 0
-/* do we have a config directive for this name */
-static int config_iskey(char *name)
-{
-	config_entry_t *ce;
-
-	for (ce = config; ce; ce = ce->next) {
-		if (!strcmp(name, ce->key))
-			return 0;
-	}
-
-	return 1;
-}
-#endif
-
 /***********************************************************************
  * PUBLIC INTERFACE
  ***********************************************************************/
@@ -126,11 +111,10 @@ int config_register_file(const char *file)
 }
 
 /* parse config file */
-int config_parse_file(const char *section, config_entry_t *keys)
+int config_parse_file(const char *section, struct config_keyset *kset)
 {
 	FILE *cfile;
 	char *args;
-	config_entry_t *ce;
 	int err = 0;
 	int found = 0;
 	char linebuf[LINE_LEN+1];
@@ -140,7 +124,7 @@ int config_parse_file(const char *section, config_entry_t *keys)
 	if (!cfile)
 		return -ERROPEN;
 
-	DEBUGC("prasing section [%s]\n", section);
+	DEBUGC("parsing section [%s]\n", section);
 
 	/* Search for correct section */
 	while (fgets(line, LINE_LEN, cfile)) {
@@ -167,6 +151,7 @@ int config_parse_file(const char *section, config_entry_t *keys)
 	/* Parse this section until next section */
 	while (fgets(line, LINE_LEN, cfile))
 	{
+		int i;
 		char wordbuf[LINE_LEN];
 		char *wordend;
 		
@@ -183,7 +168,8 @@ int config_parse_file(const char *section, config_entry_t *keys)
 		}
 
 		DEBUGC("parse_file: entering main loop\n");
-		for (ce = keys; ce; ce = ce->next) {
+		for (i = 0; i < kset->num_ces; i++) {
+			struct config_entry *ce = kset->ces[i];
 			DEBUGC("parse main loop, key: %s\n", ce->key);
 			if (strcmp(ce->key, (char *) &wordbuf)) {
 				continue;
@@ -222,7 +208,8 @@ int config_parse_file(const char *section, config_entry_t *keys)
 	}
 
 
-	for (ce = keys; ce; ce = ce->next) {
+	for (i = 0; i < kset->num_ces; i++) {
+		struct config_entry *ce = kset->ces[i];
 		DEBUGC("ce post loop, ce=%s\n", ce->key);
 		if ((ce->options & CONFIG_OPT_MANDATORY) && (ce->hit == 0)) {
 			DEBUGC("Mandatory config directive \"%s\" not found\n",
