@@ -1,4 +1,4 @@
-/var/log/ulogd.log /var/log/ulogd.syslogemu /var/log/ulogd.pktlog {
+/var/log/ulogd.log /var/log/ulogd.syslogemu /var/log/ulogd.pktlog /var/log/ulogd.pcap {
     missingok
     sharedscripts
     postrotate
