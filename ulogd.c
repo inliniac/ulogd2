@@ -1,6 +1,6 @@
-/* ulogd, Version $Revision: 1.33 $
+/* ulogd, Version $Revision: 1.34 $
  *
- * $Id: ulogd.c,v 1.33 2003/02/08 12:21:18 laforge Exp $
+ * $Id: ulogd.c,v 1.34 2003/03/05 23:03:49 laforge Exp $
  *
  * userspace logging daemon for the iptables ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd.c,v 1.33 2003/02/08 12:21:18 laforge Exp $
+ * $Id: ulogd.c,v 1.34 2003/03/05 23:03:49 laforge Exp $
  *
  * Modifications:
  * 	14 Jun 2001 Martin Josefsson <gandalf@wlug.westbo.se>
@@ -49,10 +49,15 @@
 #include <ulogd/conffile.h>
 #include <ulogd/ulogd.h>
 
-/* Size of the netlink receive buffer. If you have _big_ in-kernel
- * queues, you may have to increase this number. 
- * ( --qthreshold 100 * 1500 bytes/packet = 150kB */
-#define ULOGD_BUFSIZE_DEFAULT 65535
+/* Size of the socket recevive memory.  Should be at least the same size as the
+ * 'nlbufsiz' module loadtime parameter of ipt_ULOG.o
+ * If you have _big_ in-kernel queues, you may have to increase this number.  (
+ * --qthreshold 100 * 1500 bytes/packet = 150kB  */
+#define ULOGD_RMEM_DEFAULT	131071
+
+/* Size of the receive buffer for the netlink socket.  Should be at least of
+ * RMEM_DEFAULT size.  */
+#define ULOGD_BUFSIZE_DEFAULT	150000
 
 #ifdef DEBUG
 #define DEBUGP(format, args...) fprintf(stderr, format, ## args)
@@ -529,13 +534,16 @@ static config_entry_t nlgroup_ce = { &plugin_ce, "nlgroup", CONFIG_TYPE_INT,
 static config_entry_t loglevel_ce = { &nlgroup_ce, "loglevel", CONFIG_TYPE_INT,
 				      CONFIG_OPT_NONE, 0, 
 				      { value: 1 } };
+static config_entry_t rmem_ce = { &loglevel_ce, "rmem", CONFIG_TYPE_INT,
+				  CONFIG_OPT_NONE, 0, 
+				  { value: ULOGD_RMEM_DEFAULT } };
 
 static int init_conffile(char *file)
 {
 	if (config_register_file(file))
 		return 1;
 
-	config_register_key(&loglevel_ce);
+	config_register_key(&rmem_ce);
 	
 	/* parse config file the first time (for logfile name, ...) */
 	return parse_conffile(0);
@@ -658,10 +666,10 @@ int main(int argc, char* argv[])
 		ipulog_perror(NULL);
 		exit(1);
 	}
-	
+
 	/* create ipulog handle */
-	libulog_h = 
-		ipulog_create_handle(ipulog_group2gmask(nlgroup_ce.u.value));
+	libulog_h = ipulog_create_handle(ipulog_group2gmask(nlgroup_ce.u.value),
+					 rmem_ce.u.value);
 
 	if (!libulog_h) {
 		/* if some error occurrs, print it to stderr */

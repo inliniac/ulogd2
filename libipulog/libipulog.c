@@ -1,5 +1,5 @@
 /* 
- * libipulog.c, $Revision: 1.9 $
+ * libipulog.c, $Revision: 1.10 $
  *
  * netfilter ULOG userspace library.
  *
@@ -21,7 +21,7 @@
  * This library is still under development, so be aware of sudden interface
  * changes
  *
- * $Id: libipulog.c,v 1.9 2001/09/01 11:53:41 laforge Exp $
+ * $Id: libipulog.c,v 1.10 2002/07/30 07:04:12 laforge Exp $
  */
 
 #include <stdlib.h>
@@ -42,22 +42,6 @@ struct ipulog_handle
 
 /* internal */
 
-enum 
-{
-	IPULOG_ERR_NONE = 0,
-	IPULOG_ERR_IMPL,
-	IPULOG_ERR_HANDLE,
-	IPULOG_ERR_SOCKET,
-	IPULOG_ERR_BIND,
-	IPULOG_ERR_RECVBUF,
-	IPULOG_ERR_RECV,
-	IPULOG_ERR_NLEOF,
-	IPULOG_ERR_TRUNC,
-	IPULOG_ERR_INVGR,
-	IPULOG_ERR_INVNL,
-};
-
-#define IPULOG_MAXERR IPULOG_ERR_INVNL
 
 int ipulog_errno = IPULOG_ERR_NONE;
 
@@ -139,7 +123,8 @@ u_int32_t ipulog_group2gmask(u_int32_t group)
 }
 
 /* create a ipulog handle for the reception of packets sent to gmask */
-struct ipulog_handle *ipulog_create_handle(unsigned int gmask)
+struct ipulog_handle *ipulog_create_handle(u_int32_t gmask, 
+					   u_int32_t rcvbufsize)
 {
 	struct ipulog_handle *h;
 	int status;
@@ -175,6 +160,16 @@ struct ipulog_handle *ipulog_create_handle(unsigned int gmask)
 	h->peer.nl_family = AF_NETLINK;
 	h->peer.nl_pid = 0;
 	h->peer.nl_groups = gmask;
+
+	status = setsockopt(h->fd, SOL_SOCKET, SO_RCVBUF, &rcvbufsize,
+			    sizeof(rcvbufsize));
+	if (status == -1)
+	{
+		ipulog_errno = IPULOG_ERR_RECVBUF;
+		close(h->fd);
+		free(h);
+		return NULL;
+	}
 
 	return h;
 } 

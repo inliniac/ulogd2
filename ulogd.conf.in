@@ -1,5 +1,5 @@
 # Example configuration for ulogd
-# $Id: ulogd.conf,v 1.8 2002/07/30 07:15:54 laforge Exp $
+# $Id: ulogd.conf.in,v 1.1 2003/04/27 07:47:26 laforge Exp $
 #
 
 ######################################################################
@@ -15,9 +15,12 @@ logfile /var/log/ulogd.log
 # loglevel: debug(1), info(3), notice(5), error(7) or fatal(8)
 loglevel 5
 
-# libipulog receive buffer size (should be at least the size of the
+# socket receive buffer size (should be at least the size of the
 # in-kernel buffer (ipt_ULOG.o 'nlbufsiz' parameter)
-bufsize 65535
+rmem 131071
+
+# libipulog/ulogd receive buffer size, should be > rmem
+bufsize 150000
 
 ######################################################################
 # PLUGIN OPTIONS

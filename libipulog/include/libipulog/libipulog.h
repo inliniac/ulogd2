@@ -1,7 +1,7 @@
 #ifndef _LIBIPULOG_H
 #define _LIBIPULOG_H
 
-/* $Id: libipulog.h,v 1.5 2002/07/30 07:04:12 laforge Exp $ */
+/* $Id: libipulog.h,v 1.6 2002/07/30 07:23:36 laforge Exp $ */
 
 #include <errno.h>
 #include <unistd.h>
@@ -24,7 +24,7 @@ extern int ipulog_errno;
 
 u_int32_t ipulog_group2gmask(u_int32_t group);
 
-struct ipulog_handle *ipulog_create_handle(u_int32_t gmask);
+struct ipulog_handle *ipulog_create_handle(u_int32_t gmask, u_int32_t rmem);
 
 void ipulog_destroy_handle(struct ipulog_handle *h);
 
@@ -38,5 +38,21 @@ ulog_packet_msg_t *ipulog_get_packet(struct ipulog_handle *h,
 char *ipulog_strerror(int errcode);
 
 void ipulog_perror(const char *s);
+
+enum 
+{
+	IPULOG_ERR_NONE = 0,
+	IPULOG_ERR_IMPL,
+	IPULOG_ERR_HANDLE,
+	IPULOG_ERR_SOCKET,
+	IPULOG_ERR_BIND,
+	IPULOG_ERR_RECVBUF,
+	IPULOG_ERR_RECV,
+	IPULOG_ERR_NLEOF,
+	IPULOG_ERR_TRUNC,
+	IPULOG_ERR_INVGR,
+	IPULOG_ERR_INVNL,
+};
+#define IPULOG_MAXERR IPULOG_ERR_INVNL
 
 #endif /* _LIBULOG_H */
