@@ -1,4 +1,4 @@
-/* ulogd_MAC.c, Version $Revision: 1.11 $
+/* ulogd_MAC.c, Version $Revision: 1.12 $
  *
  * ulogd interpreter plugin for 
  * 	o MAC addresses
@@ -26,7 +26,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  
- * $Id: ulogd_BASE.c,v 1.11 2002/04/27 19:45:27 laforge Exp $
+ * $Id: ulogd_BASE.c,v 1.12 2002/06/13 12:55:21 laforge Exp $
  *
  */
 
@@ -194,7 +194,7 @@ static ulog_iret_t tcphdr_rets[] = {
 	{ NULL, NULL, 0, ULOGD_RET_UINT32, ULOGD_RETF_NONE, "tcp.ackseq", 
 		{ ui32: 0 } },
 	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "tcp.window",
-	        { ui32:	0 } },
+		{ ui16:	0 } },
 	{ NULL, NULL, 0, ULOGD_RET_BOOL, ULOGD_RETF_NONE, "tcp.urg", 
 		{ b: 0 } },
 	{ NULL, NULL, 0, ULOGD_RET_UINT16, ULOGD_RETF_NONE, "tcp.urgp",
