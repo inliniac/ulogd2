@@ -1,4 +1,4 @@
-/* ulogd_MYSQL.c, Version $Revision: 1.9 $
+/* ulogd_MYSQL.c, Version $Revision: 1.10 $
  *
  * ulogd output plugin for logging to a MySQL database
  *
@@ -17,7 +17,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  * 
- * $Id: ulogd_MYSQL.c,v 1.9 2003/03/18 10:13:05 laforge Exp $
+ * $Id: ulogd_MYSQL.c,v 1.10 2003/08/11 19:44:07 laforge Exp $
  *
  * 15 May 2001, Alex Janssen <alex@ynfonatic.de>:
  *      Added a compability option for older MySQL-servers, which
@@ -310,12 +310,13 @@ static int _mysql_get_columns(const char *table)
 /* make connection and select database */
 static int _mysql_open_db(char *server, char *user, char *pass, char *db)
 {
-	dbh = mysql_real_connect(NULL, server, user, pass, NULL, 0, NULL, 0);
-
+	dbh = mysql_init(NULL);
 	if (!dbh)
 		return 1;
 
-	mysql_select_db(dbh, db);
+	if (!mysql_connect(dbh, server, user, pass, db, 0, NULL, 0))
+		return 1;
+
 	return 0;
 }
 
