@@ -1,6 +1,6 @@
 #ifndef _ULOGD_H
 #define _ULOGD_H
-/* ulogd, Version $Revision: 1.6 $
+/* ulogd, Version $Revision: 1.7 $
  *
  * first try of a logging daemon for my netfilter ULOG target
  * for the linux 2.4 netfilter subsystem.
@@ -9,10 +9,11 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.h,v 1.6 2000/09/12 13:43:34 laforge Exp $
+ * $Id: ulogd.h,v 1.7 2000/09/12 14:29:37 laforge Exp $
  */
 
 #include <libipulog/libipulog.h>
+#include <stdio.h>
 
 /* All types with MSB = 1 make use of value.ptr
  * other types use one of the union's member */
@@ -34,11 +35,16 @@
 
 #define ULOGD_RET_IPADDR	0x0100
 
-/* types with lenght field*/
+/* types with length field */
 #define ULOGD_RET_STRING	0x8020
 #define ULODG_RET_RAW		0x8030
 
-#define ULOGD_RET_OTHER		0xffff
+
+/* FLAGS */
+#define ULOGD_RETF_NONE		0x0000
+#define ULOGD_RETF_VALID	0x0001
+#define ULOGD_RETF_FREE		0x0002
+
 
 /* maximum length of ulogd key */
 #define ULOGD_MAX_KEYLEN 32
@@ -51,10 +57,19 @@
 extern FILE *logfile;
 
 typedef struct ulog_iret {
+	/* next interpreter return (key) in the global list */
 	struct ulog_iret *next;
+	/* next interpreter in linked list for current result */
+	struct ulog_iret *cur_next;
+	/* length of the returned value (only for lengthed types */
 	u_int32_t len;
+	/* type of the returned value (ULOGD_IRET_...) */
 	u_int16_t type;
+	/* flags (i.e. free, ...) */
+	u_int16_t flags;
+	/* name of this key */
 	char key[ULOGD_MAX_KEYLEN];
+	/* and finally the returned value */
 	union {
 		u_int8_t	b;
 		u_int8_t	ui8;
@@ -70,14 +85,27 @@ typedef struct ulog_iret {
 } ulog_iret_t;
 
 typedef struct ulog_interpreter {
+	/* next interpreter in old-style linked list */
 	struct ulog_interpreter *next;
+	/* name of this interpreter (predefined by plugin) */
 	char name[ULOGD_MAX_KEYLEN];
-	ulog_iret_t* (*interp)(ulog_packet_msg_t *pkt);
+	/* ID for this interpreter (dynamically assigned) */
+	unsigned int id;
+	/* function to call for each packet */
+	ulog_iret_t* (*interp)(struct ulog_interpreter *ip, 
+				ulog_packet_msg_t *pkt);
+	/* number of keys this interpreter has */
+	unsigned int key_num;
+	/* keys of this particular interpreter */
+	ulog_iret_t *result;
 } ulog_interpreter_t;
 
 typedef struct ulog_output {
+	/* next output in the linked list */
 	struct ulog_output *next;
+	/* name of this ouput plugin */
 	char name[ULOGD_MAX_KEYLEN];
+	/* callback function */
 	int* (*output)(ulog_iret_t *ret);
 } ulog_output_t;
 
@@ -99,5 +127,8 @@ void ulogd_log(int level, const char *message, ...);
 
 /* backwards compatibility */
 #define ulogd_error(format, args...) ulogd_log(ULOGD_ERROR, format, ## args)
+
+/* get an interpreter hash id by name */
+unsigned int interh_getid(const char *name);
 
 #endif

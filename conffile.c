@@ -1,7 +1,7 @@
 /* config file parser functions
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  *
- * $Id: conffile.c,v 1.5 2000/09/12 14:29:36 laforge Exp $
+ * $Id: conffile.c,v 1.6 2000/09/22 06:54:33 laforge Exp $
  * 
  * This code is distributed under the terms of GNU GPL */
 
@@ -115,7 +115,7 @@ int config_parse_file(int final)
 	
 	while (fgets(line, LINE_LEN, cfile))
 	{
-		DEBUGC("line read\n");
+		DEBUGC("line read: %s\n", line);
 		if (*line == '#')
 			continue;
 
@@ -123,18 +123,21 @@ int config_parse_file(int final)
 		if (!word)
 			continue;
 
+#if 0
 		/* if we do the final parse and word is not a config key */
 		if (final && config_iskey(word)) {
 			DEBUGC("final and key '%s' not found\n", word);
 			err = -ERRUNKN;
 			goto cpf_error;
 		}
+#endif
 
 		args = line + strlen(word) + 1;
 		*(args + strlen(args) - 1 ) = '\0';
-
+		
+		DEBUGC("parse_file: entering main loop\n");
 		for (ce = config; ce; ce = ce->next) {
-			DEBUGC("parse main loop\n");
+			DEBUGC("parse main loop, key: %s\n", ce->key);
 			if (strcmp(ce->key, word)) {
 				continue;
 			}
@@ -164,12 +167,13 @@ int config_parse_file(int final)
 			}
 			break;
 		}
+		DEBUGC("parse_file: exiting main loop\n");
 	}
 
 
 	for (ce = config; ce; ce = ce->next) {
 		DEBUGC("ce post loop, ce=%s\n", ce->key);
-		if ((ce->options & CONFIG_OPT_MANDATORY) && (ce->hit == 0)) {
+		if ((ce->options & CONFIG_OPT_MANDATORY) && (ce->hit == 0) && final) {
 			DEBUGC("mandatory config directive %s not found\n",
 				ce->key);
 			config_errce = ce;

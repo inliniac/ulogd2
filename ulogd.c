@@ -1,4 +1,4 @@
-/* ulogd, Version $Revision: 1.9 $
+/* ulogd, Version $Revision: 1.10 $
  *
  * first try of a logging daemon for my netfilter ULOG target
  * for the linux 2.4 netfilter subsystem.
@@ -7,7 +7,7 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id: ulogd.c,v 1.9 2000/09/12 13:43:34 laforge Exp $
+ * $Id: ulogd.c,v 1.10 2000/09/12 14:29:37 laforge Exp $
  */
 
 #include <stdio.h>
@@ -48,36 +48,147 @@
 
 
 FILE *logfile = NULL;
-
 /* linked list for all registered interpreters */
 static ulog_interpreter_t *ulogd_interpreters;
 
 /* linked list for all registered output targets */
 static ulog_output_t *ulogd_outputs;
 
+/***********************************************************************
+ * INTERPRETER AND KEY HASH FUNCTIONS
+ ***********************************************************************/
+
+/* hashtable for all registered interpreters */
+static ulog_interpreter_t *ulogd_interh[100];
+static unsigned int ulogd_interh_ids;
+
+/* allocate a new interpreter id and write it into the interpreter struct */
+static unsigned int interh_allocid(ulog_interpreter_t *ip)
+{
+	unsigned int id;
+
+	id = ++ulogd_interh_ids;
+	ip->id = id;
+	ulogd_interh[id] = ip;
+	return id;
+}
+
+/* get interpreter d by name */
+unsigned int interh_getid(const char *name)
+{
+	int i;
+	for (i = 1; i <= ulogd_interh_ids; i++)
+		if (!strcmp(name, (ulogd_interh[i])->name))
+			return i;
+
+	return 0;
+}
+
+/* dump out the contents of the interpreter hash */
+static void interh_dump(void)
+{
+	int i;
+
+	for (i = 1; i <= ulogd_interh_ids; i++)
+		printf("ulogd_interh[%d] = %s\n", i, (ulogd_interh[i])->name);
+
+}
+
+struct ulogd_keyh_entry {
+	ulog_interpreter_t *interp;	/* interpreter for this key */
+	unsigned int offset;		/* offset within interpreter */
+	const char *name;		/* name of this particular key */
+};
+
+static struct ulogd_keyh_entry ulogd_keyh[100];
+static unsigned int ulogd_keyh_ids;
+
+/* allocate a new key_id */
+static unsigned int keyh_allocid(ulog_interpreter_t *ip, unsigned int offset,
+				const char *name)
+{
+	unsigned int id;
+
+	id = ++ulogd_keyh_ids;
+
+	ulogd_keyh[id].interp = ip;
+	ulogd_keyh[id].offset = offset;
+	ulogd_keyh[id].name = name;
+
+	return id;
+}
+
+static void keyh_dump(void)
+{
+	int i;
+
+	printf("dumping keyh\n");
+	for (i = 1; i <= ulogd_keyh_ids; i++)
+		printf("ulogd_keyh[%d] = %s:%d\n", i, ulogd_keyh[i].interp->name, 
+				ulogd_keyh[i].offset);
+
+}
+
+/* get keyid by name */
+unsigned int keyh_getid(const char *name)
+{
+	int i;
+	for (i = 1; i <= ulogd_keyh_ids; i++)
+		if (!strcmp(name, ulogd_keyh[i].name))
+			return i;
+
+	return 0;
+}
+
+/* get key name by keyid */
+inline char *keyh_getname(unsigned int id)
+{
+	return ulogd_keyh[id].interp->name;
+}
+
+
 /* try to lookup a registered interpreter for a given name */
 static ulog_interpreter_t *find_interpreter(const char *name)
 {
-	ulog_interpreter_t *ptr;
+	int id;
+	
+	id = interh_getid(name);
+	if (!id)
+		return NULL;
 
-	for (ptr = ulogd_interpreters; ptr; ptr = ptr->next) {
-		if (strcmp(name, ptr->name) == 0)
-				return ptr;
-	}
-
-	return NULL;
+	return ulogd_interh[id];
 }
 
 /* the function called by all interpreter plugins for registering their
  * target. */ 
 void register_interpreter(ulog_interpreter_t *me)
 {
+	int i;
+
+	/* check if we already have an interpreter with this name */
 	if (find_interpreter(me->name)) {
 		ulogd_error("interpreter `%s' already registered\n",
 				me->name);
 		exit(1);
 	}
+
 	ulogd_log(ULOGD_NOTICE, "registering interpreter `%s'\n", me->name);
+
+	/* allocate a new interpreter id for it */
+	interh_allocid(me);
+
+	/* - allocate one keyh_id for each result of this interpreter 
+	 * - link the elements to each other */
+	for (i = 0; i < me->key_num; i++) {
+		keyh_allocid(me, i, me->result[i].key);
+		if (i != me->key_num - 1)
+			me->result[i].next = &me->result[i+1];
+	}
+
+	if (ulogd_interpreters)
+		me->result[me->key_num - 1].next = &ulogd_interpreters->result[0];
+
+	/* all work done, we can prepend the new interpreter to the list */
 	me->next = ulogd_interpreters;
 	ulogd_interpreters = me;
 }
@@ -121,25 +232,7 @@ ulog_iret_t *alloc_ret(const u_int16_t type, const char* key)
 	return ptr;
 }
 
-/* free a ulog_iret_t* including all linked ones and the value pointers */
-void free_ret(ulog_iret_t *ret)
-{
-	ulog_iret_t *ptr = NULL;
-	ulog_iret_t *nextptr = NULL;
-
-	for (ptr = ret; ptr; ptr = nextptr) {
-		if ((ptr->type | 0x7fff) == 0xffff) {
-			free(ptr->value.ptr);
-			}
-		if (ptr->next) {
-			nextptr = ptr->next;
-		} else {
-			nextptr = NULL;
-		}
-		free(ptr);
-	}
-}
-
+/* log message to the logfile */
 void ulogd_log(int level, const char *format, ...)
 {
 	char *timestr;
@@ -156,6 +249,7 @@ void ulogd_log(int level, const char *format, ...)
 
 	tm = time(NULL);
 	timestr = ctime(&tm);
+	timestr[strlen(timestr)-1] = '\0';
 	fprintf(outfd, "%s <%1.1d>", timestr, level);
 	
 	vfprintf(outfd, format, ap);
@@ -172,28 +266,46 @@ static void propagate_results(ulog_iret_t *ret)
 	}
 }
 
+/* clean results (set all values to 0 and free pointers) */
+static void clean_results(ulog_iret_t *ret)
+{
+	ulog_iret_t *r;
+
+	for (r = ret; r; r = r->next) {
+		if (r->flags & ULOGD_RETF_FREE)
+			free(r->value.ptr);
+		memset(&r->value, 0, sizeof(r->value));
+		r->flags &= ~ULOGD_RETF_VALID;
+	}
+}
+
+#define IS_VALID(x)	(x.flags & ULOGD_RETF_VALID)
+
 /* call all registered interpreters and hand the results over to 
  * propagate_results */
 static void handle_packet(ulog_packet_msg_t *pkt)
 {
-	ulog_interpreter_t *ptr;
-	ulog_iret_t *ret, *b;
+	ulog_iret_t *ret;
         ulog_iret_t *allret = NULL;
+	ulog_interpreter_t *ip;
 
-	/* call each registered interpreter */
-	for (ptr = ulogd_interpreters; ptr; ptr = ptr->next) {
-		ret = (*ptr->interp)(pkt);
-		if (ret) {
-			/* prepend the results to allret */
-			if (allret) { 
-				for (b = ret; b->next; b = b->next);
-				b->next = allret;
+	unsigned int i,j;
+
+	for (i = 1; i <= ulogd_interh_ids; i++) {
+		ip = ulogd_interh[i];
+		/* call interpreter */
+		if (ret = ((ip)->interp)(ip, pkt)) {
+			/* create references for result linked-list */
+			for (j = 0; j < ip->key_num; j++) {
+				if (IS_VALID(ip->result[j])) {
+					ip->result[j].cur_next = allret;
+					allret = &ip->result[j];
+				}
 			}
-			allret = ret;
 		}
-	}	
+	}
 	propagate_results(allret);
-	free_ret(allret);
+	clean_results(ulogd_interpreters->result);
 }
 
 /* silly plugin loader to dlopen() all available plugins */
@@ -212,12 +324,15 @@ static void load_plugins(char *dir)
 			DEBUGP("load_plugins: %s\n", dent->d_name);
 			sprintf(fname, "%s/%s", dir, dent->d_name);
 			if (!dlopen(fname, RTLD_NOW))
-				ulogd_error("load_plugins: %s", dlerror());
+				ulogd_error("load_plugins: %s\n", dlerror());
 			}
 		}
 		free(fname);
 	} else
 		ulogd_error("No plugin directory: %s\n", dir);
+
+	interh_dump();
+	keyh_dump();
 
 }
 
@@ -253,7 +368,7 @@ static int parse_conffile(int final)
 			ulogd_error("ERROR: option occurred more than once\n");
 			break;
 		case -ERRUNKN:
-			ulogd_error("ERROR: unknown config key, %s\n",
+			ulogd_error("ERROR: unknown config key\n");
 				config_errce->key);
 			break;
 	}

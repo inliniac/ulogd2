@@ -3,13 +3,13 @@ LIBIPULOG=../libipulog
 INCIPULOG=-I../libipulog/include
 
 # Names of the plugins to be compiled
-ULOGD_SL:=BASE OPRINT PWSNIFF
+ULOGD_SL:=BASE OPRINT PWSNIFF #MYSQL
 
 #  Normally You should not need to change anything below
 #
 CC = gcc
 CFLAGS = -I. -Wall $(INCIPULOG) -O2
-#CFLAGS+=-g -DDEBUG
+CFLAGS+=-g -DDEBUG
 
 SH_CFLAGS:=$(CFLAGS) -fPIC
 
@@ -27,7 +27,7 @@ conffile.o: conffile.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 ulogd: ulogd.c $(LIBIPULOG) ulogd.h conffile.o
-	$(CC) $(CFLAGS) -rdynamic -ldl -i ulogd.c conffile.o $(LIBIPULOG)/libipulog.a -o ulogd
+	$(CC) $(CFLAGS) -rdynamic -ldl ulogd.c -lmysqlclient conffile.o $(LIBIPULOG)/libipulog.a -o ulogd
 
 clean:
 	rm -f ulogd *.o extensions/*.o extensions/*.so

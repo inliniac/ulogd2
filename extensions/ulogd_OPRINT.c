@@ -1,11 +1,11 @@
-/* ulogd_MAC.c, Version $Revision: 1.3 $
+/* ulogd_MAC.c, Version $Revision: 1.4 $
  *
  * ulogd output target for logging to a file 
  *
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  * This software is released under the terms of GNU GPL
  *
- * $Id: ulogd_OPRINT.c,v 1.3 2000/09/12 14:29:37 laforge Exp $
+ * $Id: ulogd_OPRINT.c,v 1.4 2000/09/22 06:54:33 laforge Exp $
  *
  */
 
@@ -34,7 +34,7 @@ int _output_print(ulog_iret_t *res)
 	ulog_iret_t *ret;
 	
 	fprintf(of, "===>PACKET BOUNDARY\n");
-	for (ret = res; ret; ret = ret->next) {
+	for (ret = res; ret; ret = ret->cur_next) {
 		fprintf(of,"%s=", ret->key);
 		switch (ret->type) {
 			case ULOGD_RET_STRING:

@@ -1,11 +1,11 @@
-/* ulogd_PWSNIFF.c, Version $Revision: 1.1 $
+/* ulogd_PWSNIFF.c, Version $Revision: 1.2 $
  *
  * ulogd logging interpreter for POP3 / FTP like plaintext passwords.
  *
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  * This software is released under the terms of GNU GPL
  *
- * $Id: ulogd_PWSNIFF.c,v 1.1 2000/08/17 08:03:22 laforge Exp $
+ * $Id: ulogd_PWSNIFF.c,v 1.2 2000/09/22 06:54:33 laforge Exp $
  *
  */
 
@@ -46,15 +46,14 @@ static char *_get_next_blank(char* begp, char *endp)
 	return NULL;
 }
 
-static ulog_iret_t *_interp_pwsniff(ulog_packet_msg_t *pkt)
+static ulog_iret_t *_interp_pwsniff(ulog_interpreter_t *ip, ulog_packet_msg_t *pkt)
 {
 	struct iphdr *iph = (struct iphdr *) pkt->payload;
 	void *protoh = (u_int32_t *)iph + iph->ihl;
 	struct tcphdr *tcph = protoh;
 	u_int32_t tcplen = ntohs(iph->tot_len) - iph->ihl * 4;
 	unsigned char  *ptr, *begp, *pw_begp, *endp, *pw_endp;
-	ulog_iret_t *ret = NULL;
-	ulog_iret_t *ret2;
+	ulog_iret_t *ret = ip->result;
 	int len, pw_len, i, cont = 0;
 
 	len = pw_len = 0;
@@ -94,37 +93,36 @@ static ulog_iret_t *_interp_pwsniff(ulog_packet_msg_t *pkt)
 	}
 
 	if (len) {
-		ret = alloc_ret(ULOGD_RET_STRING, "pwsniff.user");
-		ret->value.ptr = (char *) malloc(len+1);
-		if (!ret->value.ptr) {
+		ret[0].value.ptr = (char *) malloc(len+1);
+		ret[0].flags |= ULOGD_RETF_VALID;
+		if (!ret[0].value.ptr) {
 			ulogd_error("_interp_pwsniff: OOM (size=%u)\n", len);
-			free(ret);
 			return NULL;
 		}
-		strncpy(ret->value.ptr, begp, len);
-		*((char *)ret->value.ptr + len + 1) = '\0';
+		strncpy(ret[0].value.ptr, begp, len);
+		*((char *)ret[0].value.ptr + len + 1) = '\0';
 	}
 	if (pw_len) {
-		ret2 = alloc_ret(ULOGD_RET_STRING,"pwsniff.pass");
-		ret2->value.ptr = (char *) malloc(pw_len+1);
-		if (!ret2->value.ptr){
+		ret[1].value.ptr = (char *) malloc(pw_len+1);
+		ret[1].flags |= ULOGD_RETF_VALID;
+		if (!ret[1].value.ptr){
 			ulogd_error("_interp_pwsniff: OOM (size=%u)\n", pw_len);
-			free(ret2);
 			return NULL;
 		}
-		strncpy(ret2->value.ptr, pw_begp, pw_len);
-		*((char *)ret2->value.ptr + pw_len + 1) = '\0';
+		strncpy(ret[1].value.ptr, pw_begp, pw_len);
+		*((char *)ret[1].value.ptr + pw_len + 1) = '\0';
 
-		if (ret) 
-			ret->next = ret2;
-		else
-			ret = ret2;
 	}
 	return ret;
 }
+
+static ulog_iret_t pwsniff_rets[] = {
+	{ NULL, NULL, 0, ULOGD_RET_STRING, ULOGD_RETF_FREE, "pwsniff.user", 0 },
+	{ NULL, NULL, 0, ULOGD_RET_STRING, ULOGD_RETF_FREE, "pwsniff.pass", 0 },
+};
 static ulog_interpreter_t base_ip[] = { 
 
-	{ NULL, "pwsniff", &_interp_pwsniff },
+	{ NULL, "pwsniff", 0, &_interp_pwsniff, 2, &pwsniff_rets },
 	{ NULL, "", NULL }, 
 };
 void _base_reg_ip(void)
