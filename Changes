@@ -6,6 +6,7 @@ Version 0.93
 	(reported by Drori Ghiora)
 - sigterm handler installed for clean shutdown
 - logfile now fflush()ed after each line printed
+- ulogd_LOGEMU now prints date and hostname, just as syslog does
 
 Version 0.92
 - fixes libipulog loop-bug (reported by Drori Ghiora)
