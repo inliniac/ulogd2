@@ -1,6 +1,6 @@
-/* ulogd, Version $Revision: 1.18 $
+/* ulogd, Version $Revision: 1.19 $
  *
- * $Id: ulogd.c,v 1.18 2001/06/17 20:08:30 laforge Exp $
+ * $Id: ulogd.c,v 1.19 2001/07/03 14:36:19 laforge Exp $
  *
  * userspace logging daemon for the netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
@@ -582,7 +582,7 @@ int main(int argc, char* argv[])
 			if (len < 0) {
 				/* an error during read occurred,
 				 * we may want some rate limiting here */
-				ulogd_log(LOG_ERROR, 
+				ulogd_log(ULOGD_ERROR, 
 					  ipulog_strerror(ipulog_errno));
 				continue;
 			}
