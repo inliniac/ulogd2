@@ -6,6 +6,8 @@ include @top_srcdir@/Rules.make
 
 all: conffile.o
 
+distrib:
+
 conffile.o: conffile.c
 	$(CC) $(CFLAGS) -c $< -o $@
 

@@ -9,7 +9,10 @@ SH_CFLAGS:=$(CFLAGS) -fPIC
 
 SHARED_LIBS+=$(foreach T,$(ULOGD_SL),ulogd_$(T).so)
 
+
 all: $(SHARED_LIBS)
+
+distrib:
 
 $(SHARED_LIBS): %.so: %_sh.o
 	ld -shared -o $@ $<

@@ -1,4 +1,5 @@
 #! /usr/bin/make
+# this file is shamelessly stolen from the iptables CVS tree
 
 LANG_DIRS:=
 
@@ -13,7 +14,9 @@ PSUS_HOWTOS:=$(HOWTOS:.sgml=.letter.ps)
 HOWTO_FLAGS_it/=-c latin -l it
 HOWTO_FLAGS_fr/=-c latin -l fr
 
-interesting_howtos: $(TXT_HOWTOS) $(PSA4_HOWTOS)
+user_calls_make:
+
+distrib: $(TXT_HOWTOS) $(PSA4_HOWTOS) $(HTML_HOWTOS)
 
 HOWTOs: $(TXT_HOWTOS) $(HTML_HOWTOS) $(PSA4_HOWTOS) $(PSUS_HOWTOS)
 
@@ -37,10 +40,10 @@ $(TXT_HOWTOS) $(HTML_HOWTOS) $(PSA4_HOWTOS) $(PSUS_HOWTOS): Makefile
 	@dvips -t letter -o $@ $< 
 
 %.html: %.sgml
-	@echo Making $@: && cd `dirname $<` && sgml2html $(HOWTO_FLAGS_$(dir $<)) `basename $<` 2>&1 | sed "s?^<standard input>:\([0-9]*\):[^ ]* ?$<:\1:?"
+	@echo Making $@: && cd `dirname $<` && sgml2html -s 0 $(HOWTO_FLAGS_$(dir $<)) `basename $<` 2>&1 | sed "s?^<standard input>:\([0-9]*\):[^ ]* ?$<:\1:?"
 
 clean:
-	for d in . $(LANG_DIRS); do rm -f $$d/*.html $$d/*.ps $$d/*.aux $$d/*.log $$d/*.txt $$d/*~; done
+#	for d in . $(LANG_DIRS); do rm -f $$d/*.html $$d/*.ps $$d/*.aux $$d/*.log $$d/*.txt $$d/*~; done
 
 distclean:
 	rm -f Makefile

@@ -6,6 +6,8 @@ CFLAGS+=-Iinclude -I/usr/src/linux/include
 libipulog.a: libipulog.o
 	ld -i $< -o $@
 
+distrib:
+
 ulog_test: ulog_test.c libipulog.a
 	$(CC) $(CFLAGS) ulog_test.c libipulog.a -o ulog_test
 
