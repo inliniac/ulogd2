@@ -1,3 +1,15 @@
+Version 0.93
+- fixes logfile bug: wrong filename and line numbers printed
+- fixes config file parsing, new generic get_word() in conffile.c
+- fixes bug in ulogd_LOGEMU.c on big-endian systems
+- fixes segfault when packet received but no interpreters registered
+	(reported by Drori Ghiora)
+- sigterm handler installed for clean shutdown
+- logfile now fflush()ed after each line printed
+
+Version 0.92
+- fixes libipulog loop-bug (reported by Drori Ghiora)
+
 Version 0.91
 - changes for new kernel ULOG. Includes support for multilink netlink
   messages.
