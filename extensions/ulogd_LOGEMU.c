@@ -1,4 +1,4 @@
-/* ulogd_LOGEMU.c, Version $Revision: 1.10 $
+/* ulogd_LOGEMU.c, Version $Revision: 1.11 $
  *
  * ulogd output target for syslog logging emulation
  *
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_LOGEMU.c,v 1.10 2002/12/09 14:42:43 laforge Exp $
+ * $Id: ulogd_LOGEMU.c,v 1.11 2002/12/09 15:03:51 laforge Exp $
  *
  */
 
@@ -143,8 +143,10 @@ int _output_logemu(ulog_iret_t *res)
 	fprintf(of, "MAC=%s ",
 		(GET_FLAGS(3) & ULOGD_RETF_VALID) ? (char *) GET_VALUE(3).ptr : "");
 
-	fprintf(of, "SRC=%s ", inet_ntoa(htonl(GET_VALUE(4).ui32)));
-	fprintf(of, "DST=%s ", inet_ntoa(htonl(GET_VALUE(5).ui32)));
+	fprintf(of, "SRC=%s ", inet_ntoa((struct in_addr)
+					 {htonl(GET_VALUE(4).ui32)}));
+	fprintf(of, "DST=%s ", inet_ntoa((struct in_addr)
+					 {htonl(GET_VALUE(5).ui32)}));
 
 	fprintf(of, "LEN=%u TOS=%02X PREC=0x%02X TTL=%u ID=%u ", 
 			GET_VALUE(6).ui16, GET_VALUE(7).ui8 & IPTOS_TOS_MASK, 
@@ -225,7 +227,7 @@ int _output_logemu(ulog_iret_t *res)
 						GET_VALUE(31).ui32 >> 24);
 					break;
 				case ICMP_REDIRECT:
-					fprintf(of, "GATEWAY=%s ", inet_ntoa(htonl(GET_VALUE(31).ui32)));
+					fprintf(of, "GATEWAY=%s ", inet_ntoa((struct in_addr) {htonl(GET_VALUE(31).ui32)}));
 					break;
 				case ICMP_DEST_UNREACH:
 					if (GET_VALUE(28).ui8 == ICMP_FRAG_NEEDED)
