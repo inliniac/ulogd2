@@ -5,7 +5,7 @@
  * (C) 2000 by Harald Welte <laforge@gnumonks.org> 
  * This software is distributed under the terms of GNU GPL 
  *
- * $Id: ulogd_MYSQL.c,v 1.1 2000/11/20 11:43:22 laforge Exp $
+ * $Id: ulogd_MYSQL.c,v 1.1 2000/11/20 19:37:55 laforge Exp $
  *
  **/
 
@@ -124,6 +124,9 @@ static int _mysql_output(ulog_iret_t *result)
 				break;
 			case ULOGD_RET_UINT64:
 				sprintf(stmt_ins, "%lu,", res->value.ui64);
+				break;
+			case ULOGD_RET_BOOL:
+				sprintf(stmt_ins, "1,");
 				break;
 			case ULOGD_RET_STRING:
 				*stmt_ins++ = '\'';
