@@ -22,6 +22,7 @@ X syslog compatibility output plugin
 - big endian fixes
 - man pages
 - IPv6 support (core and extensions)
+- pcap output plugin (to use ethereal/tcpdump/... for the logs)
 
 conffile:
 - rewrite. This stuff is a real mess.
