@@ -159,13 +159,14 @@ then
         AC_MSG_WARN(PGSQL backend not used)
 else
         AC_DEFINE(HAVE_PGSQL)
-	if test -f ${pgsqldir}/include/libpq-fe.h
-	then
-		PGSQLINCLUDES=${pgsqldir}/include
-	elif test -f ${pgsqldir}/include/postgresql/libpq-fe.h
-	then
-		PGSQLINCLUDES=${pgsqldir}/include/postgresql
-	fi
+	for i in include include/postgresql include/pgsql
+	do
+		if test -f ${pgsqldir}/$i/libpq-fe.h
+		then
+			PGSQLINCLUDES=${pgsqldir}/$i
+			break
+		fi
+	done
 	PGSQLLIBS=${pgsqldir}/lib
 
 	DATABASE_DIR="${DATABASE_DIR} pgsql"
