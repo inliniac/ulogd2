@@ -59,17 +59,6 @@
 #include <libipulog/libipulog.h>
 #include <ulogd/conffile.h>
 #include <ulogd/ulogd.h>
-
-/* Size of the socket recevive memory.  Should be at least the same size as the
- * 'nlbufsiz' module loadtime parameter of ipt_ULOG.o
- * If you have _big_ in-kernel queues, you may have to increase this number.  (
- * --qthreshold 100 * 1500 bytes/packet = 150kB  */
-#define ULOGD_RMEM_DEFAULT	131071
-
-/* Size of the receive buffer for the netlink socket.  Should be at least of
- * RMEM_DEFAULT size.  */
-#define ULOGD_BUFSIZE_DEFAULT	150000
-
 #ifdef DEBUG
 #define DEBUGP(format, args...) fprintf(stderr, format, ## args)
 #else
@@ -90,8 +79,6 @@
 #endif
 
 /* global variables */
-static struct ipulog_handle *libulog_h;	/* our libipulog handle */
-static unsigned char* libulog_buf;	/* the receive buffer */
 static FILE *logfile = NULL;		/* logfile pointer */
 static int loglevel = 1;		/* current loglevel */
 static char *ulogd_configfile = ULOGD_CONFIGFILE;
@@ -501,24 +488,13 @@ static config_entry_t logf_ce = { NULL, "logfile", CONFIG_TYPE_STRING,
 				  CONFIG_OPT_NONE, 0, 
 				  { string: ULOGD_LOGFILE_DEFAULT } };
 
-static config_entry_t bufsiz_ce = { &logf_ce, "bufsize", CONFIG_TYPE_INT,       
-				   CONFIG_OPT_NONE, 0,
-				   { value: ULOGD_BUFSIZE_DEFAULT } }; 
-
-static config_entry_t plugin_ce = { &bufsiz_ce, "plugin", CONFIG_TYPE_CALLBACK,
+static config_entry_t plugin_ce = { &logf_ce, "plugin", CONFIG_TYPE_CALLBACK,
 				    CONFIG_OPT_MULTI, 0, 
 				    { parser: &load_plugin } };
 
-static config_entry_t nlgroup_ce = { &plugin_ce, "nlgroup", CONFIG_TYPE_INT,
-				     CONFIG_OPT_NONE, 0,
-				     { value: ULOGD_NLGROUP_DEFAULT } };
-
-static config_entry_t loglevel_ce = { &nlgroup_ce, "loglevel", CONFIG_TYPE_INT,
+static config_entry_t loglevel_ce = { &logf_ce, "loglevel", CONFIG_TYPE_INT,
 				      CONFIG_OPT_NONE, 0, 
 				      { value: 1 } };
-static config_entry_t rmem_ce = { &loglevel_ce, "rmem", CONFIG_TYPE_INT,
-				  CONFIG_OPT_NONE, 0, 
-				  { value: ULOGD_RMEM_DEFAULT } };
 
 static void sigterm_handler(int signal)
 {
@@ -646,32 +622,10 @@ int main(int argc, char* argv[])
 	}
 	
 	/* parse config file */
-	if (parse_conffile("global", &rmem_ce)) {
+	if (parse_conffile("global", &logf_ce)) {
 		ulogd_log(ULOGD_FATAL, "parse_conffile\n");
 		exit(1);
 	}
-
-	/* allocate a receive buffer */
-	libulog_buf = (unsigned char *) malloc(bufsiz_ce.u.value);
-
-	if (!libulog_buf) {
-		ulogd_log(ULOGD_FATAL, "unable to allocate receive buffer"
-			  "of %d bytes\n", bufsiz_ce.u.value);
-		ipulog_perror(NULL);
-		exit(1);
-	}
-
-	/* create ipulog handle */
-	libulog_h = ipulog_create_handle(ipulog_group2gmask(nlgroup_ce.u.value),
-					 rmem_ce.u.value);
-
-	if (!libulog_h) {
-		/* if some error occurrs, print it to stderr */
-		ulogd_log(ULOGD_FATAL, "unable to create ipulogd handle\n");
-		ipulog_perror(NULL);
-		exit(1);
-	}
-
 
 	if (change_uid) {
 		ulogd_log(ULOGD_NOTICE, "Changing UID / GID\n");
