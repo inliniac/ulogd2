@@ -1,4 +1,4 @@
-/* ulogd_PGSQL.c, Version $Revision: 1.5 $
+/* ulogd_PGSQL.c, Version $Revision: 1.6 $
  *
  * ulogd output plugin for logging to a PGSQL database
  *
@@ -65,26 +65,12 @@ static config_entry_t table_ce = { &pass_ce, "pgsqltable", CONFIG_TYPE_STRING,
 				CONFIG_OPT_MANDATORY, 0,
 				{ } };
 
-/* is the given string a field in our table? */
-static int is_field(const char *name)
-{
-	struct _field *f;
-
-	for (f = fields; f; f = f->next) {
-		if (!strcmp(f->name, name))
-			return 1;
-	}
-	return 0;
-}
-
 /* our main output function, called by ulogd */
 static int _pgsql_output(ulog_iret_t *result)
 {
 	struct _field *f;
 	ulog_iret_t *res;
                 PGresult   *pgres;
-
-	char *tmpstr;
 
 	stmt_ins = stmt_val;
 
@@ -114,7 +100,7 @@ static int _pgsql_output(ulog_iret_t *result)
 				sprintf(stmt_ins, "%d,", res->value.i32);
 				break;
 			case ULOGD_RET_INT64:
-				sprintf(stmt_ins, "%ld,", res->value.i64);
+				sprintf(stmt_ins, "%lld,", res->value.i64);
 				break;
 			case ULOGD_RET_UINT8:
 				sprintf(stmt_ins, "%u,", res->value.ui8);
@@ -138,7 +124,7 @@ static int _pgsql_output(ulog_iret_t *result)
 				sprintf(stmt_ins, "%u,", res->value.ui32);
 				break;
 			case ULOGD_RET_UINT64:
-				sprintf(stmt_ins, "%lu,", res->value.ui64);
+				sprintf(stmt_ins, "%llu,", res->value.ui64);
 				break;
 			case ULOGD_RET_BOOL:
 				sprintf(stmt_ins, "'%d',", res->value.b);
@@ -216,7 +202,7 @@ static int _pgsql_createstmt(void)
 
 	for (f = fields; f; f = f->next) {
 		strncpy(buf, f->name, ULOGD_MAX_KEYLEN);
-		while (underscore = strchr(buf, '.'))
+		while ((underscore = strchr(buf, '.')))
 			*underscore = '_';
 		sprintf(stmt_val, "%s,", buf);
 		stmt_val = stmt + strlen(stmt);
@@ -265,7 +251,7 @@ static int _pgsql_get_columns(const char *table)
 
 		/* replace all underscores with dots */
 		strncpy(buf, PQgetvalue(result, intaux, 0), ULOGD_MAX_KEYLEN);
-		while (underscore = strchr(buf, '_'))
+		while ((underscore = strchr(buf, '_')))
 			*underscore = '.';
 
 		DEBUGP("field '%s' found: ", buf);
