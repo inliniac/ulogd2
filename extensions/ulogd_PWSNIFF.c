@@ -1,4 +1,4 @@
-/* ulogd_PWSNIFF.c, Version $Revision: 1.5 $
+/* ulogd_PWSNIFF.c, Version $Revision: 1.6 $
  *
  * ulogd logging interpreter for POP3 / FTP like plaintext passwords.
  *
@@ -17,13 +17,14 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_PWSNIFF.c,v 1.5 2001/09/01 11:51:54 laforge Exp $
+ * $Id: ulogd_PWSNIFF.c,v 1.6 2002/12/09 14:42:43 laforge Exp $
  *
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <linux/ip.h>
 #include <linux/in.h>
 #include <linux/tcp.h>
