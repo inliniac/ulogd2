@@ -1,4 +1,4 @@
-/* ulogd_PCAP.c, Version $Revision: 1.3 $
+/* ulogd_PCAP.c, Version $Revision: 1.4 $
  *
  * ulogd output target for writing pcap-style files (like tcpdump)
  *
@@ -20,7 +20,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: ulogd_PCAP.c,v 1.3 2003/04/27 07:39:07 laforge Exp $
+ * $Id: ulogd_PCAP.c,v 1.4 2003/04/27 07:43:37 laforge Exp $
  *
  */
 
@@ -60,8 +60,6 @@ static config_entry_t pcapsync_ce = { &pcapf_ce, "pcapsync",
 
 static FILE *of = NULL;
 
-static char hostname[255];
-
 struct intr_id {
 	char* name;
 	unsigned int id;		
@@ -81,7 +79,6 @@ static struct intr_id intr_ids[INTR_IDS] = {
 
 int _output_pcap(ulog_iret_t *res)
 {
-	ulog_iret_t *ret;
 	struct pcap_pkthdr pchdr;
 
 	pchdr.caplen = GET_VALUE(1).ui32;
