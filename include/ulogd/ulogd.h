@@ -1,11 +1,11 @@
 #ifndef _ULOGD_H
 #define _ULOGD_H
-/* ulogd, Version $Revision: 1.16 $
+/* ulogd, Version $Revision$
  *
  * userspace logging daemon for netfilter ULOG target
  * of the linux 2.4 netfilter subsystem.
  *
- * (C) 2000 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2000-2005 by Harald Welte <laforge@gnumonks.org>
  *
  * this code is released under the terms of GNU GPL
  *
@@ -60,11 +60,12 @@
 
 extern FILE *logfile;
 
+/* ulogd data type */
 enum ulogd_dtype {
 	ULOGD_DTYPE_NULL,
-	ULOGD_DTYPE_RAW,
-	ULOGD_DTYPE_PACKET,
-	ULOGD_DTYPE_FLOW,
+	ULOGD_DTYPE_RAW,	/* raw packet data */
+	ULOGD_DTYPE_PACKET,	/* packet metadata */
+	ULOGD_DTYPE_FLOW,	/* flow metadata */
 };
 
 /* structure describing an input  / output parameter of a plugin */
@@ -113,7 +114,7 @@ struct ulogd_plugin {
 	struct {
 		/* possible input keys of this interpreter */
 		struct ulogd_key *keys;
-		/* number of keys this interpreter has */
+		/* number of input keys */
 		unsigned int num_keys;
 		/* type */
 		enum ulogd_dtype type;
@@ -129,12 +130,14 @@ struct ulogd_plugin {
 
 	/* function to call for each packet */
 	int (*interp)(struct ulogd_pluginstance *instance);
+
 	/* function to construct a new pluginstance */
 	struct ulogd_pluginstance *(*constructor)(struct ulogd_plugin *pl);
 	/* function to destruct an existing pluginstance */
 	int (*destructor)(struct ulogd_pluginstance *instance);
+
 	/* configuration parameters */
-	struct config_keyest config_kset;
+	struct config_keyset config_kset;
 };
 
 /* an instance of a plugin, element in a stack */

@@ -1,6 +1,6 @@
 /* config file parser functions
  *
- * (C) 2000-2004 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2000-2005 by Harald Welte <laforge@gnumonks.org>
  *
  * $Id$
  * 
