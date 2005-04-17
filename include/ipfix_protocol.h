@@ -4,6 +4,8 @@
 /* This header file defines structures for the IPFIX protocol in accordance with
  * draft-ietf-ipfix-protocol-03.txt */
 
+#define IPFIX_VENDOR_NETFILTE	0x23424223
+
 /* Section 8.1 */
 struct ipfix_msg_hdr {
 	u_int16_t	version;
