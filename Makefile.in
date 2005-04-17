@@ -3,16 +3,16 @@
 include @top_srcdir@/Rules.make
 CFLAGS+=-I@top_srcdir@/libipulog/include -I@top_srcdir@/include
 
-SUBDIRS=conffile libipulog extensions doc
+SUBDIRS=conffile libipulog doc input/flow input/packet filter/raw2packet filter/packet2flow output
 
 ifeq (x@MYSQLINCLUDES@,x)
 else
-SUBDIRS+=mysql
+SUBDIRS+=output/mysql
 endif
 
 ifeq (x@PGSQLINCLUDES@,x)
 else
-SUBDIRS+=pgsql
+SUBDIRS+=output/pgsql
 endif
 
 ifeq (x@HAVE_PCAP_H@,x)
