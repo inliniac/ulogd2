@@ -41,6 +41,9 @@
  * 	03 Oct 2004 Harald Welte <laforge@gnumonks.org>
  * 		- further unification towards generic network event logging
  * 		  and support for lnstat
+ *
+ * 	17 Apr 2005 Harald Welte <laforge@gnumonks.org>
+ * 		- 
  */
 
 #define ULOGD_VERSION	"2.00alpha"
@@ -72,9 +75,6 @@
 #ifndef ULOGD_LOGFILE_DEFAULT
 #define ULOGD_LOGFILE_DEFAULT	"/var/log/ulogd.log"
 #endif
-#ifndef ULOGD_NLGROUP_DEFAULT
-#define ULOGD_NLGROUP_DEFAULT	32
-#endif
 
 /* where to look for the config file */
 #ifndef ULOGD_CONFIGFILE
@@ -100,7 +100,7 @@ static LIST_HEAD(ulogd_fds);
 
 /* We keep hashtables of interpreters and registered keys. The hash-tables
  * are allocated dynamically at program load time. You may control the
- * allocation granularity of both hashes (i.e. the amount of hashtable
+ e allocation granularity of both hashes (i.e. the amount of hashtable
  * entries are allocated at one time) through modification of the constants
  * INTERH_ALLOC_GRAN and KEYH_ALLOC_GRAN 
  */
@@ -438,14 +438,14 @@ pluginstance_alloc_init(struct ulogd_plugin *pl, char *pi_id,
 	memcpy(pi->id, pi_id, sizeof(pi->id));
 
 	/* copy config keys */
-	pi->config_kset.num_ces = pl->config_kset.num_ces;
-	ce_size = pl->config_kset.num_ces*sizeof(struct config_entry);
+	pi->config_kset.num_ces = pl->config_kset->num_ces;
+	ce_size = pl->config_kset->num_ces*sizeof(struct config_entry);
 	pi->config_kset.ces = malloc(ce_size);
 	if (!pi->configs) {
 		free(pi);
 		return NULL;
 	}
-	memcpy(pi->config_kset.ces, pl->config_kset.ces, ce_size);
+	memcpy(pi->config_kset.ces, pl->config_kset->ces, ce_size);
 	
 	/* FIXME: allocate input and output keys ?*/
 
@@ -535,11 +535,12 @@ void ulogd_unregister_fd(struct ulogd_fd *ufd)
 	list_del(&ufd->list);
 }
 
-int ulogd_main_loop()
+static int ulogd_main_loop(void)
 {
 	fd_set read_fd, write_fd, except_fd;
 	unsigned int hifd;
 	struct ulogd_fd *ufd;
+	int ret = 0;
 
 	while (1) {
 		FD_ZERO(&read_fd);
@@ -559,6 +560,18 @@ int ulogd_main_loop()
 		}
 
 		ret = select(hifd+1, &read_fd, &write_fd, &except_fd, NULL);
+		if (ret == 0) 
+			continue;
+
+		if (ret < 0) {
+			if (errno = -EINTR)
+				continue;
+			else {
+				ulogd_log(ULOGD_ERROR, "select returned %s\n",
+					  strerror(errno));
+				break;
+			}
+		}
 
 		list_for_each_entry(ufd, &ulogd_fds, list) {
 			unsigned int what = 0;
@@ -574,6 +587,7 @@ int ulogd_main_loop()
 		}
 	}
 
+	return ret;
 }
 
 /* open the logfile */
@@ -836,10 +850,12 @@ int main(int argc, char* argv[])
 
 	logfile_open(logf_ce.u.string);
 
+#if 0
 	for (p = ulogd_outputs; p; p = p->next) {
 		if (p->init)
 			(*p->init)();
 	}
+#endif
 
 #ifdef DEBUG
 	/* dump key and interpreter hash */
@@ -862,6 +878,8 @@ int main(int argc, char* argv[])
 
 	ulogd_log(ULOGD_NOTICE, 
 		  "initialization finished, entering main loop\n");
+
+	ulogd_main_loop();
 
 	/* hackish, but result is the same */
 	sigterm_handler(SIGTERM);	

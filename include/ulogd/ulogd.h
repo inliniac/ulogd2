@@ -13,8 +13,11 @@
  */
 
 #include <ulogd/linuxlist.h>
+#include <ulogd/conffile.h>
+#include <ulogd/ipfix_protocol.h>
 #include <stdio.h>
 #include <signal.h>	/* need this because of extension-sighandler */
+#include <sys/types.h>
 
 /* All types with MSB = 1 make use of value.ptr
  * other types use one of the union's member */
@@ -71,7 +74,7 @@ enum ulogd_dtype {
 /* structure describing an input  / output parameter of a plugin */
 struct ulogd_key {
 	/* next interpreter return (key) in the global list */
-	struct ulogd_iret *next;
+	struct ulogd_key *next;
 	/* length of the returned value (only for lengthed types */
 	u_int32_t len;
 	/* type of the returned value (ULOGD_IRET_...) */
@@ -100,10 +103,11 @@ struct ulogd_key {
 			int64_t		i64;
 			void		*ptr;
 		} value;
-		struct ulogd_iret *source;
+		struct ulogd_key *source;
 	} u;
 };
 
+struct ulogd_pluginstance;
 struct ulogd_plugin {
 	/* global list of plugins */
 	struct list_head list;
@@ -137,7 +141,7 @@ struct ulogd_plugin {
 	int (*destructor)(struct ulogd_pluginstance *instance);
 
 	/* configuration parameters */
-	struct config_keyset config_kset;
+	struct config_keyset *config_kset;
 };
 
 /* an instance of a plugin, element in a stack */
@@ -151,11 +155,11 @@ struct ulogd_pluginstance {
 	/* name / id  of this instance*/
 	char id[ULOGD_MAX_KEYLEN];
 	/* per-instance input keys */
-	struct ulogd_input *input;
+	struct ulogd_key *input;
 	/* per-instance output keys */
-	struct ulogd_iret *output;
+	struct ulogd_key *output;
 	/* per-instance config parameters (array) */
-	config_entry_t *configs;
+	struct config_entry *configs;
 	unsigned int num_configs;
 	/* private data */
 	char private[0];
@@ -175,8 +179,8 @@ struct ulogd_keyh_entry {
 /* register a new interpreter plugin */
 void ulogd_register_plugin(struct ulogd_plugin *me);
 
-/* allocate a new ulogd_iret */
-struct ulogd_iret *alloc_ret(const u_int16_t type, const char*);
+/* allocate a new ulogd_key */
+struct ulogd_key *alloc_ret(const u_int16_t type, const char*);
 
 /* write a message to the daemons' logfile */
 void __ulogd_log(int level, char *file, int line, const char *message, ...);
@@ -193,7 +197,7 @@ unsigned int interh_getid(const char *name);
 unsigned int keyh_getid(const char *name);
 
 /* get a result for a given key id */
-struct ulogd_iret *keyh_getres(unsigned int id);
+struct ulogd_key *keyh_getres(unsigned int id);
 
 /* the key hash itself */
 extern struct ulogd_keyh_entry *ulogd_keyh;

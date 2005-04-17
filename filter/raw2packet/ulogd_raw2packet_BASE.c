@@ -1,4 +1,4 @@
-/* ulogd_MAC.c, Version $Revision: 1.21 $
+/* ulogd_MAC.c, Version $Revision$
  *
  * ulogd interpreter plugin for 
  * 	o MAC addresses
@@ -11,7 +11,7 @@
  * 	o ICMP header
  * 	o AH/ESP header
  *
- * (C) 2000-2001 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2000-2005 by Harald Welte <laforge@gnumonks.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 
@@ -45,7 +45,7 @@
  * 			IP HEADER
  ***********************************************************************/
 
-static ulog_iret_t iphdr_rets[] = {
+static struct ulogd_key iphdr_rets[] = {
 	{ 
 		.type = ULOGD_RET_IPADDR,
 		.flags = ULOGD_RETF_NONE, 
@@ -425,6 +425,7 @@ static struct ulogd_pluginstance *base_init(struct ulogd_plugin *pl)
 
 static int base_fini(struct ulogd_pluginstance *upi)
 {
+	free(bpi);
 	return 0;
 }
 

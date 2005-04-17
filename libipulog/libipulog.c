@@ -1,5 +1,5 @@
 /* 
- * libipulog.c, $Revision: 1.11 $
+ * libipulog.c, $Revision$
  *
  * netfilter ULOG userspace library.
  *
@@ -21,7 +21,7 @@
  * This library is still under development, so be aware of sudden interface
  * changes
  *
- * $Id: libipulog.c,v 1.11 2003/05/04 10:00:10 laforge Exp $
+ * $Id$
  */
 
 #include <stdlib.h>
@@ -253,3 +253,8 @@ void ipulog_perror(const char *s)
 	fputc('\n', stderr);
 }
 
+int ipulog_get_fd(struct ipulog_handle *h)
+{
+	return h->fd;
+}
+ 

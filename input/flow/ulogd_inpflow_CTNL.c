@@ -9,6 +9,7 @@
  * as published by the Free Software Foundation
  */
 
+#include <ulogd/ulogd.h>
 #include "libnfnetlink.h"
 #include "libctnetlink.h"
 
