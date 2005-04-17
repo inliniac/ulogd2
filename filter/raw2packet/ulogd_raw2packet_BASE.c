@@ -102,36 +102,36 @@ static struct ulogd_key iphdr_rets[] = {
 	},
 };
 
-static ulog_iret_t *_interp_iphdr(struct ulog_interpreter *ip, 
-				ulog_packet_msg_t *pkt)
+static struct ulog_key *_interp_iphdr(struct ulogd_pluginstance *pi)
 {
-	ulog_iret_t *ret = ip->result;
-	struct iphdr *iph = (struct iphdr *) pkt->payload;
+	struct ulogd_key *ret = pi->output;
+	struct iphdr *iph = (struct iphdr *) pi->input[0].u.value.ptr;
 
-	ret[0].value.ui32 = ntohl(iph->saddr);
+	ret[0].u.value.ui32 = ntohl(iph->saddr);
 	ret[0].flags |= ULOGD_RETF_VALID;
-	ret[1].value.ui32 = ntohl(iph->daddr);
+	ret[1].u.value.ui32 = ntohl(iph->daddr);
 	ret[1].flags |= ULOGD_RETF_VALID;
-	ret[2].value.ui8 = iph->protocol;
+	ret[2].u.value.ui8 = iph->protocol;
 	ret[2].flags |= ULOGD_RETF_VALID;
-	ret[3].value.ui8 = iph->tos;
+	ret[3].u.value.ui8 = iph->tos;
 	ret[3].flags |= ULOGD_RETF_VALID;
-	ret[4].value.ui8 = iph->ttl;
+	ret[4].u.value.ui8 = iph->ttl;
 	ret[4].flags |= ULOGD_RETF_VALID;
-	ret[5].value.ui16 = ntohs(iph->tot_len);
+	ret[5].u.value.ui16 = ntohs(iph->tot_len);
 	ret[5].flags |= ULOGD_RETF_VALID;
-	ret[6].value.ui8 = iph->ihl;
+	ret[6].u.value.ui8 = iph->ihl;
 	ret[6].flags |= ULOGD_RETF_VALID;
-	ret[7].value.ui16 = ntohs(iph->check);
+	ret[7].u.value.ui16 = ntohs(iph->check);
 	ret[7].flags |= ULOGD_RETF_VALID;
-	ret[8].value.ui16 = ntohs(iph->id);
+	ret[8].u.value.ui16 = ntohs(iph->id);
 	ret[8].flags |= ULOGD_RETF_VALID;
-	ret[9].value.ui16 = ntohs(iph->frag_off);
+	ret[9].u.value.ui16 = ntohs(iph->frag_off);
 	ret[9].flags |= ULOGD_RETF_VALID;
 
-	return ret;
+	return 0;
 }
 
+#if 0
 /***********************************************************************
  * 			TCP HEADER
  ***********************************************************************/
@@ -215,43 +215,43 @@ static ulog_iret_t *_interp_tcphdr(struct ulog_interpreter *ip,
 	if (iph->protocol != IPPROTO_TCP)
 		return NULL;
 	
-	ret[0].value.ui16 = ntohs(tcph->source);
+	ret[0].u.value.ui16 = ntohs(tcph->source);
 	ret[0].flags |= ULOGD_RETF_VALID;
-	ret[1].value.ui16 = ntohs(tcph->dest);
+	ret[1].u.value.ui16 = ntohs(tcph->dest);
 	ret[1].flags |= ULOGD_RETF_VALID;
-	ret[2].value.ui32 = ntohl(tcph->seq);
+	ret[2].u.value.ui32 = ntohl(tcph->seq);
 	ret[2].flags |= ULOGD_RETF_VALID;
-	ret[3].value.ui32 = ntohl(tcph->ack_seq);
+	ret[3].u.value.ui32 = ntohl(tcph->ack_seq);
 	ret[3].flags |= ULOGD_RETF_VALID;
-	ret[4].value.ui8 = ntohs(tcph->doff);
+	ret[4].u.value.ui8 = ntohs(tcph->doff);
 	ret[4].flags |= ULOGD_RETF_VALID;
-	ret[5].value.ui8 = ntohs(tcph->res1);
+	ret[5].u.value.ui8 = ntohs(tcph->res1);
 	ret[5].flags |= ULOGD_RETF_VALID;
-	ret[6].value.ui16 = ntohs(tcph->window);
+	ret[6].u.value.ui16 = ntohs(tcph->window);
 	ret[6].flags |= ULOGD_RETF_VALID;
 
-	ret[7].value.b = tcph->urg;
+	ret[7].u.value.b = tcph->urg;
 	ret[7].flags |= ULOGD_RETF_VALID;
 	if (tcph->urg) {
-		ret[8].value.ui16 = ntohs(tcph->urg_ptr);
+		ret[8].u.value.ui16 = ntohs(tcph->urg_ptr);
 		ret[8].flags |= ULOGD_RETF_VALID;
 	}
-	ret[9].value.b = tcph->ack;
+	ret[9].u.value.b = tcph->ack;
 	ret[9].flags |= ULOGD_RETF_VALID;
-	ret[10].value.b = tcph->psh;
+	ret[10].u.value.b = tcph->psh;
 	ret[10].flags |= ULOGD_RETF_VALID;
-	ret[11].value.b = tcph->rst;
+	ret[11].u.value.b = tcph->rst;
 	ret[11].flags |= ULOGD_RETF_VALID;
-	ret[12].value.b = tcph->syn;
+	ret[12].u.value.b = tcph->syn;
 	ret[12].flags |= ULOGD_RETF_VALID;
-	ret[13].value.b = tcph->fin;
+	ret[13].u.value.b = tcph->fin;
 	ret[13].flags |= ULOGD_RETF_VALID;
-	ret[14].value.b = tcph->res1;
+	ret[14].u.value.b = tcph->res1;
 	ret[14].flags |= ULOGD_RETF_VALID;
-	ret[15].value.b = tcph->res2;
+	ret[15].u.value.b = tcph->res2;
 	ret[15].flags |= ULOGD_RETF_VALID;
-	ret[16].value.ui16 = ntohs(tcph->check);
-	ret[16].value.ui16 = ULOGD_RETF_VALID;
+	ret[16].u.value.ui16 = ntohs(tcph->check);
+	ret[16].u.value.ui16 = ULOGD_RETF_VALID;
 	
 	return ret;
 }
@@ -295,13 +295,13 @@ static ulog_iret_t *_interp_udp(struct ulog_interpreter *ip,
 	if (iph->protocol != IPPROTO_UDP)
 		return NULL;
 
-	ret[0].value.ui16 = ntohs(udph->source);
+	ret[0].u.value.ui16 = ntohs(udph->source);
 	ret[0].flags |= ULOGD_RETF_VALID;
-	ret[1].value.ui16 = ntohs(udph->dest);
+	ret[1].u.value.ui16 = ntohs(udph->dest);
 	ret[1].flags |= ULOGD_RETF_VALID;
-	ret[2].value.ui16 = ntohs(udph->len);
+	ret[2].u.value.ui16 = ntohs(udph->len);
 	ret[2].flags |= ULOGD_RETF_VALID;
-	ret[3].value.ui16 = ntohs(udph->check);
+	ret[3].u.value.ui16 = ntohs(udph->check);
 	ret[3].flags |= ULOGD_RETF_VALID;
 	
 	return ret;
@@ -339,32 +339,32 @@ static ulog_iret_t *_interp_icmp(struct ulog_interpreter *ip,
 	if (iph->protocol != IPPROTO_ICMP)
 		return NULL;
 	
-	ret[0].value.ui8 = icmph->type;
+	ret[0].u.value.ui8 = icmph->type;
 	ret[0].flags |= ULOGD_RETF_VALID;
-	ret[1].value.ui8 = icmph->code;
+	ret[1].u.value.ui8 = icmph->code;
 	ret[1].flags |= ULOGD_RETF_VALID;
 
 	switch(icmph->type) {
 		case ICMP_ECHO:
 		case ICMP_ECHOREPLY:
-			ret[2].value.ui16 = ntohs(icmph->un.echo.id);
+			ret[2].u.value.ui16 = ntohs(icmph->un.echo.id);
 			ret[2].flags |= ULOGD_RETF_VALID;
-			ret[3].value.ui16 = ntohs(icmph->un.echo.sequence);
+			ret[3].u.value.ui16 = ntohs(icmph->un.echo.sequence);
 			ret[3].flags |= ULOGD_RETF_VALID;
 			break;
 		case ICMP_REDIRECT:
 		case ICMP_PARAMETERPROB:
-			ret[4].value.ui32 = ntohl(icmph->un.gateway);
+			ret[4].u.value.ui32 = ntohl(icmph->un.gateway);
 			ret[4].flags |= ULOGD_RETF_VALID;
 			break;
 		case ICMP_DEST_UNREACH:
 			if (icmph->code == ICMP_FRAG_NEEDED) {
-				ret[5].value.ui16 = ntohs(icmph->un.frag.mtu);
+				ret[5].u.value.ui16 = ntohs(icmph->un.frag.mtu);
 				ret[5].flags |= ULOGD_RETF_VALID;
 			}
 			break;
 	}
-	ret[6].value.ui16 = icmph->checksum;
+	ret[6].u.value.ui16 = icmph->checksum;
 	ret[6].flags |= ULOGD_RETF_VALID;
 
 	return ret;
@@ -392,7 +392,7 @@ static ulog_iret_t *_interp_ahesp(struct ulog_interpreter *ip,
 	if (iph->protocol != IPPROTO_ESP)
 		return NULL;
 
-	ret[0].value.ui32 = ntohl(esph->spi);
+	ret[0].u.value.ui32 = ntohl(esph->spi);
 	ret[0].flags |= ULOGD_RETF_VALID;
 #endif
 
@@ -408,6 +408,18 @@ static ulog_interpreter_t base_ip[] = {
 	{ NULL, "ahesp", 0, &_interp_ahesp, 1, ahesphdr_rets },
 	{ NULL, "", 0, NULL, 0, NULL }, 
 };
+#endif
+
+static struct ulogd_key base_inp[] = {
+	{ 
+		.type = ULOGD_RET_RAW,
+		.name = "raw.pkt", 
+		.ipfix = { 
+			.vendor = IPFIX_VENDOR_NETFILTER, 
+			.field_id = 1 
+		},
+	},
+};
 
 static struct ulogd_pluginstance *base_init(struct ulogd_plugin *pl)
 {
@@ -417,32 +429,35 @@ static struct ulogd_pluginstance *base_init(struct ulogd_plugin *pl)
 		return NULL;
 
 	bpi->plugin = pl;
-	bpi->input = FIXME;
-	bpi->output = FIXME;
+	//bpi->input = &base_inp;
+	//bpi->output = &iphdr_rets;
 
 	return bpi;
 }
 
 static int base_fini(struct ulogd_pluginstance *upi)
 {
-	free(bpi);
+	free(upi);
 	return 0;
 }
 
 static struct ulogd_plugin base_plugin = {
 	.name = "BASE",
 	.input = {
-		.keys =;
+		.keys = &base_inp,
 		.num_keys = 1,
 		.type = ULOGD_DTYPE_RAW,
 		},
 	.output = {
-		.keys = &base_keys,
-		.num_keys = 39,
-		.type = ULOGD_DTYPE_PKT,
+		.keys = &iphdr_rets,
+//		.num_keys = 39,
+		.num_keys = 10,
+		.type = ULOGD_DTYPE_PACKET,
 		},
-	.interp = &base_interp,
-	.construct = &base_init,
+//	.interp = &base_interp,
+	.interp = &_interp_iphdr,
+
+	.constructor = &base_init,
 	.destructor = &base_fini,
 };
 
