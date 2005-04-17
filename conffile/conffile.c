@@ -117,6 +117,7 @@ int config_parse_file(const char *section, struct config_keyset *kset)
 	char *args;
 	int err = 0;
 	int found = 0;
+	int i;
 	char linebuf[LINE_LEN+1];
 	char *line = linebuf;
 
@@ -169,7 +170,7 @@ int config_parse_file(const char *section, struct config_keyset *kset)
 
 		DEBUGC("parse_file: entering main loop\n");
 		for (i = 0; i < kset->num_ces; i++) {
-			struct config_entry *ce = kset->ces[i];
+			struct config_entry *ce = &kset->ces[i];
 			DEBUGC("parse main loop, key: %s\n", ce->key);
 			if (strcmp(ce->key, (char *) &wordbuf)) {
 				continue;
@@ -209,7 +210,7 @@ int config_parse_file(const char *section, struct config_keyset *kset)
 
 
 	for (i = 0; i < kset->num_ces; i++) {
-		struct config_entry *ce = kset->ces[i];
+		struct config_entry *ce = &kset->ces[i];
 		DEBUGC("ce post loop, ce=%s\n", ce->key);
 		if ((ce->options & CONFIG_OPT_MANDATORY) && (ce->hit == 0)) {
 			DEBUGC("Mandatory config directive \"%s\" not found\n",
