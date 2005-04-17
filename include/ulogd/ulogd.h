@@ -66,9 +66,11 @@ extern FILE *logfile;
 /* ulogd data type */
 enum ulogd_dtype {
 	ULOGD_DTYPE_NULL,
+	ULOGD_DTYPE_SOURCE,	/* source of data, no input keys */
 	ULOGD_DTYPE_RAW,	/* raw packet data */
 	ULOGD_DTYPE_PACKET,	/* packet metadata */
 	ULOGD_DTYPE_FLOW,	/* flow metadata */
+	ULOGD_DTYPE_SINK,	/* sink of data, no output keys */
 };
 
 /* structure describing an input  / output parameter of a plugin */

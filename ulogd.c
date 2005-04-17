@@ -684,43 +684,45 @@ static struct config_keyset ulogd_kset = {
 #define plugin_ce	ulogd_ces[1]
 #define loglevel_ce	ulogd_ces[2]
 #define stack_ce	ulogd_ces[3]
-					
+
+
+static void deliver_signal_pluginstances(int signal)
+{
+	struct ulogd_pluginstance *stack, *pi;
+
+	list_for_each_entry(stack, &ulogd_pi_stack, stack_list) {
+		list_for_each_entry(pi, stack, list) {
+			if (pi->plugin->signal)
+				(*pi->plugin->signal)(pi, signal);
+		}
+	}
+}
 
 static void sigterm_handler(int signal)
 {
-	struct ulogd_plugin *p;
 	
 	ulogd_log(ULOGD_NOTICE, "sigterm received, exiting\n");
 
-	ipulog_destroy_handle(libulog_h);
-	free(libulog_buf);
+	deliver_signal_pluginstances(signal);
+
 	if (logfile != stdout)
 		fclose(logfile);
-
-	for (p = ulogd_outputs; p; p = p->next) {
-		if (p->fini)
-			(*p->fini)();
-	}
 
 	exit(0);
 }
 
-static void sighup_handler(int signal)
+static void signal_handler(int signal)
 {
-	struct ulogd_plugin *p;
+	ulogd_log(ULOGD_NOTICE, "signal received, calling pluginstances\n");
+	
+	deliver_signal_pluginstances(signal);
 
+	/* reopen logfile */
 	if (logfile != stdout) {
 		fclose(logfile);
 		logfile = fopen(logf_ce.u.string, "a");
 		if (!logfile)
 			sigterm_handler(signal);
-	}
-
-	ulogd_log(ULOGD_NOTICE, "sighup received, calling plugin handlers\n");
-	
-	for (p = ulogd_outputs; p; p = p->next) {
-		if (p->signal)
-			(*p->signal)(SIGHUP);
 	}
 }
 
@@ -874,7 +876,7 @@ int main(int argc, char* argv[])
 	}
 
 	signal(SIGTERM, &sigterm_handler);
-	signal(SIGHUP, &sighup_handler);
+	signal(SIGHUP, &signal_handler);
 
 	ulogd_log(ULOGD_NOTICE, 
 		  "initialization finished, entering main loop\n");
