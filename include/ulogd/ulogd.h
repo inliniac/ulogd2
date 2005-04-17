@@ -203,4 +203,23 @@ extern struct ulogd_keyh_entry *ulogd_keyh;
 #define IS_NEEDED(x)	(x.flags & ULOGD_RETF_NEEDED)
 #define SET_NEEDED(x)	(x.flags |= ULOGD_RETF_NEEDED)
 
+/***********************************************************************
+ * file descriptor handling
+ ***********************************************************************/
+
+#define ULOGD_FD_READ	0x0001
+#define ULOGD_FD_WRITE	0x0002
+#define ULOGD_FD_EXCEPT	0x0004
+
+struct ulogd_fd {
+	struct list_head list;
+	int fd;				/* file descriptor */
+	unsigned int when;
+	int (*cb)(int fd, unsigned int what, void *data);
+	void *data;			/* void * to pass to callback */
+};
+
+int ulogd_register_fd(struct ulogd_fd *ufd);
+void ulogd_unregister_fd(struct ulogd_fd *ufd);
+
 #endif /* _ULOGD_H */

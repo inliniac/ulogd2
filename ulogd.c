@@ -39,7 +39,7 @@
  * 		- major restructuring for flow accounting / ipfix work
  *
  * 	03 Oct 2004 Harald Welte <laforge@gnumonks.org>
- * 		- further unification towars generic network event logging
+ * 		- further unification towards generic network event logging
  * 		  and support for lnstat
  */
 
@@ -91,7 +91,8 @@ static char *ulogd_configfile = ULOGD_CONFIGFILE;
 
 /* linked list for all registered plugins */
 static struct ulogd_plugin *ulogd_plugins;
-LIST_HEAD(ulogd_pi_stacks);
+static LIST_HEAD(ulogd_pi_stacks);
+static LIST_HEAD(ulogd_fds);
 
 /***********************************************************************
  * INTERPRETER AND KEY HASH FUNCTIONS 			(new in 0.9)
@@ -524,6 +525,57 @@ static int create_stack(char *option)
 	return 0;
 }
 
+int ulogd_register_fd(struct ulogd_fd *ufd)
+{
+	list_add(&ufd->list, &ulogd_fds);
+}
+
+void ulogd_unregister_fd(struct ulogd_fd *ufd)
+{
+	list_del(&ufd->list);
+}
+
+int ulogd_main_loop()
+{
+	fd_set read_fd, write_fd, except_fd;
+	unsigned int hifd;
+	struct ulogd_fd *ufd;
+
+	while (1) {
+		FD_ZERO(&read_fd);
+		FD_ZERO(&write_fd);
+		FD_ZERO(&except_fd);
+		hifd = 0;
+		list_for_each_entry(ufd, &ulogd_fds, list) {
+			if (ufd->when & ULOGD_FD_READ)
+				FD_SET(ufd->fd, &read_fd);
+			if (ufd->when & ULOGD_FD_WRITE)
+				FD_SET(ufd->fd, &write_fd);
+			if (ufd->when & ULOGD_FD_EXCEPT)
+				FD_SET(ufd->fd, &except_fd);
+
+			if (ufd->fd > hifd)
+				hifd = ufd;
+		}
+
+		ret = select(hifd+1, &read_fd, &write_fd, &except_fd, NULL);
+
+		list_for_each_entry(ufd, &ulogd_fds, list) {
+			unsigned int what = 0;
+			if (FD_ISSET(ufd->fd, &read_fd))
+				what |= ULOGD_FD_READ;
+			if (FD_ISSET(ufd->fd, &write_fd))
+				what |= ULOGD_FD_WRITE;
+			if (FD_ISSET(ufd->fd, &except_fd))
+				what |= ULOGD_FD_EXCEPT;
+
+			if (what & ufd->when)
+				ufd->cb(ufd->fd, what, ufd->data);
+		}
+	}
+
+}
+
 /* open the logfile */
 static int logfile_open(const char *name)
 {
@@ -662,7 +714,7 @@ static void print_usage(void)
 {
 	/* FIXME */
 	printf("ulogd Version %s\n", ULOGD_VERSION);
-	printf("Copyright (C) 2000-2004 Harald Welte "
+	printf("Copyright (C) 2000-2005 Harald Welte "
 	       "<laforge@gnumonks.org>\n");
 	printf("This is free software with ABSOLUTELY NO WARRANTY.\n\n");
 	printf("Parameters:\n");
@@ -717,7 +769,7 @@ int main(int argc, char* argv[])
 			break;
 		case 'V':
 			printf("ulogd Version %s\n", ULOGD_VERSION);
-			printf("Copyright (C) 2000-2002 Harald Welte "
+			printf("Copyright (C) 2000-2005 Harald Welte "
 			       "<laforge@gnumonks.org>\n");
 			exit(0);
 			break;
