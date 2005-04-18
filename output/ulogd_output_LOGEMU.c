@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 #include <ulogd/ulogd.h>
 #include <ulogd/conffile.h>
 #include "../util/printpkt.c"
@@ -45,6 +46,10 @@
 	((unsigned char *)&addr)[1], \
         ((unsigned char *)&addr)[2], \
         ((unsigned char *)&addr)[3]
+
+struct ulogd_key logemu_inp[] = {
+
+};
 
 static struct config_keyset logemu_kset = {
 	.num_ces = 2,
@@ -64,21 +69,23 @@ static struct config_keyset logemu_kset = {
 	},
 };
 
-struct logemu_instance = {
+struct logemu_instance {
 	struct ulogd_pluginstance upi;
-	static FILE *of = NULL;
+	FILE *of;
 };
 
-static int _output_logemu(ulog_iret_t *res)
+static int _output_logemu(struct ulogd_pluginstance *upi)
 {
+	struct logemu_instance *li = (struct logemu_instance *) upi;
+	struct ulogd_key *res = upi->input;
 	static char buf[4096];
 
 	printpkt_print(res, buf, 1);
 
-	fprintf(of, "%s", buf);
+	fprintf(li->of, "%s", buf);
 
-	if (syslsync_ce.u.value) 
-		fflush(of);
+	if (upi->configs[1].u.value) 
+		fflush(li->of);
 
 	return 0;
 }
@@ -91,7 +98,7 @@ static void signal_handler_logemu(struct ulogd_pluginstance *pi, int signal)
 	case SIGHUP:
 		ulogd_log(ULOGD_NOTICE, "syslogemu: reopening logfile\n");
 		fclose(li->of);
-		li->of = fopen(syslogf_ce.u.string, "a");
+		li->of = fopen(pi->configs[0].u.string, "a");
 		if (!li->of) {
 			ulogd_log(ULOGD_FATAL, "can't open syslogemu: %s\n",
 				  strerror(errno));
@@ -119,7 +126,7 @@ static struct ulogd_pluginstance *init_logemu(struct ulogd_plugin *pl)
 #ifdef DEBUG_LOGEMU
 	li->of = stdout;
 #else
-	li->of = fopen(syslogf_ce.u.string, "a");
+	li->of = fopen(li->upi.configs[0].u.string, "a");
 	if (!li->of) {
 		ulogd_log(ULOGD_FATAL, "can't open syslogemu: %s\n", 
 			  strerror(errno));

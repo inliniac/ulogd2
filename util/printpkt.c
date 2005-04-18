@@ -95,7 +95,7 @@ static struct intr_id intr_ids[INTR_IDS] = {
 #define GET_VALUE(x)	ulogd_keyh[intr_ids[x].id].interp->result[ulogd_keyh[intr_ids[x].id].offset].value
 #define GET_FLAGS(x)	ulogd_keyh[intr_ids[x].id].interp->result[ulogd_keyh[intr_ids[x].id].offset].flags
 
-int printpkt_print(ulog_iret_t *res, char *buf, int prefix)
+int printpkt_print(struct ulogd_key *res, char *buf, int prefix)
 {
 	char *timestr;
 	char *tmp;
