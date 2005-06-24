@@ -4,7 +4,7 @@
  *
  * unified network logging daemon for Linux.
  *
- * (C) 2000-2004 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2000-2005 by Harald Welte <laforge@gnumonks.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 
@@ -18,8 +18,6 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * $Id$
  *
  * Modifications:
  * 	14 Jun 2001 Martin Josefsson <gandalf@wlug.westbo.se>
@@ -441,7 +439,7 @@ pluginstance_alloc_init(struct ulogd_plugin *pl, char *pi_id,
 	pi->config_kset.num_ces = pl->config_kset->num_ces;
 	ce_size = pl->config_kset->num_ces*sizeof(struct config_entry);
 	pi->config_kset.ces = malloc(ce_size);
-	if (!pi->configs) {
+	if (!pi->config_kset.ces) {
 		free(pi);
 		return NULL;
 	}
@@ -503,7 +501,7 @@ static int create_stack(char *option)
 		}
 
 		/* allocate */
-		pi = ulogd_pluginstance_alloc_init(pl. pi_id, stack);
+		pi = ulogd_pluginstance_alloc_init(pl, pi_id, stack);
 		if (!pi) {
 			ulogd_log(ULOGD_ERROR, 
 				  "unable to allocate pluginstance for %s\n",

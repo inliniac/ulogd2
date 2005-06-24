@@ -3,7 +3,7 @@
 /* ulogd, Version $Revision$
  *
  * userspace logging daemon for netfilter ULOG target
- * of the linux 2.4 netfilter subsystem.
+ * of the linux 2.4/2.6 netfilter subsystem.
  *
  * (C) 2000-2005 by Harald Welte <laforge@gnumonks.org>
  *
@@ -161,8 +161,7 @@ struct ulogd_pluginstance {
 	/* per-instance output keys */
 	struct ulogd_key *output;
 	/* per-instance config parameters (array) */
-	struct config_entry *configs;
-	unsigned int num_configs;
+	struct config_entry *config_kset;
 	/* private data */
 	char private[0];
 };
