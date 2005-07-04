@@ -1,4 +1,4 @@
-/* ulogd_MAC.c, Version $Revision: 1.9 $
+/* ulogd_MAC.c, Version $Revision$
  *
  * ulogd output target for logging to a file 
  *
@@ -151,7 +151,7 @@ static struct ulogd_plugin oprint_plugin = {
 			.type = ULOGD_DTYPE_PKT,
 		},
 	.output = {
-			.type = ULOGD_DTYPE_NULL,
+			.type = ULOGD_DTYPE_SINK,
 		},
 	.interp = &oprint_interp,
 	.constructor = &oprint_init,
