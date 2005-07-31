@@ -7,7 +7,7 @@ SH_CFLAGS:=$(CFLAGS) -fPIC
 #  Normally You should not need to change anything below
 #
 
-SHARED_LIBS=ulogd_inppkt_ULOG.so
+SHARED_LIBS=ulogd_inppkt_ULOG.so ulogd_inppkt_NFLOG.so
 
 all: $(SHARED_LIBS)
 
