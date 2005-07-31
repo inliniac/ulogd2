@@ -10,12 +10,13 @@
  */
 
 #include <ulogd/ulogd.h>
-#include <libnfnetlink.h>
-#include <libctnetlink.h>
+#include <libnfnetlink/libnfnetlink.h>
+#include <libnfnetlink_conntrack/libnfnetlink_conntrack.h>
 
 static struct ulogd_ctnl_pluginstance {
 	struct ulogd_pluginstance upi;
 	struct ctnl_handle cth;
+	struct ulogd_fd ctnl_fd;
 };
 
 static int ctnl_parser(struct ulogd_pluginstance *pi,
@@ -79,6 +80,18 @@ static struct ctnl_msg_Handler destroy_h = {
 	.handler = event_handler,
 };
 
+static int read_cb_ctnl(int fd, unsigned int what, void *param)
+{
+	struct ulogd_ctnl_pluginstance *cpi = 
+				(struct ulogd_ctnl_pluginstance *) param;
+
+	if (!(what & ULOGD_FD_READ))
+		return 0;
+
+	/* FIXME: implement this */
+	ctnl_event_conntrack(&cpi->cth, AF_INET);
+}
+
 static struct ulogd_pluginstance *constructor_ctnl(struct ulogd_plugin *pl)
 {
 	struct ulogd_ctnl_pluginstance *cpi = malloc(sizeof *cpi);
@@ -99,7 +112,14 @@ static struct ulogd_pluginstance *constructor_ctnl(struct ulogd_plugin *pl)
 
 	ctnl_register_handler(&cpi->cth, &new_h);
 	ctnl_register_handler(&cpi->cth, &destroy_h);
-	//ctnl_event_conntrack(&cth, AF_INET);
+	
+	/* FIXME: ctnl interface must allow usage of external select
+	 * loop */
+	cpi->ctnl_fd.fd = ctnl_get_fd(&cpi->cth);
+	cpi->ctnl_fd.cb = &read_cb_ctnl;
+	cpi->ctnl_fd.data = cpi;
+
+	ulogd_register_fd(&cpi->ctnl_fd);
 	
 	return &cpi->upi;
 }
