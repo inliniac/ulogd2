@@ -349,7 +349,7 @@ static struct ulogd_plugin *find_plugin(const char *name)
 void register_plugin(struct ulogd_plugin *me)
 {
 	if (find_plugin(me->name)) {
-		ulogd_log(ULOGD_NOTICE, "output `%s' already registered\n",
+		ulogd_log(ULOGD_NOTICE, "plugin `%s' already registered\n",
 				me->name);
 		exit(EXIT_FAILURE);
 	}
@@ -518,6 +518,12 @@ static int create_stack(char *option)
 		else
 			list_add(&pi->list, &stack->list);
 	}
+
+	ulogd_log(ULOGD_DEBUG, "connecting input/output keys of stack:\n");
+	list_for_each_entry() {
+
+	}
+
 	/* add head of pluginstance stack to list of stacks */
 	list_add(&stack->stack_list, &ulogd_pi_stacks);
 	return 0;

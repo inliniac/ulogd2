@@ -23,8 +23,8 @@
 #define NFLOG_BUFSIZE_DEFAULT	150000
 
 struct nful_input {
-	struct nfulnl_handle nful_h;
-	struct nfulnl_g_handle nful_gh;
+	struct nfulnl_handle *nful_h;
+	struct nfulnl_g_handle *nful_gh;
 	unsigned char *nfulog_buf;
 	struct ulogd_fd nful_fd;
 };
@@ -184,14 +184,18 @@ static int interp_packet(struct ulogd_pluginstance *ip, ulog_packet_msg_t *pkt)
 	return 0;
 }
 
+/* callback called when fd is readable */
 static int nful_read_cb(int fd, unsigned int what, void *param)
 {
 	struct ulogd_pluginstance *upi = (struct ulogd_pluginstance *)param;
-	struct nful_input *u = (struct nful_input *)upi->private;
+	struct nful_input *ui = (struct nful_input *)upi->private;
 	int len;
 
 	if (!(what & ULOGD_FD_READ))
 		return 0;
+
+	/* FIXME: read */
+	nfulnl_handle_packet(ui->nful_h, buf, len);
 #if 0
 	while (len = ipulog_read(u->libulog_h, u->libulog_buf,
 				 bufsiz_ce(upi->configs).u.value, 1)) {
@@ -212,6 +216,13 @@ static int nful_read_cb(int fd, unsigned int what, void *param)
 	return 0;
 }
 
+/* callback called by libnfnetlink* for every nlmsg */
+static int msg_cb(struct nfulnl_g_handle *gh, struct nfgenmsg *nfmsg,
+		  struct nfattr *nfa[], void *data)
+{
+	/* FIXME: interp_packet() */
+}
+
 static struct ulogd_pluginstance *init(struct ulogd_plugin *pl)
 {
 	struct nful_input *ui;
@@ -229,22 +240,25 @@ static struct ulogd_pluginstance *init(struct ulogd_plugin *pl)
 	if (!ui->nfulog_buf)
 		goto out_buf;
 
-	if (nfulnl_open(&ui->nful_h) < 0)
+	ui->nful_h = nfulnl_open();
+	if (!ui->nful_h)
 		goto out_handle;
 
 	/* FIXME: config entry for af's */
 	/* FIXME: forced unbind of existing handler */
-	if (nfulnl_bind_pf(&ui->nful_h, AF_INET) < 0)
+	if (nfulnl_bind_pf(ui->nful_h, AF_INET) < 0)
 		goto out_bind_pf;
 
-	if (nfulnl_bind_group(&ui->nful_h, &ui->nful_gh,
-			      group_ce(upi->configs).u.value) < 0)
+	ui->nful_gh = nfulnl_bind_group(&ui->nful_h,
+					group_ce(upi->configs).u.value,
+					&msg_cb, NULL);
+	if (!ui->nful_gh)
 		goto out_bind;
 
 	//nfulnl_set_nlbufsiz(&ui->nful_gh, );
 	//nfnl_set_rcvbuf();
 
-	ui->ulog_fd.fd = nfulnl_get_fd(&ui->nfulnl_h);
+	ui->ulog_fd.fd = nfulnl_fd(ui->nfulnl_h);
 	ui->ulog_fd.cb = &nfulnl_read_cb;
 	ui->ulog_fd.data = upi;
 
@@ -266,8 +280,8 @@ static int fini(struct ulogd_pluginstance *pi)
 	struct nful_input *ui = (struct nful_input *)pi->private;
 
 	ulogd_unregister_fd(&ui->nful_fd);
-	nfulnl_unbind_group(&ui->nful_gh);
-	nfulnl_close(&ui->nful_h);
+	nfulnl_unbind_group(ui->nful_gh);
+	nfulnl_close(ui->nful_h);
 
 	free(pi);
 
