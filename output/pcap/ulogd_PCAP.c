@@ -1,4 +1,4 @@
-/* ulogd_PCAP.c, Version $Revision: 1.7 $
+/* ulogd_PCAP.c, Version $Revision$
  *
  * ulogd output target for writing pcap-style files (like tcpdump)
  *
