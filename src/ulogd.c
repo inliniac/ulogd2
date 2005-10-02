@@ -51,6 +51,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <errno.h>
 #include <time.h>
 #include <ctype.h>
 #include <signal.h>
@@ -60,7 +61,6 @@
 #include <getopt.h>
 #include <pwd.h>
 #include <grp.h>
-#include <libipulog/libipulog.h>
 #include <ulogd/conffile.h>
 #include <ulogd/ulogd.h>
 #include "select.h"
@@ -949,29 +949,24 @@ int main(int argc, char* argv[])
 		ulogd_log(ULOGD_NOTICE, "Changing UID / GID\n");
 		if (setgid(gid)) {
 			ulogd_log(ULOGD_FATAL, "can't set GID %u\n", gid);
-			ipulog_perror(NULL);
 			exit(1);
 		}
 		if (setegid(gid)) {
 			ulogd_log(ULOGD_FATAL, "can't sett effective GID %u\n",
 				  gid);
-			ipulog_perror(NULL);
 			exit(1);
 		}
 		if (initgroups(user, gid)) {
 			ulogd_log(ULOGD_FATAL, "can't set user secondary GID\n");
-			ipulog_perror(NULL);
 			exit(1);
 		}
 		if (setuid(uid)) {
 			ulogd_log(ULOGD_FATAL, "can't set UID %u\n", uid);
-			ipulog_perror(NULL);
 			exit(1);
 		}
 		if (seteuid(uid)) {
 			ulogd_log(ULOGD_FATAL, "can't set effective UID %u\n",
 				  uid);
-			ipulog_perror(NULL);
 			exit(1);
 		}
 	}

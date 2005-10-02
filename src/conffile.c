@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "conffile.h"
+#include <ulogd/conffile.h>
 
 #ifdef DEBUG_CONF
 #define DEBUGC(format, args...) fprintf(stderr, format, ## args)
