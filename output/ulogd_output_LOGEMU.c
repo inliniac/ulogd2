@@ -41,16 +41,6 @@
 #define ULOGD_LOGEMU_SYNC_DEFAULT	0
 #endif
 
-#define NIPQUAD(addr) \
-	((unsigned char *)&addr)[0], \
-	((unsigned char *)&addr)[1], \
-        ((unsigned char *)&addr)[2], \
-        ((unsigned char *)&addr)[3]
-
-struct ulogd_key logemu_inp[] = {
-
-};
-
 static struct config_keyset logemu_kset = {
 	.num_ces = 2,
 	.ces = {
@@ -70,13 +60,12 @@ static struct config_keyset logemu_kset = {
 };
 
 struct logemu_instance {
-	struct ulogd_pluginstance upi;
 	FILE *of;
 };
 
 static int _output_logemu(struct ulogd_pluginstance *upi)
 {
-	struct logemu_instance *li = (struct logemu_instance *) upi;
+	struct logemu_instance *li = (struct logemu_instance *) &upi->private;
 	struct ulogd_key *res = upi->input;
 	static char buf[4096];
 
@@ -84,7 +73,7 @@ static int _output_logemu(struct ulogd_pluginstance *upi)
 
 	fprintf(li->of, "%s", buf);
 
-	if (upi->configs[1].u.value) 
+	if (upi->config_kset->ces[1].u.value) 
 		fflush(li->of);
 
 	return 0;
@@ -92,17 +81,16 @@ static int _output_logemu(struct ulogd_pluginstance *upi)
 
 static void signal_handler_logemu(struct ulogd_pluginstance *pi, int signal)
 {
-	struct logemu_instance *li = (struct logemu_instance *) pi;
+	struct logemu_instance *li = (struct logemu_instance *) &pi->private;
 
 	switch (signal) {
 	case SIGHUP:
 		ulogd_log(ULOGD_NOTICE, "syslogemu: reopening logfile\n");
 		fclose(li->of);
-		li->of = fopen(pi->configs[0].u.string, "a");
+		li->of = fopen(pi->config_kset->ces[0].u.string, "a");
 		if (!li->of) {
-			ulogd_log(ULOGD_FATAL, "can't open syslogemu: %s\n",
+			ulogd_log(ULOGD_ERROR, "can't reopen syslogemu: %s\n",
 				  strerror(errno));
-			exit(2);
 		}
 		break;
 	default:
@@ -111,38 +99,30 @@ static void signal_handler_logemu(struct ulogd_pluginstance *pi, int signal)
 }
 		
 
-static struct ulogd_pluginstance *init_logemu(struct ulogd_plugin *pl)
+static int start_logemu(struct ulogd_pluginstance *pi)
 {
-	struct logemu_instance *li = malloc(sizeof(*li));
-
-	if (!li)
-		return NULL;
-
-	memset(li, 0, sizeof(*li));
-	li->upi.plugin = pl;
-	/* FIXME: upi->input = NULL; */
-	li->upi.output = NULL;
+	struct logemu_instance *li = (struct logemu_instance *) &pi->private;
 
 #ifdef DEBUG_LOGEMU
 	li->of = stdout;
 #else
-	li->of = fopen(li->upi.configs[0].u.string, "a");
+	li->of = fopen(pi->config_kset->ces[0].u.string, "a");
 	if (!li->of) {
 		ulogd_log(ULOGD_FATAL, "can't open syslogemu: %s\n", 
 			  strerror(errno));
-		exit(2);
+		return errno;
 	}		
 #endif
 	if (printpkt_init()) {
 		ulogd_log(ULOGD_ERROR, "can't resolve all keyhash id's\n");
-		exit(1);
+		return -EINVAL;
 	}
 
-	return &li->upi;
+	return 0;
 }
 
 static int fini_logemu(struct ulogd_pluginstance *pi) {
-	struct logemu_instance *li = (struct logemu_instance *) pi;
+	struct logemu_instance *li = (struct logemu_instance *) &pi->private;
 
 	if (li->of != stdout)
 		fclose(li->of);
@@ -150,27 +130,39 @@ static int fini_logemu(struct ulogd_pluginstance *pi) {
 	return 0;
 }
 
+static int configure_logemu(struct ulogd_pluginstance *pi,
+			    struct ulogd_pluginstance_stack *stack)
+{
+	/* we should actually parse our logfile section here */
+
+	return 0;
+}
+
 static struct ulogd_plugin logemu_plugin = { 
 	.name = "LOGEMU",
 	.input = {
-		.keys = &logemu_inp,
-		.num_keys = FIXME,
+		.keys = printpkt_keys,
+		.num_keys = ARRAY_SIZE(printpkt_keys),
 		.type = ULOGD_DTYPE_PACKET,
 	},
 	.output = {
 		.type = ULOGD_DTYPE_SINK,
 	},
-	.constructor = &init_logemu,
-	.destructor = &fini_logemu,
-	.interp = &_output_logemu, 
-	.signal = &signal_handler_logemu,
-	.config_kset = &logemu_kset,
+	.config_kset 	= &logemu_kset,
+	.priv_size 	= sizeof(struct logemu_instance),
+
+	.configure	= &configure_logemu,
+	.start	 	= &start_logemu,
+	.stop	 	= &fini_logemu,
+
+	.interp 	= &_output_logemu, 
+	.signal 	= &signal_handler_logemu,
 };
 
 void _init(void)
 {
 	/* FIXME: error handling */
-	config_parse_file("LOGEMU", &syslsync_ce);
+	config_parse_file("LOGEMU", &logemu_kset);
 
-	register_output(&logemu_op);
+	ulogd_register_plugin(&logemu_plugin);
 }

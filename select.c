@@ -21,8 +21,12 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-static maxfd = 0;
-static list_head ulogd_fds;
+#include <fcntl.h>
+#include <ulogd/ulogd.h>
+#include <ulogd/linuxlist.h>
+
+static int maxfd = 0;
+static LIST_HEAD(ulogd_fds);
 
 int ulogd_register_fd(struct ulogd_fd *fd)
 {
@@ -40,42 +44,56 @@ int ulogd_register_fd(struct ulogd_fd *fd)
 	/* Register FD */
 	if (fd->fd > maxfd)
 		maxfd = fd->fd;
-	return list_add_tail(&fd->list, &ulogd_fds);
+	list_add_tail(&fd->list, &ulogd_fds);
+
+	return 0;
 }
 
-int ulogd_unregister_fd(struct ulogd_fd *fd)
+void ulogd_unregister_fd(struct ulogd_fd *fd)
 {
-	return list_del(&fd->list);
+	list_del(&fd->list);
 }
 
 int ulogd_select_main()
 {
 	struct ulogd_fd *ufd;
-	fd_set readset, writeset;
+	fd_set readset, writeset, exceptset;
 	int i;
 
 	FD_ZERO(&readset);
 	FD_ZERO(&writeset);
+	FD_ZERO(&exceptset);
 
 	/* prepare read and write fdsets */
-	list_for_each_entry(&ulogd_fds, ufd, list) {
-		if (ufd->flags & ULOGD_FD_F_READ)
+	list_for_each_entry(ufd, &ulogd_fds, list) {
+		if (ufd->when & ULOGD_FD_READ)
 			FD_SET(ufd->fd, &readset);
 
-		if (ufd->flags & UlOGD_FD_F_WRITE)
+		if (ufd->when & ULOGD_FD_WRITE)
 			FD_SET(ufd->fd, &writeset);
+
+		if (ufd->when & ULOGD_FD_EXCEPT)
+			FD_SET(ufd->fd, &exceptset);
 	}
 
 	i = select(maxfd, &readset, &writeset, NULL, NULL);
 	if (i > 0) {
 		/* call registered callback functions */
-		list_for_each_entry(&ulogd_fds, ufd, list) {
+		list_for_each_entry(ufd, &ulogd_fds, list) {
+			int flags = 0;
+
 			if (FD_ISSET(ufd->fd, &readset))
-				ret = ufd->cb(ufd->fd, UFD_FD_F_READ, 
-					      ufd->data);
+				flags |= ULOGD_FD_READ;
+
 			if (FD_ISSET(ufd->fd, &writeset))
-				ret = ufd->cb(ufd->fd, UFD_FD_F_WRITE,
-					      ufd->data);
+				flags |= ULOGD_FD_WRITE;
+
+			if (FD_ISSET(ufd->fd, &exceptset))
+				flags |= ULOGD_FD_EXCEPT;
+
+			if (flags)
+				ufd->cb(ufd->fd, flags, ufd->data);
 		}
 	}
+	return i;
 }

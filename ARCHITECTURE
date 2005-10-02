@@ -60,3 +60,20 @@ Architecture of ulogd2
 - problems:
 	- multiple interpreters can return same value (i.e. sport/dport)
 	- some outputs/filters will require _ALL_ keys (e.g. OPRINT)
+
+Plugin stack building
+
+- start at final output plugin in stack.
+	- pass list of input keys to previous plugin in stack
+	- next plugin in stack verifies that it can provide those keys,
+	  and determines it's required input keys. pass them to next plugin
+
+if current plugin cannot support this key, a plugin further up the stack could!
+two-pass approach:
+1) connect next<->prev pointers so plugin stack is known
+2) start from output plugin and go upwards
+
+- list of "can provide" keys should be per instance, since configuration
+  parameters could determine the possible keys. -LATER
+
+

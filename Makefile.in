@@ -17,12 +17,12 @@ endif
 
 ifeq (x@HAVE_PCAP_H@,x)
 else
-SUBDIRS+=pcap
+SUBDIRS+=output/pcap
 endif
 
 
-ULOGD_VERSION=1.10
-OLD_ULOGD_VERSION=1.09
+ULOGD_VERSION=2.00
+OLD_ULOGD_VERSION=1.23
 
 #  Normally You should not need to change anything below
 
@@ -56,8 +56,8 @@ diff: $(RELEASE_DIR)/ulogd-$(ULOGD_VERSION).tar.bz2
 recurse: 
 	@for d in $(SUBDIRS); do if ! make -C $$d; then exit 1; fi; done
 
-ulogd: ulogd.c $(LIBIPULOG) include/ulogd/ulogd.h conffile/conffile.o $(LIBIPULOG)/libipulog.a ulogd.conf
-	$(CC) $(CFLAGS) -rdynamic $< conffile/conffile.o $(LIBIPULOG)/libipulog.a -o $@ $(LIBS)
+ulogd: ulogd.c select.c conffile/conffile.o
+	$(CC) $(CFLAGS) -rdynamic $^ conffile/conffile.o -o $@ $(LIBS)
 
 edit = sed -e 's,@libdir\@,$(ULOGD_LIB_PATH),g'
 

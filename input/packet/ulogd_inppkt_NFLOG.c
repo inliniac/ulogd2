@@ -32,7 +32,7 @@ struct nful_input {
 /* configuration entries */
 
 static struct config_keyset libulog_kset = {
-	.num_ces = 10,
+	.num_ces = 3,
 	.ces = {
 	{
 		.key 	 = "bufsize",
@@ -52,7 +52,6 @@ static struct config_keyset libulog_kset = {
 		.options = CONFIG_OPT_NONE,
 		.u.value = NFLOG_RMEM_DEFAULT,
 	},
-	}
 };
 
 #define bufsiz_ce(x)	(x[0])

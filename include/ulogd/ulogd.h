@@ -19,6 +19,9 @@
 #include <signal.h>	/* need this because of extension-sighandler */
 #include <sys/types.h>
 
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+
+
 /* All types with MSB = 1 make use of value.ptr
  * other types use one of the union's member */
 
@@ -51,6 +54,10 @@
 #define ULOGD_RETF_NEEDED	0x0004	/* this parameter is actually needed
 					 * by some downstream plugin */
 
+#define ULOGD_KEYF_OPTIONAL	0x0100	/* this key is optional */
+#define ULOGD_KEYF_INACTIVE	0x0200	/* marked as inactive (i.e. totally
+					   to be ignored by everyone */
+
 
 /* maximum length of ulogd key */
 #define ULOGD_MAX_KEYLEN 32
@@ -61,7 +68,7 @@
 #define ULOGD_ERROR	7	/* error condition, requires user action */
 #define ULOGD_FATAL	8	/* fatal, program aborted */
 
-extern FILE *logfile;
+//extern FILE *logfile;
 
 /* ulogd data type */
 enum ulogd_dtype {
@@ -79,7 +86,7 @@ struct ulogd_key {
 	struct ulogd_key *next;
 	/* length of the returned value (only for lengthed types */
 	u_int32_t len;
-	/* type of the returned value (ULOGD_IRET_...) */
+	/* type of the returned value (ULOGD_DTYPE_...) */
 	u_int16_t type;
 	/* flags (i.e. free, ...) */
 	u_int16_t flags;
@@ -109,6 +116,7 @@ struct ulogd_key {
 	} u;
 };
 
+struct ulogd_pluginstance_stack;
 struct ulogd_pluginstance;
 struct ulogd_plugin {
 	/* global list of plugins */
@@ -137,23 +145,36 @@ struct ulogd_plugin {
 	/* function to call for each packet */
 	int (*interp)(struct ulogd_pluginstance *instance);
 
+	int (*configure)(struct ulogd_pluginstance *instance,
+			 struct ulogd_pluginstance_stack *stack);
+
 	/* function to construct a new pluginstance */
-	struct ulogd_pluginstance *(*constructor)(struct ulogd_plugin *pl);
+	int (*start)(struct ulogd_pluginstance *pi);
 	/* function to destruct an existing pluginstance */
-	int (*destructor)(struct ulogd_pluginstance *instance);
+	int (*stop)(struct ulogd_pluginstance *pi);
+
+	/* function to receive a signal */
+	void (*signal)(struct ulogd_pluginstance *pi, int signal);
 
 	/* configuration parameters */
 	struct config_keyset *config_kset;
+
+	/* size of instance->priv */
+	unsigned int priv_size;
 };
+
+#define ULOGD_IRET_ERR		-1
+#define ULOGD_IRET_STOP		-2
+#define ULOGD_IRET_OK		0
 
 /* an instance of a plugin, element in a stack */
 struct ulogd_pluginstance {
-	/* global list of pluginstance stacks. only valid for first item */
-	struct list_head stack_list;
 	/* local list of plugins in this stack */
 	struct list_head list;
-	/* plugin (master) */
+	/* plugin */
 	struct ulogd_plugin *plugin;
+	/* stack that we're part of */
+	struct ulogd_pluginstance_stack *stack;
 	/* name / id  of this instance*/
 	char id[ULOGD_MAX_KEYLEN];
 	/* per-instance input keys */
@@ -161,9 +182,17 @@ struct ulogd_pluginstance {
 	/* per-instance output keys */
 	struct ulogd_key *output;
 	/* per-instance config parameters (array) */
-	struct config_entry *config_kset;
+	struct config_keyset *config_kset;
 	/* private data */
 	char private[0];
+};
+
+struct ulogd_pluginstance_stack {
+	/* global list of pluginstance stacks */
+	struct list_head stack_list;
+	/* list of plugins in this stack */
+	struct list_head list;
+	char *name;
 };
 
 /* entries of the key hash */
@@ -176,6 +205,8 @@ struct ulogd_keyh_entry {
 /***********************************************************************
  * PUBLIC INTERFACE 
  ***********************************************************************/
+
+void ulogd_propagate_results(struct ulogd_pluginstance *pi);
 
 /* register a new interpreter plugin */
 void ulogd_register_plugin(struct ulogd_plugin *me);
@@ -219,6 +250,7 @@ extern struct ulogd_keyh_entry *ulogd_keyh;
 struct ulogd_fd {
 	struct list_head list;
 	int fd;				/* file descriptor */
+	unsigned int flags;
 	unsigned int when;
 	int (*cb)(int fd, unsigned int what, void *data);
 	void *data;			/* void * to pass to callback */

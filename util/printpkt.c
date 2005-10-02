@@ -54,46 +54,52 @@ struct intr_id {
 static char hostname[HOST_NAME_MAX+1];
 
 #define INTR_IDS 	35
-static struct intr_id intr_ids[INTR_IDS] = {
-	{ "oob.time.sec", 0 },
-	{ "oob.prefix", 0 },
-	{ "oob.in", 0 },
-	{ "oob.out", 0 },
-	{ "raw.mac", 0 },
-	{ "ip.saddr", 0 },
-	{ "ip.daddr", 0 },
-	{ "ip.totlen", 0 },
-	{ "ip.tos", 0 },
-	{ "ip.ttl", 0 },
-	{ "ip.id", 0 },
-	{ "ip.fragoff", 0 },
-	{ "ip.protocol", 0 },
-	{ "tcp.sport", 0 },
-	{ "tcp.dport", 0 },
-	{ "tcp.seq", 0 },
-	{ "tcp.ackseq", 0 },
-	{ "tcp.window", 0 },
-	{ "tcp.urg", 0 },
-	{ "tcp.ack", 0 },
-	{ "tcp.psh", 0 },
-	{ "tcp.rst", 0 },
-	{ "tcp.syn", 0 },
-	{ "tcp.fin", 0 },
-	{ "tcp.urgp", 0 },
-	{ "udp.sport", 0 },
-	{ "udp.dport", 0 },
-	{ "udp.len", 0 },
-	{ "icmp.type", 0 },
-	{ "icmp.code", 0 },
-	{ "icmp.echoid", 0 },
-	{ "icmp.echoseq", 0 },
-	{ "icmp.gateway", 0 },
-	{ "icmp.fragmtu", 0 },
-	{ "ahesp.spi", 0 },
+static struct ulogd_key printpkt_keys[INTR_IDS] = {
+	{ .name = "oob.time.sec", },
+	{ .name = "oob.prefix", },
+	{ .name = "oob.in", },
+	{ .name = "oob.out", },
+	{ .name = "raw.mac", },
+	{ .name = "ip.saddr", },
+	{ .name = "ip.daddr", },
+	{ .name = "ip.totlen", },
+	{ .name = "ip.tos", },
+	{ .name = "ip.ttl", },
+	{ .name = "ip.id", },
+	{ .name = "ip.fragoff", },
+	{ .name = "ip.protocol", },
+	{ .name = "tcp.sport", },
+	{ .name = "tcp.dport", },
+	{ .name = "tcp.seq", },
+	{ .name = "tcp.ackseq", },
+	{ .name = "tcp.window", },
+	{ .name = "tcp.urg", },
+	{ .name = "tcp.ack", },
+	{ .name = "tcp.psh", },
+	{ .name = "tcp.rst", },
+	{ .name = "tcp.syn", },
+	{ .name = "tcp.fin", },
+	{ .name = "tcp.urgp", },
+	{ .name = "udp.sport", },
+	{ .name = "udp.dport", },
+	{ .name = "udp.len", },
+	{ .name = "icmp.type", },
+	{ .name = "icmp.code", },
+	{ .name = "icmp.echoid", },
+	{ .name = "icmp.echoseq", },
+	{ .name = "icmp.gateway", },
+	{ .name = "icmp.fragmtu", },
+	{ .name = "ahesp.spi", },
 };
 
+#define GET_VALUE(res, x)	(res[x].u.source->u.value)
+#define GET_FLAGS(res, x)	(res[x].u.source->flags)
+#define pp_is_valid(res, x)	(GET_FLAGS(res, x) & ULOGD_RETF_VALID)
+
+#if 0
 #define GET_VALUE(x)	ulogd_keyh[intr_ids[x].id].interp->result[ulogd_keyh[intr_ids[x].id].offset].value
 #define GET_FLAGS(x)	ulogd_keyh[intr_ids[x].id].interp->result[ulogd_keyh[intr_ids[x].id].offset].flags
+#endif
 
 int printpkt_print(struct ulogd_key *res, char *buf, int prefix)
 {
@@ -104,7 +110,11 @@ int printpkt_print(struct ulogd_key *res, char *buf, int prefix)
 	char *buf_cur = buf;
 
 	if (prefix) {
-		now = (time_t) GET_VALUE(0).ui32;
+		if (pp_is_valid(res, 0))
+			now = (time_t) GET_VALUE(res, 0).ui32;
+		else
+			now = (time_t) 0;
+
 		timestr = ctime(&now) + 4;
 
 		/* truncate time */
@@ -119,73 +129,82 @@ int printpkt_print(struct ulogd_key *res, char *buf, int prefix)
 		buf_cur += sprintf(buf_cur, "%.15s %s", timestr, hostname);
 	}
 
-	if (*(char *) GET_VALUE(1).ptr)
-		buf_cur += sprintf(buf_cur, " %s", (char *) GET_VALUE(1).ptr);
+	if (pp_is_valid(res, 1))
+		buf_cur += sprintf(buf_cur, " %s", (char *) GET_VALUE(res, 1).ptr);
 
-	buf_cur += sprintf(buf_cur," IN=%s OUT=%s ", 
-			   (char *) GET_VALUE(2).ptr, 
-			   (char *) GET_VALUE(3).ptr);
+	if (pp_is_valid(res, 2) && pp_is_valid(res, 3)) {
+		buf_cur += sprintf(buf_cur," IN=%s OUT=%s ", 
+				   (char *) GET_VALUE(res, 2).ptr, 
+				   (char *) GET_VALUE(res, 3).ptr);
+	}
 
 	/* FIXME: configurable */
-	buf_cur += sprintf(buf_cur, "MAC=%s ", 
-		(GET_FLAGS(4) & ULOGD_RETF_VALID) ? (char *) GET_VALUE(4).ptr : "");
+	if (pp_is_valid(res, 4))
+		buf_cur += sprintf(buf_cur, "MAC=%s ",
+				   (char *) GET_VALUE(res, 4).ptr);
+	else
+		buf_cur += sprintf(buf_cur, "MAC= ");
+	
+	if (pp_is_valid(res, 5))
+		buf_cur += sprintf(buf_cur, "SRC=%s ", inet_ntoa(
+				(struct in_addr) {htonl(GET_VALUE(res, 5).ui32)}));
 
-	buf_cur += sprintf(buf_cur, "SRC=%s ", 
-		       inet_ntoa((struct in_addr) {htonl(GET_VALUE(5).ui32)}));
-	buf_cur += sprintf(buf_cur, "DST=%s ", 
-		       inet_ntoa((struct in_addr) {htonl(GET_VALUE(6).ui32)}));
+	if (pp_is_valid(res, 6))
+		buf_cur += sprintf(buf_cur, "DST=%s ", inet_ntoa(
+				(struct in_addr) {htonl(GET_VALUE(res, 6).ui32)}));
 
+	/* FIXME: add pp_is_valid calls to remainder of file */
 	buf_cur += sprintf(buf_cur,"LEN=%u TOS=%02X PREC=0x%02X TTL=%u ID=%u ", 
-			GET_VALUE(7).ui16, GET_VALUE(8).ui8 & IPTOS_TOS_MASK, 
-			GET_VALUE(8).ui8 & IPTOS_PREC_MASK, GET_VALUE(9).ui8,
-			GET_VALUE(10).ui16);
+			GET_VALUE(res, 7).ui16, GET_VALUE(res, 8).ui8 & IPTOS_TOS_MASK, 
+			GET_VALUE(res, 8).ui8 & IPTOS_PREC_MASK, GET_VALUE(res, 9).ui8,
+			GET_VALUE(res, 10).ui16);
 
-	if (GET_VALUE(10).ui16 & IP_RF) 
+	if (GET_VALUE(res, 10).ui16 & IP_RF) 
 		buf_cur += sprintf(buf_cur, "CE ");
 
-	if (GET_VALUE(11).ui16 & IP_DF)
+	if (GET_VALUE(res, 11).ui16 & IP_DF)
 		buf_cur += sprintf(buf_cur, "DF ");
 
-	if (GET_VALUE(11).ui16 & IP_MF)
+	if (GET_VALUE(res, 11).ui16 & IP_MF)
 		buf_cur += sprintf(buf_cur, "MF ");
 
-	if (GET_VALUE(11).ui16 & IP_OFFMASK)
+	if (GET_VALUE(res, 11).ui16 & IP_OFFMASK)
 		buf_cur += sprintf(buf_cur, "FRAG:%u ", 
-				GET_VALUE(11).ui16 & IP_OFFMASK);
+				GET_VALUE(res, 11).ui16 & IP_OFFMASK);
 
-	switch (GET_VALUE(12).ui8) {
+	switch (GET_VALUE(res, 12).ui8) {
 
 	case IPPROTO_TCP:
 		buf_cur += sprintf(buf_cur, "PROTO=TCP ");
 		buf_cur += sprintf(buf_cur, "SPT=%u DPT=%u ",
-				GET_VALUE(13).ui16, GET_VALUE(14).ui16);
+				GET_VALUE(res, 13).ui16, GET_VALUE(res, 14).ui16);
 		/* FIXME: config */
 		buf_cur += sprintf(buf_cur, "SEQ=%u ACK=%u ", 
-				GET_VALUE(15).ui32, GET_VALUE(16).ui32);
+				GET_VALUE(res, 15).ui32, GET_VALUE(res, 16).ui32);
 
-		buf_cur += sprintf(buf_cur, "WINDOW=%u ", GET_VALUE(17).ui16);
+		buf_cur += sprintf(buf_cur, "WINDOW=%u ", GET_VALUE(res, 17).ui16);
 
 //		buf_cur += sprintf(buf_cur, "RES=0x%02x ", 
 		
-		if (GET_VALUE(18).b)
+		if (GET_VALUE(res, 18).b)
 			buf_cur += sprintf(buf_cur, "URG ");
 
-		if (GET_VALUE(19).b)
+		if (GET_VALUE(res, 19).b)
 			buf_cur += sprintf(buf_cur, "ACK ");
 
-		if (GET_VALUE(20).b)
+		if (GET_VALUE(res, 20).b)
 			buf_cur += sprintf(buf_cur, "PSH ");
 
-		if (GET_VALUE(21).b)
+		if (GET_VALUE(res, 21).b)
 			buf_cur += sprintf(buf_cur, "RST ");
 
-		if (GET_VALUE(22).b)
+		if (GET_VALUE(res, 22).b)
 			buf_cur += sprintf(buf_cur, "SYN ");
 
-		if (GET_VALUE(23).b)
+		if (GET_VALUE(res, 23).b)
 			buf_cur += sprintf(buf_cur, "FIN ");
 
-		buf_cur += sprintf(buf_cur, "URGP=%u ", GET_VALUE(24).ui16);
+		buf_cur += sprintf(buf_cur, "URGP=%u ", GET_VALUE(res, 24).ui16);
 
 		break;
 	case IPPROTO_UDP:
@@ -193,48 +212,48 @@ int printpkt_print(struct ulogd_key *res, char *buf, int prefix)
 		buf_cur += sprintf(buf_cur, "PROTO=UDP ");
 
 		buf_cur += sprintf(buf_cur, "SPT=%u DPT=%u LEN=%u ", 
-				GET_VALUE(25).ui16, GET_VALUE(26).ui16, 
-				GET_VALUE(27).ui16);
+				GET_VALUE(res, 25).ui16, GET_VALUE(res, 26).ui16, 
+				GET_VALUE(res, 27).ui16);
 			break;
 	case IPPROTO_ICMP:
 
 		buf_cur += sprintf(buf_cur, "PROTO=ICMP ");
 
 		buf_cur += sprintf(buf_cur, "TYPE=%u CODE=%u ",
-				GET_VALUE(28).ui8, GET_VALUE(29).ui8);
+				GET_VALUE(res, 28).ui8, GET_VALUE(res, 29).ui8);
 
-		switch (GET_VALUE(28).ui8) {
+		switch (GET_VALUE(res, 28).ui8) {
 		case ICMP_ECHO:
 		case ICMP_ECHOREPLY:
 			buf_cur += sprintf(buf_cur, "ID=%u SEQ=%u ", 
-					   GET_VALUE(30).ui16,
-					   GET_VALUE(31).ui16);
+					   GET_VALUE(res, 30).ui16,
+					   GET_VALUE(res, 31).ui16);
 			break;
 		case ICMP_PARAMETERPROB:
 			buf_cur += sprintf(buf_cur, "PARAMETER=%u ",
-					   GET_VALUE(32).ui32 >> 24);
+					   GET_VALUE(res, 32).ui32 >> 24);
 			break;
 		case ICMP_REDIRECT:
-			buf_cur += sprintf(buf_cur, "GATEWAY=%s ", inet_ntoa((struct in_addr) {htonl(GET_VALUE(32).ui32)}));
+			buf_cur += sprintf(buf_cur, "GATEWAY=%s ", inet_ntoa((struct in_addr) {htonl(GET_VALUE(res, 32).ui32)}));
 			break;
 		case ICMP_DEST_UNREACH:
-			if (GET_VALUE(29).ui8 == ICMP_FRAG_NEEDED)
+			if (GET_VALUE(res, 29).ui8 == ICMP_FRAG_NEEDED)
 				buf_cur += sprintf(buf_cur, "MTU=%u ", 
-						   GET_VALUE(33).ui16);
+						   GET_VALUE(res, 33).ui16);
 			break;
 		}
 		break;
 	case IPPROTO_ESP:
 	case IPPROTO_AH:
-		buf_cur += sprintf(buf_cur, "PROTO=%s ", GET_VALUE(12).ui8 == IPPROTO_ESP ? "ESP" : "AH");
+		buf_cur += sprintf(buf_cur, "PROTO=%s ", GET_VALUE(res, 12).ui8 == IPPROTO_ESP ? "ESP" : "AH");
 		/* FIXME: "INCOMPLETE [%u bytes]" in case of short pkt */
-		if (intr_ids[34].id > 0) {
-			buf_cur += sprintf(buf_cur, "SPI=0x%x ", GET_VALUE(34).ui32);
+		if (pp_is_valid(res, 34)) {
+			buf_cur += sprintf(buf_cur, "SPI=0x%x ", GET_VALUE(res, 34).ui32);
 		}
 		break;
 	default:
 
-		buf_cur += sprintf(buf_cur, "PROTO=%u ", GET_VALUE(11).ui8);
+		buf_cur += sprintf(buf_cur, "PROTO=%u ", GET_VALUE(res, 11).ui8);
 	}
 	strcat(buf_cur, "\n");
 
@@ -244,6 +263,7 @@ int printpkt_print(struct ulogd_key *res, char *buf, int prefix)
 /* get all key id's for the keys we are intrested in */
 static int get_ids(void)
 {
+#if 0
 	int i;
 	struct intr_id *cur_id;
 
@@ -257,6 +277,7 @@ static int get_ids(void)
 			return 1;
 		}
 	}	
+#endif
 	return 0;
 }
 
