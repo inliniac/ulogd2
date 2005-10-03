@@ -93,7 +93,7 @@ static struct ulogd_key iphdr_rets[] = {
 	{
 		.type = ULOGD_RET_UINT16,
 		.flags = ULOGD_RETF_NONE,
-		.name "ip.id", 
+		.name = "ip.id", 
 	},
 	{
 		.type = ULOGD_RET_UINT16,
@@ -102,10 +102,10 @@ static struct ulogd_key iphdr_rets[] = {
 	},
 };
 
-static struct ulog_key *_interp_iphdr(struct ulogd_pluginstance *pi)
+static int _interp_iphdr(struct ulogd_pluginstance *pi)
 {
 	struct ulogd_key *ret = pi->output;
-	struct iphdr *iph = (struct iphdr *) pi->input[0].u.value.ptr;
+	struct iphdr *iph = (struct iphdr *) pi->input[0].u.source->u.value.ptr;
 
 	ret[0].u.value.ui32 = ntohl(iph->saddr);
 	ret[0].flags |= ULOGD_RETF_VALID;
@@ -421,35 +421,25 @@ static struct ulogd_key base_inp[] = {
 	},
 };
 
-static struct ulogd_pluginstance *base_init(struct ulogd_plugin *pl)
+static int base_start(struct ulogd_pluginstance *upi)
 {
-	struct ulogd_pluginstance *bpi = malloc(sizeof(*bpi));
-
-	if (!bpi)
-		return NULL;
-
-	bpi->plugin = pl;
-	//bpi->input = &base_inp;
-	//bpi->output = &iphdr_rets;
-
-	return bpi;
+	return 0;
 }
 
 static int base_fini(struct ulogd_pluginstance *upi)
 {
-	free(upi);
 	return 0;
 }
 
 static struct ulogd_plugin base_plugin = {
 	.name = "BASE",
 	.input = {
-		.keys = &base_inp,
+		.keys = base_inp,
 		.num_keys = 1,
 		.type = ULOGD_DTYPE_RAW,
 		},
 	.output = {
-		.keys = &iphdr_rets,
+		.keys = iphdr_rets,
 //		.num_keys = 39,
 		.num_keys = 10,
 		.type = ULOGD_DTYPE_PACKET,
@@ -457,11 +447,14 @@ static struct ulogd_plugin base_plugin = {
 //	.interp = &base_interp,
 	.interp = &_interp_iphdr,
 
-	.constructor = &base_init,
-	.destructor = &base_fini,
+	.configure = &base_start,
+	.start = &base_start,
+	.stop = &base_fini,
 };
 
-void _init(void)
+void __attribute__ ((constructor)) init(void);
+
+void init(void)
 {
 	ulogd_register_plugin(&base_plugin);
 }
