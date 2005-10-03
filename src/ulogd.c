@@ -95,244 +95,6 @@ static char *ulogd_configfile = ULOGD_CONFIGFILE;
 static LIST_HEAD(ulogd_plugins);
 static LIST_HEAD(ulogd_pi_stacks);
 
-#if 0
-/***********************************************************************
- * INTERPRETER AND KEY HASH FUNCTIONS 			(new in 0.9)
- ***********************************************************************/
-
-/* We keep hashtables of interpreters and registered keys. The hash-tables
- * are allocated dynamically at program load time. You may control the
- e allocation granularity of both hashes (i.e. the amount of hashtable
- * entries are allocated at one time) through modification of the constants
- * INTERH_ALLOC_GRAN and KEYH_ALLOC_GRAN 
- */
-
-/* allocation granularity */
-#define INTERH_ALLOC_GRAN	5
-
-/* hashtable for all registered interpreters */
-static struct ulogd_interpreter **ulogd_interh;
-
-/* current hashtable size */
-static unsigned int ulogd_interh_ids_alloc;
-
-/* total number of registered ids */
-static unsigned int ulogd_interh_ids;
-
-/* allocate a new interpreter id and write it into the interpreter struct */
-static unsigned int interh_allocid(struct ulogd_interpreter *ip)
-{
-	unsigned int id;
-
-	id = ++ulogd_interh_ids;
-	
-	if (id >= ulogd_interh_ids_alloc) {
-		if (!ulogd_interh)
-			ulogd_interh = (struct ulogd_interpreter **) 
-				malloc(INTERH_ALLOC_GRAN *
-					sizeof(struct ulogd_interpreter));
-		else
-			ulogd_interh = (struct ulogd_interpreter **)
-				realloc(ulogd_interh, 
-					(INTERH_ALLOC_GRAN +
-					 ulogd_interh_ids_alloc) *
-					sizeof(struct ulogd_interpreter));
-
-		ulogd_interh_ids_alloc += INTERH_ALLOC_GRAN;
-	}
-
-	ip->id = id;
-	ulogd_interh[id] = ip;
-	return id;
-}
-
-/* get interpreter id by name */
-unsigned int interh_getid(const char *name)
-{
-	unsigned int i;
-	for (i = 1; i <= ulogd_interh_ids; i++)
-		if (!strcmp(name, (ulogd_interh[i])->name))
-			return i;
-
-	return 0;
-}
-
-#ifdef DEBUG
-/* dump out the contents of the interpreter hash */
-static void interh_dump(void)
-{
-	unsigned int i;
-
-	for (i = 1; i <= ulogd_interh_ids; i++)
-		ulogd_log(ULOGD_DEBUG, "ulogd_interh[%d] = %s\n", 
-			i, (ulogd_interh[i])->name);
-
-}
-#endif
-
-/* key hash allocation granularity */
-#define KEYH_ALLOC_GRAN 20
-
-/* hash table for key ids */
-struct ulogd_keyh_entry *ulogd_keyh;
-
-/* current size of the hashtable */
-static unsigned int ulogd_keyh_ids_alloc;
-
-/* total number of registered keys */
-static unsigned int ulogd_keyh_ids;
-
-/* allocate a new key_id */
-static unsigned int keyh_allocid(struct ulogd_interpreter *ip, unsigned int offset,
-				const char *name)
-{
-	unsigned int id;
-
-	id = ++ulogd_keyh_ids;
-
-	if (id >= ulogd_keyh_ids_alloc) {
-		if (!ulogd_keyh) {
-			ulogd_keyh = (struct ulogd_keyh_entry *)
-				malloc(KEYH_ALLOC_GRAN * 
-					sizeof(struct ulogd_keyh_entry));
-			if (!ulogd_keyh) {
-				ulogd_log(ULOGD_ERROR, "OOM!\n");
-				return 0;
-			}
-		} else {
-			ulogd_keyh = (struct ulogd_keyh_entry *)
-				realloc(ulogd_keyh, (KEYH_ALLOC_GRAN
-						+ulogd_keyh_ids_alloc) *
-					sizeof(struct ulogd_keyh_entry));
-
-			if (!ulogd_keyh) {
-				ulogd_log(ULOGD_ERROR, "OOM!\n");
-				return 0;
-			}
-		}
-
-		ulogd_keyh_ids_alloc += KEYH_ALLOC_GRAN;
-	}
-
-	ulogd_keyh[id].interp = ip;
-	ulogd_keyh[id].offset = offset;
-	ulogd_keyh[id].name = name;
-
-	return id;
-}
-
-#ifdef DEBUG
-/* dump the keyhash to standard output */
-static void keyh_dump(void)
-{
-	unsigned int i;
-
-	printf("dumping keyh\n");
-	for (i = 1; i <= ulogd_keyh_ids; i++)
-		printf("ulogd_keyh[%lu] = %s:%u\n", i, 
-			ulogd_keyh[i].interp->name, ulogd_keyh[i].offset);
-}
-#endif
-
-/* get keyid by name */
-unsigned int keyh_getid(const char *name)
-{
-	unsigned int i;
-	for (i = 1; i <= ulogd_keyh_ids; i++)
-		if (!strcmp(name, ulogd_keyh[i].name))
-			return i;
-
-	return 0;
-}
-
-/* get key name by keyid */
-char *keyh_getname(unsigned int id)
-{
-	if (id > ulogd_keyh_ids) {
-		ulogd_log(ULOGD_NOTICE, 
-			"keyh_getname called with invalid id%u\n", id);
-		return NULL;
-	}
-		
-	return ulogd_keyh[id].interp->name;
-}
-
-/* get result for given key id. does not check if result valid */
-struct ulogd_iret *keyh_getres(unsigned int id)
-{
-	struct ulogd_iret *ret;
-
-	if (id > ulogd_keyh_ids) {
-		ulogd_log(ULOGD_NOTICE,
-			"keyh_getres called with invalid id %d\n", id);
-		return NULL;
-	}
-
-	ret = &ulogd_keyh[id].interp->result[ulogd_keyh[id].offset];
-
-	return ret;
-}
-
-/***********************************************************************
- * INTERPRETER MANAGEMENT 
- ***********************************************************************/
-
-/* try to lookup a registered interpreter for a given name */
-static struct ulogd_interpreter *find_interpreter(const char *name)
-{
-	unsigned int id;
-	
-	id = interh_getid(name);
-	if (!id)
-		return NULL;
-
-	return ulogd_interh[id];
-}
-
-/* the function called by all interpreter plugins for registering their
- * target. */ 
-void register_interpreter(struct ulogd_interpreter *me)
-{
-	unsigned int i;
-
-	/* check if we already have an interpreter with this name */
-	if (find_interpreter(me->name)) {
-		ulogd_log(ULOGD_NOTICE, 
-			"interpreter `%s' already registered\n", me->name);
-		return;
-	}
-
-	ulogd_log(ULOGD_INFO, "registering interpreter `%s'\n", me->name);
-
-	/* allocate a new interpreter id for it */
-	if (!interh_allocid(me)) {
-		ulogd_log(ULOGD_ERROR, "unable to obtain interh_id for "
-			"interpreter '%s'\n", me->name);
-		return;
-	}
-
-	/* - allocate one keyh_id for each result of this interpreter 
-	 * - link the elements to each other */
-	for (i = 0; i < me->key_num; i++) {
-		if (!keyh_allocid(me, i, me->result[i].key)) {
-			ulogd_log(ULOGD_ERROR, "unable to obtain keyh_id "
-				"for interpreter %s, key %d", me->name,
-				me->result[i].key);
-			continue;
-		}
-		if (i != me->key_num - 1)
-			me->result[i].next = &me->result[i+1];
-	}
-
-	/* all work done, we can prepend the new interpreter to the list */
-	if (ulogd_interpreters)
-		me->result[me->key_num - 1].next = 
-					&ulogd_interpreters->result[0];
-	me->next = ulogd_interpreters;
-	ulogd_interpreters = me;
-}
-#endif
-
 /***********************************************************************
  * PLUGIN MANAGEMENT 
  ***********************************************************************/
@@ -554,7 +316,10 @@ create_stack_resolve_keys(struct ulogd_pluginstance_stack *stack)
 					list_entry(pi_cur->list.prev,
 						   struct ulogd_pluginstance,
 						   list);
-		if (i == 0) {
+		i++;
+		ulogd_log(ULOGD_DEBUG, "traversing plugin `%s'\n", 
+			  pi_cur->plugin->name);
+		if (i == 1) {
 			/* first round: output plugin */
 			if (pi_cur->plugin->output.type != ULOGD_DTYPE_SINK) {
 				ulogd_log(ULOGD_ERROR, "last plugin in stack "
@@ -632,6 +397,26 @@ create_stack_resolve_keys(struct ulogd_pluginstance_stack *stack)
 	return 0;
 }
 
+static int create_stack_start_instances(struct ulogd_pluginstance_stack *stack)
+{
+	int ret;
+	struct ulogd_pluginstance *pi;
+
+	/* start from input to output plugin */
+	list_for_each_entry(pi, &stack->list, list) {
+		if (!pi->plugin->start)
+			continue;
+
+		ret = pi->plugin->start(pi);
+		if (ret < 0) {
+			ulogd_log(ULOGD_ERROR, "error during start of `%s'\n",
+				  pi->id);
+			return ret;
+		}
+	}
+	return 0;
+}
+
 /* create a new stack of plugins */
 static int create_stack(char *option)
 {
@@ -700,10 +485,19 @@ static int create_stack(char *option)
 		list_add_tail(&pi->list, &stack->list);
 	}
 
+	/* PASS 2: resolve key connections from bottom to top of stack */
 	ret = create_stack_resolve_keys(stack);
 	if (ret < 0) {
-		free(stack);
 		ulogd_log(ULOGD_DEBUG, "destroying stack\n");
+		free(stack);
+		return ret;
+	}
+
+	/* PASS 3: start each plugin in stack */
+	ret = create_stack_start_instances(stack);
+	if (ret < 0) {
+		ulogd_log(ULOGD_DEBUG, "destroying stack\n");
+		free(stack);
 		return ret;
 	}
 
@@ -958,6 +752,12 @@ int main(int argc, char* argv[])
 	/* parse config file */
 	if (parse_conffile("global", &ulogd_kset)) {
 		ulogd_log(ULOGD_FATAL, "parse_conffile\n");
+		exit(1);
+	}
+
+	if (list_empty(&ulogd_pi_stacks)) {
+		ulogd_log(ULOGD_FATAL, 
+			  "not even a single working plugin stack\n");
 		exit(1);
 	}
 
