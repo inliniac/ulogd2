@@ -321,7 +321,7 @@ out_buf:
 	return -1;
 }
 
-static int fini(struct ulogd_pluginstance *pi)
+static int stop(struct ulogd_pluginstance *pi)
 {
 	struct nful_input *ui = (struct nful_input *)pi->private;
 
@@ -347,11 +347,13 @@ struct ulogd_plugin libulog_plugin = {
 	.priv_size 	= sizeof(struct nful_input),
 	.configure 	= &configure,
 	.start 		= &start,
-	.stop 		= &fini,
+	.stop 		= &stop,
 	.config_kset 	= &libulog_kset,
 };
 
-void _init(void)
+void __attribute__ ((constructor)) init(void);
+
+void init(void)
 {
 	ulogd_register_plugin(&libulog_plugin);
 }
