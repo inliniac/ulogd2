@@ -494,9 +494,9 @@ pluginstance_alloc_init(struct ulogd_plugin *pl, char *pi_id,
 	pi->input = ptr;
 	memcpy(pi->input, pl->input.keys, 
 	       pl->input.num_keys * sizeof(struct ulogd_key));
+	ptr += pl->input.num_keys * sizeof(struct ulogd_key);
 	
 	/* copy input keys */
-	ptr += pl->input.num_keys * sizeof(struct ulogd_key);
 	pi->output = ptr;
 	memcpy(pi->output, pl->output.keys, 
 	       pl->output.num_keys * sizeof(struct ulogd_key));
@@ -509,9 +509,9 @@ pluginstance_alloc_init(struct ulogd_plugin *pl, char *pi_id,
 static int load_plugin(char *file)
 {
 	if (!dlopen(file, RTLD_NOW)) {
-		ulogd_log(ULOGD_ERROR, "load_plugins: '%s': %s\n", file,
+		ulogd_log(ULOGD_ERROR, "load_plugin: '%s': %s\n", file,
 			  dlerror());
-		return 1;
+		return -1;
 	}
 	return 0;
 }
@@ -527,7 +527,7 @@ find_okey_in_stack(char *name,
 	list_for_each_entry_reverse(pi, &start->list, list) {
 		int i;
 
-		if ((void *)&pi->list == stack)
+		if ((void *)&pi->list == &stack->list)
 			return NULL;
 
 		for (i = 0; i < pi->plugin->output.num_keys; i++) {
@@ -599,7 +599,7 @@ create_stack_resolve_keys(struct ulogd_pluginstance_stack *stack)
 			for (j = 0; j < pi_cur->plugin->input.num_keys; j++) {
 				struct ulogd_key *okey;
 				struct ulogd_key *ikey = 
-					&pi_cur->plugin->input.keys[i];
+					&pi_cur->plugin->input.keys[j];
 
 				/* skip those marked as 'inactive' by
 				 * pl->configure() */
@@ -607,9 +607,10 @@ create_stack_resolve_keys(struct ulogd_pluginstance_stack *stack)
 					continue;
 
 				if (ikey->u.source) { 
-					ulogd_log(ULOGD_ERROR, "key `%s' "
+					ulogd_log(ULOGD_ERROR, "input key `%s' "
 						  "already has source\n",
 						  ikey->name);
+
 					return -EINVAL;
 				}
 
@@ -702,6 +703,7 @@ static int create_stack(char *option)
 	ret = create_stack_resolve_keys(stack);
 	if (ret < 0) {
 		free(stack);
+		ulogd_log(ULOGD_DEBUG, "destroying stack\n");
 		return ret;
 	}
 
