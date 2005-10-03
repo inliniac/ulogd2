@@ -77,7 +77,7 @@
 
 /* where to look for the config file */
 #ifndef ULOGD_CONFIGFILE
-#define ULOGD_CONFIGFILE	"/etc/ulogd.conf"
+#define ULOGD_CONFIGFILE	"/usr/local/etc/ulogd.conf"
 #endif
 
 #define COPYRIGHT \
@@ -351,7 +351,7 @@ static struct ulogd_plugin *find_plugin(const char *name)
 }
 
 /* the function called by all plugins for registering themselves */
-void register_plugin(struct ulogd_plugin *me)
+void ulogd_register_plugin(struct ulogd_plugin *me)
 {
 	if (find_plugin(me->name)) {
 		ulogd_log(ULOGD_NOTICE, "plugin `%s' already registered\n",
@@ -453,8 +453,12 @@ pluginstance_alloc_init(struct ulogd_plugin *pl, char *pi_id,
 
 	size = sizeof(struct ulogd_pluginstance);
 	size += pl->priv_size;
-	size += sizeof(struct config_keyset);
-	size += pl->config_kset->num_ces * sizeof(struct config_entry);
+	if (pl->config_kset) {
+		size += sizeof(struct config_keyset);
+		if (pl->config_kset->num_ces)
+			size += pl->config_kset->num_ces * 
+						sizeof(struct config_entry);
+	}
 	size += pl->input.num_keys * sizeof(struct ulogd_key);
 	size += pl->output.num_keys * sizeof(struct ulogd_key);
 	pi = malloc(size);
@@ -472,14 +476,21 @@ pluginstance_alloc_init(struct ulogd_plugin *pl, char *pi_id,
 
 	ptr += pl->priv_size;
 	/* copy config keys */
-	pi->config_kset = ptr;
-	pi->config_kset->num_ces = pl->config_kset->num_ces;
-	memcpy(pi->config_kset->ces, pl->config_kset->ces, 
-	       pi->config_kset->num_ces * sizeof(struct config_entry));
+	if (pl->config_kset) {
+		pi->config_kset = ptr;
+		ptr += sizeof(struct config_keyset);
+		pi->config_kset->num_ces = pl->config_kset->num_ces;
+		if (pi->config_kset->num_ces) {
+			ptr += pi->config_kset->num_ces 
+						* sizeof(struct config_entry);
+			memcpy(pi->config_kset->ces, pl->config_kset->ces, 
+			       pi->config_kset->num_ces 
+			       			*sizeof(struct config_entry));
+		}
+	} else
+		pi->config_kset = NULL;
 
 	/* copy input keys */
-	ptr += sizeof(struct config_keyset);
-	ptr += pi->config_kset->num_ces * sizeof(struct config_entry);
 	pi->input = ptr;
 	memcpy(pi->input, pl->input.keys, 
 	       pl->input.num_keys * sizeof(struct ulogd_key));
@@ -638,7 +649,8 @@ static int create_stack(char *option)
 		return -ENOMEM;
 	INIT_LIST_HEAD(&stack->list);
 
-	ulogd_log(ULOGD_DEBUG, "building new pluginstance stack:\n");
+	ulogd_log(ULOGD_DEBUG, "building new pluginstance stack (%s):\n",
+		  option);
 
 	/* PASS 1: find and instanciate plugins of stack, link them together */
 	for (tok = strtok(buf, ",\n"); tok; tok = strtok(NULL, ",\n")) {
@@ -647,8 +659,10 @@ static int create_stack(char *option)
 		struct ulogd_pluginstance *pi;
 		struct ulogd_plugin *pl;
 
+		ulogd_log(ULOGD_DEBUG, "tok=`%s'\n", tok);
+
 		/* parse token into sub-tokens */
-		equals = strchr(tok, '=');
+		equals = strchr(tok, ':');
 		if (!equals || (equals - tok >= ULOGD_MAX_KEYLEN)) {
 			ulogd_log(ULOGD_ERROR, "syntax error while parsing `%s'"
 				  "of line `%s'\n", tok, buf);
@@ -682,7 +696,7 @@ static int create_stack(char *option)
 		 * fix up input/output keys */
 			
 		ulogd_log(ULOGD_DEBUG, "pushing `%s' on stack\n", pl->name);
-		list_add(&pi->list, &stack->list);
+		list_add_tail(&pi->list, &stack->list);
 	}
 
 	ret = create_stack_resolve_keys(stack);
