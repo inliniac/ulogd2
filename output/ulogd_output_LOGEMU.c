@@ -159,7 +159,9 @@ static struct ulogd_plugin logemu_plugin = {
 	.signal 	= &signal_handler_logemu,
 };
 
-void _init(void)
+void __attribute__ ((constructor)) init(void);
+
+void init(void)
 {
 	/* FIXME: error handling */
 	config_parse_file("LOGEMU", &logemu_kset);

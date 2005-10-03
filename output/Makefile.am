@@ -1,10 +1,11 @@
 
 INCLUDES = $(all_includes) -I$(top_srcdir)/include
+LIBS=
 
-lib_LTLIBRARIES = ulogd_output_LOGEMU.la # ulogd_output_OPRINT.la ulogd_output_SYSLOG.la
+lib_LTLIBRARIES = libulogd_LOGEMU.la # libulogd_OPRINT.la libulogd_SYSLOG.la
 
-ulogd_output_LOGEMU_la_SOURCES = ulogd_output_LOGEMU.c
-#ulogd_output_SYSLOG_la_SOURCES = ulogd_output_SYSLOG.c
-#ulogd_output_OPRINT_la_SOURCES = ulogd_output_OPRINT.c
+libulogd_LOGEMU_la_SOURCES = ulogd_output_LOGEMU.c
+#libulogd_SYSLOG_la_SOURCES = ulogd_output_SYSLOG.c
+#libulogd_OPRINT_la_SOURCES = ulogd_output_OPRINT.c
 
 
