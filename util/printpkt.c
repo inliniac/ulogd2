@@ -46,11 +46,6 @@
         ((unsigned char *)&addr)[2], \
         ((unsigned char *)&addr)[3]
 
-struct intr_id {
-	char* name;
-	unsigned int id;		
-};
-
 static char hostname[HOST_NAME_MAX+1];
 
 #define INTR_IDS 	35
@@ -95,11 +90,6 @@ static struct ulogd_key printpkt_keys[INTR_IDS] = {
 #define GET_VALUE(res, x)	(res[x].u.source->u.value)
 #define GET_FLAGS(res, x)	(res[x].u.source->flags)
 #define pp_is_valid(res, x)	(GET_FLAGS(res, x) & ULOGD_RETF_VALID)
-
-#if 0
-#define GET_VALUE(x)	ulogd_keyh[intr_ids[x].id].interp->result[ulogd_keyh[intr_ids[x].id].offset].value
-#define GET_FLAGS(x)	ulogd_keyh[intr_ids[x].id].interp->result[ulogd_keyh[intr_ids[x].id].offset].flags
-#endif
 
 int printpkt_print(struct ulogd_key *res, char *buf, int prefix)
 {
@@ -260,37 +250,13 @@ int printpkt_print(struct ulogd_key *res, char *buf, int prefix)
 	return 0;
 }
 
-/* get all key id's for the keys we are intrested in */
-static int get_ids(void)
-{
-#if 0
-	int i;
-	struct intr_id *cur_id;
-
-	for (i = 0; i < INTR_IDS; i++) {
-		cur_id = &intr_ids[i];
-		cur_id->id = keyh_getid(cur_id->name);
-		if (!cur_id->id) {
-			ulogd_log(ULOGD_ERROR, 
-				"Cannot resolve keyhash id for %s\n", 
-				cur_id->name);
-			return 1;
-		}
-	}	
-#endif
-	return 0;
-}
-
 int printpkt_init(void)
 {
 	if (gethostname(hostname, sizeof(hostname)) < 0) {
 		ulogd_log(ULOGD_FATAL, "can't gethostname(): %s\n",
 			  strerror(errno));
-		exit(2);
+		return -EINVAL;
 	}
-
-	if (get_ids())
-		return 1;
 
 	return 0;
 }
