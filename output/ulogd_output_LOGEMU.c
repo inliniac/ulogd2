@@ -133,7 +133,8 @@ static int fini_logemu(struct ulogd_pluginstance *pi) {
 static int configure_logemu(struct ulogd_pluginstance *pi,
 			    struct ulogd_pluginstance_stack *stack)
 {
-	/* we should actually parse our logfile section here */
+	/* FIXME: error handling */
+	config_parse_file(pi->id, &logemu_kset);
 
 	return 0;
 }
@@ -163,8 +164,5 @@ void __attribute__ ((constructor)) init(void);
 
 void init(void)
 {
-	/* FIXME: error handling */
-	config_parse_file("LOGEMU", &logemu_kset);
-
 	ulogd_register_plugin(&logemu_plugin);
 }
