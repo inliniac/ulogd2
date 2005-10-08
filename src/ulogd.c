@@ -42,6 +42,9 @@
  *
  * 	17 Apr 2005 Harald Welte <laforge@gnumonks.org>
  * 		- 
+ *
+ * 	07 Oct 2005 Harald Welte <laforge@gnumonks.org>
+ * 		- finally get ulogd2 into a running state
  */
 
 #define ULOGD_VERSION	"2.00alpha"
@@ -61,6 +64,7 @@
 #include <getopt.h>
 #include <pwd.h>
 #include <grp.h>
+#include <syslog.h>
 #include <ulogd/conffile.h>
 #include <ulogd/ulogd.h>
 #include "select.h"
@@ -85,15 +89,52 @@
 
 /* global variables */
 static FILE *logfile = NULL;		/* logfile pointer */
-static int loglevel = 1;		/* current loglevel */
 static char *ulogd_configfile = ULOGD_CONFIGFILE;
-
-/* linked list for all registered interpreters */
-//static struct ulog_interpreter *ulogd_interpreters;
+static FILE *syslog_dummy;
 
 /* linked list for all registered plugins */
 static LIST_HEAD(ulogd_plugins);
 static LIST_HEAD(ulogd_pi_stacks);
+
+
+static int load_plugin(char *file);
+static int create_stack(char *file);
+
+static struct config_keyset ulogd_kset = {
+	.num_ces = 4,
+	.ces = {
+		{
+			.key = "logfile",
+			.type = CONFIG_TYPE_STRING, 
+			.options = CONFIG_OPT_NONE,
+			.u.string = ULOGD_LOGFILE_DEFAULT,
+		},
+		{
+			.key = "plugin",
+			.type = CONFIG_TYPE_CALLBACK,
+			.options = CONFIG_OPT_MULTI,
+			.u.parser = &load_plugin,
+		},
+		{
+			.key = "loglevel", 
+			.type = CONFIG_TYPE_INT,
+			.options = CONFIG_OPT_NONE,
+			.u.value = ULOGD_NOTICE,
+		},
+		{
+			.key = "stack",
+			.type = CONFIG_TYPE_CALLBACK,
+			.options = CONFIG_OPT_NONE,
+			.u.parser = &create_stack,
+		},
+	},
+};
+
+#define logfile_ce	ulogd_kset.ces[0]
+#define plugin_ce	ulogd_kset.ces[1]
+#define loglevel_ce	ulogd_kset.ces[2]
+#define stack_ce	ulogd_kset.ces[3]
+
 
 /***********************************************************************
  * PLUGIN MANAGEMENT 
@@ -128,6 +169,31 @@ void ulogd_register_plugin(struct ulogd_plugin *me)
  * MAIN PROGRAM
  ***********************************************************************/
 
+static inline int ulogd2syslog_level(int level)
+{
+	int syslog_level = LOG_WARNING;
+
+	switch (level) {
+		case ULOGD_DEBUG:
+			syslog_level = LOG_DEBUG;
+			break;
+		case ULOGD_INFO:
+			syslog_level = LOG_INFO;
+			break;
+		case ULOGD_NOTICE:
+			syslog_level = LOG_NOTICE;
+			break;
+		case ULOGD_ERROR:
+			syslog_level = LOG_ERR;
+			break;
+		case ULOGD_FATAL:
+			syslog_level = LOG_CRIT;
+			break;
+	}
+
+	return syslog_level;
+}
+
 /* log message to the logfile */
 void __ulogd_log(int level, char *file, int line, const char *format, ...)
 {
@@ -137,26 +203,33 @@ void __ulogd_log(int level, char *file, int line, const char *format, ...)
 	FILE *outfd;
 
 	/* log only messages which have level at least as high as loglevel */
-	if (level < loglevel)
+	if (level < loglevel_ce.u.value)
 		return;
 
-	if (logfile)
-		outfd = logfile;
-	else
-		outfd = stderr;
+	if (logfile == &syslog_dummy) {
+		/* FIXME: this omits the 'file' string */
+		va_start(ap, format);
+		vsyslog(ulogd2syslog_level(level), format, ap);
+		va_end(ap);
+	} else {
+		if (logfile)
+			outfd = logfile;
+		else
+			outfd = stderr;
 
-	va_start(ap, format);
+		va_start(ap, format);
 
-	tm = time(NULL);
-	timestr = ctime(&tm);
-	timestr[strlen(timestr)-1] = '\0';
-	fprintf(outfd, "%s <%1.1d> %s:%d ", timestr, level, file, line);
-	
-	vfprintf(outfd, format, ap);
-	va_end(ap);
+		tm = time(NULL);
+		timestr = ctime(&tm);
+		timestr[strlen(timestr)-1] = '\0';
+		fprintf(outfd, "%s <%1.1d> %s:%d ", timestr, level, file, line);
 
-	/* flush glibc's buffer */
-	fflush(outfd);
+		vfprintf(outfd, format, ap);
+		va_end(ap);
+
+		/* flush glibc's buffer */
+		fflush(outfd);
+	}
 }
 
 /* propagate results to all downstream plugins in the stack */
@@ -594,42 +667,6 @@ static int parse_conffile(const char *section, struct config_keyset *ce)
 }
 
 
-static struct config_keyset ulogd_kset = {
-	.num_ces = 4,
-	.ces = {
-		{
-			.key = "logfile",
-			.type = CONFIG_TYPE_STRING, 
-			.options = CONFIG_OPT_NONE,
-			.u.string = ULOGD_LOGFILE_DEFAULT,
-		},
-		{
-			.key = "plugin",
-			.type = CONFIG_TYPE_CALLBACK,
-			.options = CONFIG_OPT_MULTI,
-			.u.parser = &load_plugin,
-		},
-		{
-			.key = "loglevel", 
-			.type = CONFIG_TYPE_INT,
-			.options = CONFIG_OPT_NONE,
-			.u.value = 1,
-		},
-		{
-			.key = "stack",
-			.type = CONFIG_TYPE_CALLBACK,
-			.options = CONFIG_OPT_NONE,
-			.u.parser = &create_stack,
-		},
-	},
-};
-
-#define logfile_ce	ulogd_kset.ces[0]
-#define plugin_ce	ulogd_kset.ces[1]
-#define loglevel_ce	ulogd_kset.ces[2]
-#define stack_ce	ulogd_kset.ces[3]
-
-
 static void deliver_signal_pluginstances(int signal)
 {
 	struct ulogd_pluginstance_stack *stack;
@@ -663,7 +700,7 @@ static void signal_handler(int signal)
 	deliver_signal_pluginstances(signal);
 
 	/* reopen logfile */
-	if (logfile != stdout) {
+	if (logfile != stdout && logfile != &syslog_dummy) {
 		fclose(logfile);
 		logfile = fopen(logfile_ce.u.string, "a");
 		if (!logfile)
@@ -799,7 +836,7 @@ int main(int argc, char* argv[])
 		if (fork()) {
 			exit(0);
 		}
-		if (logfile != stdout)
+		if (logfile != stdout && logfile != &syslog_dummy)
 			fclose(stdout);
 		fclose(stderr);
 		fclose(stdin);
@@ -809,7 +846,7 @@ int main(int argc, char* argv[])
 	signal(SIGTERM, &sigterm_handler);
 	signal(SIGHUP, &signal_handler);
 
-	ulogd_log(ULOGD_NOTICE, 
+	ulogd_log(ULOGD_INFO, 
 		  "initialization finished, entering main loop\n");
 
 	ulogd_main_loop();
