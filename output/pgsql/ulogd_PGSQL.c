@@ -1,8 +1,8 @@
-/* ulogd_PGSQL.c, Version $Revision: 1.8 $
+/* ulogd_PGSQL.c, Version $Revision$
  *
  * ulogd output plugin for logging to a PGSQL database
  *
- * (C) 2000 by Harald Welte <laforge@gnumonks.org> 
+ * (C) 2000-2005 by Harald Welte <laforge@gnumonks.org> 
  * This software is distributed under the terms of GNU GPL 
  * 
  * This plugin is based on the MySQL plugin made by Harald Welte.
@@ -12,6 +12,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <arpa/inet.h>
 #include <ulogd/ulogd.h>
 #include <ulogd/conffile.h>
 #include <libpq-fe.h>
@@ -79,6 +80,23 @@ static config_entry_t table_ce = {
 	.options = CONFIG_OPT_MANDATORY,
 };
 
+static config_entry_t schema_ce = { 
+	.next = &table_ce, 
+	.key = "schema", 
+	.type = CONFIG_TYPE_STRING,
+	.options = CONFIG_OPT_NONE,
+	.u.string = "public",
+};
+
+static config_entry_t port_ce = {
+	.next = &schema_ce,
+	.key = "port",
+	.type = CONFIG_TYPE_INT,
+	.options = CONFIG_OPT_NONE,
+};
+
+static unsigned char pgsql_have_schemas;
+
 /* our main output function, called by ulogd */
 static int pgsql_output(ulog_iret_t *result)
 {
@@ -87,6 +105,7 @@ static int pgsql_output(ulog_iret_t *result)
 	PGresult   *pgres;
 #ifdef IP_AS_STRING
 	char *tmpstr;		/* need this for --log-ip-as-string */
+	struct in_addr addr;
 #endif
 
 	stmt_ins = stmt_val;
@@ -128,7 +147,9 @@ static int pgsql_output(ulog_iret_t *result)
 			case ULOGD_RET_IPADDR:
 #ifdef IP_AS_STRING
 				*stmt_ins++ = '\'';
-				tmpstr = (char *)inet_ntoa(ntohl(res->value.ui32));
+				memset(&addr, 0, sizeof(addr));
+				addr.s_addr = ntohl(res->value.ui32);
+				tmpstr = (char *)inet_ntoa(addr);
 				PQescapeString(stmt_ins,tmpstr,strlen(tmpstr)); 
 				stmt_ins = stmt + strlen(stmt);
 				sprintf(stmt_ins, "',");
@@ -179,6 +200,37 @@ static int pgsql_output(ulog_iret_t *result)
 	return 0;
 }
 
+#define PGSQL_HAVE_NAMESPACE_TEMPLATE "SELECT nspname FROM pg_namespace n WHERE n.nspname='%s'"
+
+/* Determine if server support schemas */
+static int pgsql_namespace(void) {
+	PGresult *result;
+	char pgbuf[strlen(PGSQL_HAVE_NAMESPACE_TEMPLATE)+strlen(schema_ce.u.string)+1];
+
+	if (!dbh)
+		return 1;
+
+	sprintf(pgbuf, PGSQL_HAVE_NAMESPACE_TEMPLATE, schema_ce.u.string);
+	ulogd_log(ULOGD_DEBUG, "%s\n", pgbuf);
+	
+	result = PQexec(dbh, pgbuf);
+	if (!result) {
+		ulogd_log(ULOGD_DEBUG, "\n result false");
+		return 1;
+	}
+
+	if (PQresultStatus(result) == PGRES_TUPLES_OK) {
+		ulogd_log(ULOGD_DEBUG, "using schema %s\n", schema_ce.u.string);
+		pgsql_have_schemas = 1;
+	} else {
+		pgsql_have_schemas = 0;
+	}
+
+	PQclear(result);
+	
+	return 0;
+}
+
 #define PGSQL_INSERTTEMPL   "insert into X (Y) values (Z)"
 #define PGSQL_VALSIZE	100
 
@@ -197,7 +249,7 @@ static int pgsql_createstmt(void)
 	}
 
 	/* caclulate the size for the insert statement */
-	size = strlen(PGSQL_INSERTTEMPL) + strlen(table_ce.u.string);
+	size = strlen(PGSQL_INSERTTEMPL) + strlen(table_ce.u.string) + strlen(schema_ce.u.string) + 1;
 
 	for (f = fields; f; f = f->next) {
 		/* we need space for the key and a comma, as well as
@@ -214,7 +266,12 @@ static int pgsql_createstmt(void)
 		return 1;
 	}
 
-	sprintf(stmt, "insert into %s (", table_ce.u.string);
+	if (pgsql_have_schemas) {
+		sprintf(stmt, "insert into %s.%s (", schema_ce.u.string, table_ce.u.string);
+	} else {
+		sprintf(stmt, "insert into %s (", table_ce.u.string);
+	}
+
 	stmt_val = stmt + strlen(stmt);
 
 	for (f = fields; f; f = f->next) {
@@ -234,12 +291,16 @@ static int pgsql_createstmt(void)
 	return 0;
 }
 
+#define PGSQL_GETCOLUMN_TEMPLATE "SELECT  a.attname FROM pg_class c, pg_attribute a WHERE c.relname ='%s' AND a.attnum>0 AND a.attrelid=c.oid ORDER BY a.attnum"
+
+#define PGSQL_GETCOLUMN_TEMPLATE_SCHEMA "SELECT a.attname FROM pg_attribute a, pg_class c LEFT JOIN pg_namespace n ON c.relnamespace=n.oid WHERE c.relname ='%s' AND n.nspname='%s' AND a.attnum>0 AND a.attrelid=c.oid AND a.attisdropped=FALSE ORDER BY a.attnum"
+
 /* find out which columns the table has */
 static int pgsql_get_columns(const char *table)
 {
 	PGresult *result;
 	char buf[ULOGD_MAX_KEYLEN];
-	char pgbuf[256];
+	char pgbuf[strlen(PGSQL_GETCOLUMN_TEMPLATE_SCHEMA)+strlen(table)+strlen(schema_ce.u.string)+2];
 	char *underscore;
 	struct _field *f;
 	int id;
@@ -248,10 +309,13 @@ static int pgsql_get_columns(const char *table)
 	if (!dbh)
 		return 1;
 
-	strcpy(pgbuf, "SELECT  a.attname FROM pg_class c, pg_attribute a WHERE c.relname ='");
-	strncat(pgbuf, table, strlen(table));
-	strcat(pgbuf, "' AND a.attnum>0 AND a.attrelid=c.oid ORDER BY a.attnum");
-	ulogd_log(ULOGD_DEBUG, pgbuf);
+	if (pgsql_have_schemas) {
+		snprintf(pgbuf, sizeof(pgbuf)-1, PGSQL_GETCOLUMN_TEMPLATE_SCHEMA, table, schema_ce.u.string);
+	} else {
+		snprintf(pgbuf, sizeof(pgbuf)-1, PGSQL_GETCOLUMN_TEMPLATE, table);
+	}
+
+	ulogd_log(ULOGD_DEBUG, "%s\n", pgbuf);
 
 	result = PQexec(dbh, pgbuf);
 	if (!result) {
@@ -303,13 +367,36 @@ static int exit_nicely(PGconn *conn)
 }
 
 /* make connection and select database */
-static int pgsql_open_db(char *server, char *user, char *pass, char *db)
+static int pgsql_open_db(char *server, int port, char *user, char *pass, 
+			 char *db)
 {
-	char connstr[80];
+	int len;
+	char *connstr;
+
+	/* 80 is more than what we need for the fixed parts below */
+	len = 80 + strlen(user) + strlen(db);
+
+	/* hostname and  and password are the only optionals */
+	if (server)
+		len += strlen(server);
+	if (pass)
+		len += strlen(pass);
+	if (port)
+		len += 20;
+
+	connstr = (char *) malloc(len);
+	if (!connstr)
+		return 1;
 
 	if (server) {
 		strcpy(connstr, " host=");
 		strcat(connstr, server);
+	}
+
+	if (port) {
+		char portbuf[20];
+		snprintf(portbuf, sizeof(portbuf), " port=%u", port);
+		strcat(connstr, portbuf);
 	}
 
 	strcat(connstr, " dbname=");
@@ -334,20 +421,27 @@ static int pgsql_open_db(char *server, char *user, char *pass, char *db)
 static int pgsql_init(void)
 {
 	/* have the opts parsed */
-	config_parse_file("PGSQL", &table_ca);
+	config_parse_file("PGSQL", &port_ce);
 
-	if (pgsql_open_db(host_ce.u.string, user_ce.u.string,
+	if (pgsql_open_db(host_ce.u.string, port_ce.u.value, user_ce.u.string,
 			   pass_ce.u.string, db_ce.u.string)) {
 		ulogd_log(ULOGD_ERROR, "can't establish database connection\n");
-		return;
+		return 1;
+	}
+
+	if (pgsql_namespace()) {
+		return 1;
+		ulogd_log(ULOGD_ERROR, "unable to test for pgsql schemas\n");
 	}
 
 	/* read the fieldnames to know which values to insert */
 	if (pgsql_get_columns(table_ce.u.string)) {
 		ulogd_log(ULOGD_ERROR, "unable to get pgsql columns\n");
-		return;
+		return 1;
 	}
 	pgsql_createstmt();
+
+	return 0;
 }
 
 static void pgsql_fini(void)
