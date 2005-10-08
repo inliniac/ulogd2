@@ -26,6 +26,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
@@ -35,6 +36,48 @@
 #include <errno.h>
 #include <ulogd/ulogd.h>
 #include <ulogd/conffile.h>
+
+/* This is a timeval as stored on disk in a dumpfile.
+ * It has to use the same types everywhere, independent of the actual
+ * `struct timeval'
+ */
+
+struct pcap_timeval {
+	int32_t tv_sec;
+	int32_t tv_usec;
+};
+
+/*
+ * How a `pcap_pkthdr' is actually stored in the dumpfile.
+ *
+ * Do not change the format of this structure, in any way (this includes
+ * changes that only affect the length of fields in this structure),
+ * and do not make the time stamp anything other than seconds and
+ * microseconds (e.g., seconds and nanoseconds).  Instead:
+ *
+ *	introduce a new structure for the new format;
+ *
+ *	send mail to "tcpdump-workers@tcpdump.org", requesting a new
+ *	magic number for your new capture file format, and, when
+ *	you get the new magic number, put it in "savefile.c";
+ *
+ *	use that magic number for save files with the changed record
+ *	header;
+ *
+ *	make the code in "savefile.c" capable of reading files with
+ *	the old record header as well as files with the new record header
+ *	(using the magic number to determine the header format).
+ *
+ * Then supply the changes to "patches@tcpdump.org", so that future
+ * versions of libpcap and programs that use it (such as tcpdump) will
+ * be able to read your new capture file format.
+ */
+
+struct pcap_sf_pkthdr {
+	struct pcap_timeval ts;		/* time stamp */
+	uint32_t caplen;		/* length of portion present */
+	uint32_t len;			/* length this packet (off wire) */
+};
 
 #ifndef ULOGD_PCAP_DEFAULT
 #define ULOGD_PCAP_DEFAULT	"/var/log/ulogd.pcap"
@@ -57,13 +100,13 @@ static struct config_keyset pcap_kset = {
 			.key = "file", 
 			.type = CONFIG_TYPE_STRING, 
 			.options = CONFIG_OPT_NONE,
-			.u.string = ULOGD_PCAP_DEFAULT,
+			.u = { .string = ULOGD_PCAP_DEFAULT },
 		},
 		{ 
 			.key = "sync", 
 			.type = CONFIG_TYPE_INT,
 			.options = CONFIG_OPT_NONE,
-			.u.value = ULOGD_PCAP_SYNC_DEFAULT,
+			.u = { .value = ULOGD_PCAP_SYNC_DEFAULT },
 		},
 	},
 };
@@ -93,7 +136,7 @@ static int interp_pcap(struct ulogd_pluginstance *upi)
 {
 	struct pcap_instance *pi = (struct pcap_instance *) &upi->private;
 	struct ulogd_key *res = upi->input;
-	struct pcap_pkthdr pchdr;
+	struct pcap_sf_pkthdr pchdr;
 
 	pchdr.caplen = GET_VALUE(res, 1).ui32;
 	pchdr.len = GET_VALUE(res, 2).ui32;
@@ -104,7 +147,11 @@ static int interp_pcap(struct ulogd_pluginstance *upi)
 		pchdr.ts.tv_usec = GET_VALUE(res, 4).ui32;
 	} else {
 		/* use current system time */
-		gettimeofday(&pchdr.ts, NULL);
+		struct timeval tv;
+		gettimeofday(&tv, NULL);
+
+		pchdr.ts.tv_sec = tv.tv_sec;
+		pchdr.ts.tv_usec = tv.tv_usec;
 	}
 
 	if (fwrite(&pchdr, sizeof(pchdr), 1, pi->of) != 1) {
