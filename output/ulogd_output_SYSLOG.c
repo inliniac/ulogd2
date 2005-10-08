@@ -4,7 +4,7 @@
  *
  * This target produces a syslog entries identical to the LOG target.
  *
- * (C) 2003 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2003-2005 by Harald Welte <laforge@gnumonks.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 
@@ -40,7 +40,7 @@
 #define SYSLOG_LEVEL_DEFAULT "LOG_NOTICE"
 #endif
 
-static config_keyset logemu_kset = { 
+static struct config_keyset syslog_kset = { 
 	.num_ces = 2,
 	.ces = {
 		{
@@ -65,14 +65,13 @@ struct syslog_instance {
 
 static int _output_syslog(struct ulogd_pluginstance *upi)
 {
-	struct syslog_intance *li = (struct syslog_instance *) &upi->private;
+	struct syslog_instance *li = (struct syslog_instance *) &upi->private;
 	struct ulogd_key *res = upi->input;
 	static char buf[4096];
 	
 	printpkt_print(res, buf, 0);
 
-	syslog(upi->config_kset->ces[0].u.value |
-	       upi->config_kset->ces[1].u.value, buf);
+	syslog(li->syslog_level | li->syslog_facility, buf);
 
 	return 0;
 }
@@ -81,57 +80,61 @@ static int syslog_configure(struct ulogd_pluginstance *pi,
 			    struct ulogd_pluginstance_stack *stack)
 {
 	int syslog_facility, syslog_level;
+	char *facility, *level;
 
 	/* FIXME: error handling */
-	config_parse_file(pi->id, &level_ce);
+	config_parse_file(pi->id, pi->config_kset);
 
-	if (!strcmp(facility_ce.u.string, "LOG_DAEMON"))
+	facility = pi->config_kset->ces[0].u.string;
+	level = pi->config_kset->ces[1].u.string;
+
+	if (!strcmp(facility, "LOG_DAEMON"))
 		syslog_facility = LOG_DAEMON;
-	else if (!strcmp(facility_ce.u.string, "LOG_KERN"))
+	else if (!strcmp(facility, "LOG_KERN"))
 		syslog_facility = LOG_KERN;
-	else if (!strcmp(facility_ce.u.string, "LOG_LOCAL0"))
+	else if (!strcmp(facility, "LOG_LOCAL0"))
 		syslog_facility = LOG_LOCAL0;
-	else if (!strcmp(facility_ce.u.string, "LOG_LOCAL1"))
+	else if (!strcmp(facility, "LOG_LOCAL1"))
 		syslog_facility = LOG_LOCAL1;
-	else if (!strcmp(facility_ce.u.string, "LOG_LOCAL2"))
+	else if (!strcmp(facility, "LOG_LOCAL2"))
 		syslog_facility = LOG_LOCAL2;
-	else if (!strcmp(facility_ce.u.string, "LOG_LOCAL3"))
+	else if (!strcmp(facility, "LOG_LOCAL3"))
 		syslog_facility = LOG_LOCAL3;
-	else if (!strcmp(facility_ce.u.string, "LOG_LOCAL4"))
+	else if (!strcmp(facility, "LOG_LOCAL4"))
 		syslog_facility = LOG_LOCAL4;
-	else if (!strcmp(facility_ce.u.string, "LOG_LOCAL5"))
+	else if (!strcmp(facility, "LOG_LOCAL5"))
 		syslog_facility = LOG_LOCAL5;
-	else if (!strcmp(facility_ce.u.string, "LOG_LOCAL6"))
+	else if (!strcmp(facility, "LOG_LOCAL6"))
 		syslog_facility = LOG_LOCAL6;
-	else if (!strcmp(facility_ce.u.string, "LOG_LOCAL7"))
+	else if (!strcmp(facility, "LOG_LOCAL7"))
 		syslog_facility = LOG_LOCAL7;
-	else if (!strcmp(facility_ce.u.string, "LOG_USER"))
+	else if (!strcmp(facility, "LOG_USER"))
 		syslog_facility = LOG_USER;
 	else {
 		ulogd_log(ULOGD_FATAL, "unknown facility '%s'\n",
-			  facility_ce.u.string);
+			  facility);
 		return -EINVAL;
 	}
 
-	if (!strcmp(level_ce.u.string, "LOG_EMERG"))
+	if (!strcmp(level, "LOG_EMERG"))
 		syslog_level = LOG_EMERG;
-	else if (!strcmp(level_ce.u.string, "LOG_ALERT"))
+	else if (!strcmp(level, "LOG_ALERT"))
 		syslog_level = LOG_ALERT;
-	else if (!strcmp(level_ce.u.string, "LOG_CRIT"))
+	else if (!strcmp(level, "LOG_CRIT"))
 		syslog_level = LOG_CRIT;
-	else if (!strcmp(level_ce.u.string, "LOG_ERR"))
+	else if (!strcmp(level, "LOG_ERR"))
 		syslog_level = LOG_ERR;
-	else if (!strcmp(level_ce.u.string, "LOG_WARNING"))
+	else if (!strcmp(level, "LOG_WARNING"))
 		syslog_level = LOG_WARNING;
-	else if (!strcmp(level_ce.u.string, "LOG_NOTICE"))
+	else if (!strcmp(level, "LOG_NOTICE"))
 		syslog_level = LOG_NOTICE;
-	else if (!strcmp(level_ce.u.string, "LOG_INFO"))
+	else if (!strcmp(level, "LOG_INFO"))
 		syslog_level = LOG_INFO;
-	else if (!strcmp(level_ce.u.string, "LOG_DEBUg"))
+	else if (!strcmp(level, "LOG_DEBUg"))
 		syslog_level = LOG_DEBUG;
 	else {
 		ulogd_log(ULOGD_FATAL, "unknown level '%s'\n",
-			facility_ce.u.string);
+			facility);
 		return -EINVAL;
 	}
 
@@ -171,5 +174,5 @@ void __attribute__ ((constructor)) init(void);
 
 void init(void)
 {
-	ulogd_register_plugin(&ssslog_plugin);
+	ulogd_register_plugin(&syslog_plugin);
 }
