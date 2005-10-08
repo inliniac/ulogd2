@@ -1,4 +1,5 @@
 /* ulogd_inppkt_ULOG.c - stackable input plugin for ULOG packets -> ulogd2
+ *
  * (C) 2004-2005 by Harald Welte <laforge@gnumonks.org>
  */
 
