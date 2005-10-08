@@ -222,16 +222,17 @@ interp_packet(struct ulogd_pluginstance *upi, struct nfattr *nfa[])
 
 	if (nfa[NFULA_IFINDEX_INDEV-1]) {
 		ret[8].u.value.ui32 = 
-			ntohl(*(u_int32_t *)NFA_DATA(nfa[NFULA_IFINDEX_INDEV]));
+			ntohl(*(u_int32_t *)NFA_DATA(nfa[NFULA_IFINDEX_INDEV-1]));
 		ret[8].flags |= ULOGD_RETF_VALID;
 	}
 
 	if (nfa[NFULA_IFINDEX_OUTDEV-1]) {
 		ret[9].u.value.ui32 =
-			ntohl(*(u_int32_t *)NFA_DATA(nfa[NFULA_IFINDEX_OUTDEV]));
+			ntohl(*(u_int32_t *)NFA_DATA(nfa[NFULA_IFINDEX_OUTDEV-1]));
 		ret[9].flags |= ULOGD_RETF_VALID;
 	}
 	
+	ulogd_propagate_results(upi);
 	return 0;
 }
 
@@ -269,6 +270,10 @@ static int msg_cb(struct nfulnl_g_handle *gh, struct nfgenmsg *nfmsg,
 static int configure(struct ulogd_pluginstance *upi,
 		     struct ulogd_pluginstance_stack *stack)
 {
+	ulogd_log(ULOGD_DEBUG, "parsing config file section `%s', "
+		  "plugin `%s'\n", upi->id, upi->plugin->name);
+
+	config_parse_file(upi->id, upi->config_kset);
 	return 0;
 }
 
@@ -280,16 +285,24 @@ static int start(struct ulogd_pluginstance *upi)
 	if (!ui->nfulog_buf)
 		goto out_buf;
 
+	ulogd_log(ULOGD_DEBUG, "opening nfnetlink socket\n");
 	ui->nful_h = nfulnl_open();
 	if (!ui->nful_h)
 		goto out_handle;
 
-	if (unbind_ce(upi->config_kset).u.value > 0)
+	if (unbind_ce(upi->config_kset).u.value > 0) {
+		ulogd_log(ULOGD_NOTICE, "forcing unbind of existing log handler for "
+			  "protocol %d\n", af_ce(upi->config_kset).u.value);
 		nfulnl_unbind_pf(ui->nful_h, af_ce(upi->config_kset).u.value);
+	}
 
+	ulogd_log(ULOGD_DEBUG, "binding to protocol family %d\n",
+		  af_ce(upi->config_kset).u.value);
 	if (nfulnl_bind_pf(ui->nful_h, af_ce(upi->config_kset).u.value) < 0)
 		goto out_bind_pf;
 
+	ulogd_log(ULOGD_DEBUG, "binding to log group %d\n",
+		  group_ce(upi->config_kset).u.value);
 	ui->nful_gh = nfulnl_bind_group(ui->nful_h,
 					group_ce(upi->config_kset).u.value);
 	if (!ui->nful_gh)
@@ -305,9 +318,10 @@ static int start(struct ulogd_pluginstance *upi)
 	ui->nful_fd.fd = nfulnl_fd(ui->nful_h);
 	ui->nful_fd.cb = &nful_read_cb;
 	ui->nful_fd.data = upi;
-	ui->nful_fd.flags = ULOGD_FD_READ;
+	ui->nful_fd.when = ULOGD_FD_READ;
 
-	ulogd_register_fd(&ui->nful_fd);
+	if (ulogd_register_fd(&ui->nful_fd) < 0)
+		goto out_bind;
 
 	return 0;
 
