@@ -32,6 +32,7 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <pcap.h>
+#include <errno.h>
 #include <ulogd/ulogd.h>
 #include <ulogd/conffile.h>
 
@@ -67,7 +68,7 @@ static struct config_keyset pcap_kset = {
 	},
 };
 
-static struct pcap_instance {
+struct pcap_instance {
 	FILE *of;
 };
 
@@ -88,7 +89,7 @@ static struct ulogd_key pcap_keys[INTR_IDS] = {
 #define GET_VALUE(res, x)	(res[x].u.source->u.value)
 #define GET_FLAGS(res, x)	(res[x].u.source->flags)
 
-static int pcap_output(struct ulogd_pluginstance *upi)
+static int interp_pcap(struct ulogd_pluginstance *upi)
 {
 	struct pcap_instance *pi = (struct pcap_instance *) &upi->private;
 	struct ulogd_key *res = upi->input;
@@ -118,7 +119,7 @@ static int pcap_output(struct ulogd_pluginstance *upi)
 	}
 
 	if (upi->config_kset->ces[1].u.value)
-		fflush(of);
+		fflush(pi->of);
 
 	return 0;
 }
@@ -157,30 +158,30 @@ static int append_create_outfile(struct ulogd_pluginstance *upi)
 		exist = 1;
 
 	if (!exist) {
-		of = fopen(filename, "w");
-		if (!of) {
+		pi->of = fopen(filename, "w");
+		if (!pi->of) {
 			ulogd_log(ULOGD_ERROR, "can't open pcap file: %s\n",
 				  strerror(errno));
-			return -1;
+			return -EPERM;
 		}
-		if (!write_pcap_header()) {
+		if (!write_pcap_header(upi)) {
 			ulogd_log(ULOGD_ERROR, "can't write pcap header: %s\n",
 				  strerror(errno));
-			return -1;
+			return -ENOSPC;
 		}
 	} else {
-		of = fopen(filename, "a");
-		if (!of) {
+		pi->of = fopen(filename, "a");
+		if (!pi->of) {
 			ulogd_log(ULOGD_ERROR, "can't open pcap file: %s\n", 
 				strerror(errno));
-			return -1;
+			return -EPERM;
 		}		
 	}
 
 	return 0;
 }
 
-static void pcap_signal_handler(struct ulogd_pluginstance *upi, int signal)
+static void signal_pcap(struct ulogd_pluginstance *upi, int signal)
 {
 	struct pcap_instance *pi = (struct pcap_instance *) &upi->private;
 
@@ -234,14 +235,6 @@ static struct ulogd_plugin pcap_plugin = {
 	.stop		= &stop_pcap,
 	.signal		= &signal_pcap,
 	.interp		= &interp_pcap,
-};
-
-static ulog_output_t pcap_op = {
-	.name = "pcap", 
-	.init = &pcap_init,
-	.fini = &pcap_fini,
-	.output = &pcap_output,
-	.signal = &pcap_signal_handler,
 };
 
 void __attribute__ ((constructor)) init(void);
