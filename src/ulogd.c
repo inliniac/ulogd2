@@ -294,8 +294,11 @@ find_okey_in_stack(char *name,
 
 		for (i = 0; i < pi->plugin->output.num_keys; i++) {
 			struct ulogd_key *okey = &pi->output[i];
-			if (!strcmp(name, okey->name))
+			if (!strcmp(name, okey->name)) {
+				ulogd_log(ULOGD_DEBUG, "%s(%s)\n",
+					  pi->id, pi->plugin->name);
 				return okey;
+			}
 		}
 	}
 
@@ -319,6 +322,19 @@ create_stack_resolve_keys(struct ulogd_pluginstance_stack *stack)
 		i++;
 		ulogd_log(ULOGD_DEBUG, "traversing plugin `%s'\n", 
 			  pi_cur->plugin->name);
+		/* call plugin to tell us which keys it requires in
+		 * given configuration */
+		if (pi_cur->plugin->configure) {
+			int ret = pi_cur->plugin->configure(pi_cur, 
+							    stack);
+			if (ret < 0) {
+				ulogd_log(ULOGD_ERROR, "error during "
+					  "configure of plugin %s\n",
+					  pi_cur->plugin->name);
+				return ret;
+			}
+		}
+
 		if (i == 1) {
 			/* first round: output plugin */
 			if (pi_cur->plugin->output.type != ULOGD_DTYPE_SINK) {
@@ -348,23 +364,10 @@ create_stack_resolve_keys(struct ulogd_pluginstance_stack *stack)
 					  pi_cur->plugin->name,
 					  pi_prev->plugin->name);
 			}
-			/* call plugin to tell us which keys it requires in
-			 * given configuration */
-			if (pi_cur->plugin->configure) {
-				int ret = pi_cur->plugin->configure(pi_cur, 
-								    stack);
-				if (ret < 0) {
-					ulogd_log(ULOGD_ERROR, "error during "
-						  "configure of plugin %s\n",
-						  pi_cur->plugin->name);
-					return ret;
-				}
-			}
-
+	
 			for (j = 0; j < pi_cur->plugin->input.num_keys; j++) {
 				struct ulogd_key *okey;
-				struct ulogd_key *ikey = 
-					&pi_cur->plugin->input.keys[j];
+				struct ulogd_key *ikey = &pi_cur->input[j];
 
 				/* skip those marked as 'inactive' by
 				 * pl->configure() */
@@ -389,6 +392,9 @@ create_stack_resolve_keys(struct ulogd_pluginstance_stack *stack)
 					return -EINVAL;
 				}
 
+				ulogd_log(ULOGD_DEBUG, "assigning `%s(?)' as "
+					  "source for %s(%s)\n", okey->name,
+					  pi_cur->plugin->name, ikey->name);
 				ikey->u.source = okey;
 			}
 		}
@@ -789,11 +795,6 @@ int main(int argc, char* argv[])
 
 	logfile_open(logfile_ce.u.string);
 
-#ifdef DEBUG
-	/* dump key and interpreter hash */
-	interh_dump();
-	keyh_dump();
-#endif
 	if (daemonize){
 		if (fork()) {
 			exit(0);
