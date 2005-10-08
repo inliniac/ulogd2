@@ -4,6 +4,22 @@ Version 2.00alpha (2004-Oct-03)
   firewall logs, flow-based accounting to kernel network performance
   statistics.
 
+Version 1.23 (2005-04-18)
+- Add supprt for ulogd logging in syslog (the daemon log, not packet log)
+
+Version 1.22 (2005-03-07)
+- Fix postgresql endless loop (Jani Averbach)
+- Add postgrsql schema support (Bob Hockney)
+
+Version 1.21 (2005-02-16)
+- Fix compilation on certain gcc versions (Roberto Nibali)
+- Fix --log-ip-as-string for mysql, pgsql and sqlite3 (Jani Averbach)
+
+Version 1.20 (2005-02-12)
+- Add SQLITE3 Plugin
+- Add 'port' option (for tcp port number) to mysql and postgresql plugins
+- Cosmetic changes (c99 initializers, coding style)
+
 Version 1.10 (2003-Oct-xx)
 - Change format of configuration file.  Now every plugin has it's own section
   in the config file, making the whole parsing procedure easier - and
