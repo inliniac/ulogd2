@@ -44,6 +44,7 @@ int ulogd_register_fd(struct ulogd_fd *fd)
 	/* Register FD */
 	if (fd->fd > maxfd)
 		maxfd = fd->fd;
+
 	list_add_tail(&fd->list, &ulogd_fds);
 
 	return 0;
@@ -76,7 +77,7 @@ int ulogd_select_main()
 			FD_SET(ufd->fd, &exceptset);
 	}
 
-	i = select(maxfd, &readset, &writeset, NULL, NULL);
+	i = select(maxfd+1, &readset, &writeset, &exceptset, NULL);
 	if (i > 0) {
 		/* call registered callback functions */
 		list_for_each_entry(ufd, &ulogd_fds, list) {
