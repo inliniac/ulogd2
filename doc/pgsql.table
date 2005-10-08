@@ -33,16 +33,16 @@ CREATE TABLE "ulog" (
         "ip_csum"        integer,
 
 /* log IPs as unsigned int32 (default)                */
---      "ip_saddr"       bigint,
---      "ip_daddr"       bigint,
+        "ip_saddr"       bigint,
+        "ip_daddr"       bigint,
 
 /* log IPs as string (--with-pgsql-log-ip-as-string)  */
 --      "ip_saddr"       character varying(40),
 --      "ip_daddr"       character varying(40),
 
 /* log IPs as inet   (--with-pgsql-log-ip-as-string)  */
-        "ip_saddr"       inet,
-        "ip_daddr"       inet,
+--      "ip_saddr"       inet,
+--      "ip_daddr"       inet,
 
 
         "tcp_sport"      integer,
