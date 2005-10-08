@@ -1,4 +1,4 @@
-/* ulogd_SYSLOG.c, Version $Revision: 1.15 $
+/* ulogd_SYSLOG.c, Version $Revision$
  *
  * ulogd output target for real syslog() logging
  *
@@ -30,7 +30,7 @@
 #include <syslog.h>
 #include <ulogd/ulogd.h>
 #include <ulogd/conffile.h>
-#include "printpkt.h"
+#include "../util/printpkt.c"
 
 #ifndef SYSLOG_FACILITY_DEFAULT
 #define SYSLOG_FACILITY_DEFAULT	"LOG_KERN"
@@ -40,37 +40,50 @@
 #define SYSLOG_LEVEL_DEFAULT "LOG_NOTICE"
 #endif
 
-static config_entry_t facility_ce = { 
-	.key = "facility", 
-	.type = CONFIG_TYPE_STRING, 
-	.options = CONFIG_OPT_NONE, 
-	.u = { .string = SYSLOG_FACILITY_DEFAULT } 
+static config_keyset logemu_kset = { 
+	.num_ces = 2,
+	.ces = {
+		{
+		.key = "facility", 
+		.type = CONFIG_TYPE_STRING, 
+		.options = CONFIG_OPT_NONE, 
+		.u = { .string = SYSLOG_FACILITY_DEFAULT } 
+		},
+		{ 
+		.key = "level", 
+		.type = CONFIG_TYPE_INT,
+		.options = CONFIG_OPT_NONE, 
+		.u = { .string = SYSLOG_LEVEL_DEFAULT }
+		},
+	},
 };
 
-static config_entry_t level_ce = { 
-	.next = &facility_ce, 
-	.key = "level", 
-	.type = CONFIG_TYPE_INT,
-	.options = CONFIG_OPT_NONE, 
-	.u = { .string = SYSLOG_LEVEL_DEFAULT }
+struct syslog_instance {
+	int syslog_level;
+	int syslog_facility;
 };
 
-static int syslog_level, syslog_facility;
-
-static int _output_syslog(ulog_iret_t *res)
+static int _output_syslog(struct ulogd_pluginstance *upi)
 {
+	struct syslog_intance *li = (struct syslog_instance *) &upi->private;
+	struct ulogd_key *res = upi->input;
 	static char buf[4096];
 	
 	printpkt_print(res, buf, 0);
-	syslog(syslog_level|syslog_facility, buf);
+
+	syslog(upi->config_kset->ces[0].u.value |
+	       upi->config_kset->ces[1].u.value, buf);
 
 	return 0;
 }
 		
-static int syslog_init(void)
+static int syslog_configure(struct ulogd_pluginstance *pi,
+			    struct ulogd_pluginstance_stack *stack)
 {
+	int syslog_facility, syslog_level;
+
 	/* FIXME: error handling */
-	config_parse_file("SYSLOG", &level_ce);
+	config_parse_file(pi->id, &level_ce);
 
 	if (!strcmp(facility_ce.u.string, "LOG_DAEMON"))
 		syslog_facility = LOG_DAEMON;
@@ -97,7 +110,7 @@ static int syslog_init(void)
 	else {
 		ulogd_log(ULOGD_FATAL, "unknown facility '%s'\n",
 			  facility_ce.u.string);
-		exit(2);
+		return -EINVAL;
 	}
 
 	if (!strcmp(level_ce.u.string, "LOG_EMERG"))
@@ -119,10 +132,8 @@ static int syslog_init(void)
 	else {
 		ulogd_log(ULOGD_FATAL, "unknown level '%s'\n",
 			facility_ce.u.string);
-		exit(2);
+		return -EINVAL;
 	}
-
-	openlog("ulogd", LOG_NDELAY|LOG_PID, syslog_facility);
 
 	return 0;
 }
@@ -131,19 +142,34 @@ static void syslog_fini(void)
 {
 	closelog();
 }
+static int syslog_start(struct ulogd_pluginstance *pi)
+{
+	openlog("ulogd", LOG_NDELAY|LOG_PID, LOG_DAEMON);
 
-static ulog_output_t syslog_op = { 
-	.name = "syslog", 
-	.init = &syslog_init,
-	.fini = &syslog_fini,
-	.output &_output_syslog
+	return 0;
+}
+
+static struct ulogd_plugin syslog_plugin = {
+	.name = "SYSLOG",
+	.input = {
+		.keys = printpkt_keys,
+		.num_keys = ARRAY_SIZE(printpkt_keys),
+		.type = ULOGD_DTYPE_PACKET,
+	},
+	.output = {
+		.type = ULOGD_DTYPE_SINK,
+	},
+	.config_kset	= &syslog_kset,
+	.priv_size	= sizeof(struct syslog_instance),
+	
+	.configure	= &syslog_configure,
+	.start		= &syslog_start,
+	.interp		= &_output_syslog,
 };
 
+void __attribute__ ((constructor)) init(void);
 
-void _init(void)
+void init(void)
 {
-	if (printpkt_init())
-		ulogd_log(ULOGD_ERROR, "can't resolve all keyhash id's\n");
-
-	register_output(&syslog_op);
+	ulogd_register_plugin(&ssslog_plugin);
 }
