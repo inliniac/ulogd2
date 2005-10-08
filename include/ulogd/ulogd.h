@@ -68,8 +68,6 @@
 #define ULOGD_ERROR	7	/* error condition, requires user action */
 #define ULOGD_FATAL	8	/* fatal, program aborted */
 
-//extern FILE *logfile;
-
 /* ulogd data type */
 enum ulogd_dtype {
 	ULOGD_DTYPE_NULL,
@@ -250,7 +248,6 @@ extern struct ulogd_keyh_entry *ulogd_keyh;
 struct ulogd_fd {
 	struct list_head list;
 	int fd;				/* file descriptor */
-	unsigned int flags;
 	unsigned int when;
 	int (*cb)(int fd, unsigned int what, void *data);
 	void *data;			/* void * to pass to callback */
