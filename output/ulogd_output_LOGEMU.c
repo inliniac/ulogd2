@@ -5,7 +5,7 @@
  * This target produces a file which looks the same like the syslog-entries
  * of the LOG target.
  *
- * (C) 2000-2001 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2000-2005 by Harald Welte <laforge@gnumonks.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 
