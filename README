@@ -1,4 +1,5 @@
-Userspace logging facility for iptables / linux 2.4
+Userspace logging daemon for netfilter/iptables
+
 $Id$
 
 Project Homepage: http://www.gnumonks.org/projects/ulogd
@@ -9,7 +10,16 @@ in the doc/ subdirectory.
 
 ===> IDEA
 
-This packages is intended for passing packets from the kernel to userspace 
+This packages is intended for doing all netfilter related logging inside a
+userspace process.  This includes
+	- logging of ruleset violations via ipt_ULOG (kernel 2.4.18+)
+	- logging of ruleset violations via nfnetlink_log (kernel 2.6.14+)
+	- logging of connection startup/teardown (kernel 2.6.14+)
+	- connection-based accounting  (kernel 2.6.14+)
+
+The to-be-logged information
+
+from passing packets from the kernel to userspace 
 to do some logging there. It should work like that:
 
 - Register a target called ULOG with iptables
@@ -31,10 +41,11 @@ write userspace logging daemons. The functions provided are described
 in the source code, a small demo program (ulog_test) is also included.
 
 = ulogd daemon (ulogd) 
-A sophisticated logging daemon which uses libipulog. The daemon provides 
-an easy to use plugin interface to write additional packet interpreters and
-output targets. Example plugins (interpreter: ip, tcp, icmp output: simple
-logging to a file) are included.
+A sophisticated logging daemon core which uses a plugin for about anything. The
+daemon provides a plugin API for
+	- input plugins
+	- filter plugins
+	- output plugins
 
 = documentation (doc)
 A quite verbose documentation of this package and it's configuration exists,
@@ -88,10 +99,10 @@ Setting --ulog-cprange to 0 does always copy the whole packet. Default is 0
 
 ===> COPYRIGHT + CREDITS
 
-The code is (C) 2000-2004 by Harald Welte <laforge@gnumonks.org>
+The code and documentation is (C) 2000-2005 by Harald Welte <laforge@gnumonks.org>
 
-Thanks also to the valuable Contributions of Daniel Stone, Alexander
-Janssen and Michael Stolovitzsky.
+Thanks also to the valuable contributions of Daniel Stone, Alexander Janssen,
+Michael Stolovitzsky and Jozsef Kadlecsik.
 
 Credits to Rusty Russell, James Morris, Marc Boucher and all the other 
 netfilter hackers. 
