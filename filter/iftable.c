@@ -168,7 +168,7 @@ char *ifindex_2name(unsigned int index)
 	struct ifindex_map *im;
 
 	if (index == 0)
-		return "*";
+		return "";
 	for (im = ifindex_map[index&0xF]; im; im = im->next)
 		if (im->index == index)
 			return im->name;
