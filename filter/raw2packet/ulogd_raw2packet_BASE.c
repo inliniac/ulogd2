@@ -39,6 +39,7 @@
 #include <netinet/ip_icmp.h>
 #include <netinet/udp.h>
 #include <ulogd/ulogd.h>
+#include <ulogd/ipfix_protocol.h>
 
 
 /***********************************************************************
@@ -50,40 +51,64 @@ static struct ulogd_key iphdr_rets[] = {
 		.type = ULOGD_RET_IPADDR,
 		.flags = ULOGD_RETF_NONE, 
 		.name = "ip.saddr", 
-		.ipfix = { .vendor = 0, .field_id = 8 },
+		.ipfix = { 
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_sourceIPv4Address,
+		},
 	},
 	{
 		.type = ULOGD_RET_IPADDR,
 		.flags = ULOGD_RETF_NONE,
 		.name = "ip.daddr", 
-		.ipfix = { .vendor = 0, .field_id = 12 },
+		.ipfix = { 
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_destinationIPv4Address,
+		},
 	},
 	{
 		.type = ULOGD_RET_UINT8,
 		.flags = ULOGD_RETF_NONE,
 		.name = "ip.protocol", 
-		.ipfix = { .vendor = 0, .field_id = 4 },
+		.ipfix = { 
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_protocolIdentifier,
+		},
 	},
 	{
 		.type = ULOGD_RET_UINT8,
 		.flags = ULOGD_RETF_NONE,
 		.name = "ip.tos", 
-		.ipfix = { .vendor = 0, .field_id = 5 },
+		.ipfix = { 
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_classOfServiceIPv4,
+		},
 	},
 	{
 		.type = ULOGD_RET_UINT8,
 		.flags = ULOGD_RETF_NONE,
 		.name = "ip.ttl", 
+		.ipfix = {
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_ipTimeToLive,
+		},
 	},
 	{
 		.type = ULOGD_RET_UINT16,
 		.flags = ULOGD_RETF_NONE,
 		.name = "ip.totlen", 
+		.ipfix = {
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_totalLengthIPv4,
+		},
 	},
 	{
 		.type = ULOGD_RET_UINT8,
 		.flags = ULOGD_RETF_NONE,
 		.name = "ip.ihl", 
+		.ipfix = {
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_internetHeaderLengthIPv4,
+		},
 	},
 	{
 		.type = ULOGD_RET_UINT16,
@@ -94,11 +119,19 @@ static struct ulogd_key iphdr_rets[] = {
 		.type = ULOGD_RET_UINT16,
 		.flags = ULOGD_RETF_NONE,
 		.name = "ip.id", 
+		.ipfix = {
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_identificationIPv4,
+		},
 	},
 	{
 		.type = ULOGD_RET_UINT16,
 		.flags = ULOGD_RETF_NONE,
 		.name = "ip.fragoff", 
+		.ipfix = {
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_fragmentOffsetIPv4,
+		},
 	},
 
 	/* 10 */
@@ -107,23 +140,37 @@ static struct ulogd_key iphdr_rets[] = {
 		.type = ULOGD_RET_UINT16,
 		.flags = ULOGD_RETF_NONE,
 		.name = "tcp.sport", 
-		.ipfix = { .vendor = 0, .field_id = 7 },
+		.ipfix = { 
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_tcpSourcePort,
+		},
 	},
 	{
 		.type = ULOGD_RET_UINT16,
 		.flags = ULOGD_RETF_NONE,
 		.name = "tcp.dport", 
-		.ipfix = { .vendor = 0, .field_id = 11 },
+		.ipfix = { 
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_tcpDestinationPort,
+		},
 	},
 	{
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "tcp.seq", 
+		.ipfix = {
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_tcpSequenceNumber,
+		},
 	},
 	{
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "tcp.ackseq", 
+		.ipfix = {
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_tcpAcknowledgementNumber,
+		},
 	},
 	{
 		.type = ULOGD_RET_UINT8,
@@ -139,6 +186,10 @@ static struct ulogd_key iphdr_rets[] = {
 		.type = ULOGD_RET_UINT16,
 		.flags = ULOGD_RETF_NONE,
 		.name = "tcp.window",
+		.ipfix = {
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_tcpWindowSize,
+		},
 	},
 	{
 		.type = ULOGD_RET_BOOL, 
@@ -149,6 +200,10 @@ static struct ulogd_key iphdr_rets[] = {
 		.type = ULOGD_RET_UINT16, 
 		.flags = ULOGD_RETF_NONE,
 		.name = "tcp.urgp",
+		.ipfix = {
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_tcpUrgentPointer,
+		},
 	},
 	{
 		.type = ULOGD_RET_BOOL, 
@@ -197,13 +252,19 @@ static struct ulogd_key iphdr_rets[] = {
 		.type = ULOGD_RET_UINT16,
 		.flags = ULOGD_RETF_NONE,
 		.name = "udp.sport", 
-		.ipfix = { .vendor = 0, .field_id = 7 },
+		.ipfix = { 
+			.vendor = IPFIX_VENDOR_IETF, 
+			.field_id = IPFIX_udpSourcePort,
+		},
 	},
 	{
 		.type = ULOGD_RET_UINT16,
 		.flags = ULOGD_RETF_NONE,
 		.name = "udp.dport", 
-		.ipfix = { .vendor = 0, .field_id = 11 },
+		.ipfix = { 
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_udpDestinationPort,
+		},
 	},
 	{
 		.type = ULOGD_RET_UINT16,
@@ -223,11 +284,19 @@ static struct ulogd_key iphdr_rets[] = {
 		.type = ULOGD_RET_UINT8,
 		.flags = ULOGD_RETF_NONE,
 		.name = "icmp.type", 
+		.ipfix = {
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_icmpTypeIPv4,
+		},
 	},
 	{
 		.type = ULOGD_RET_UINT8,
 		.flags = ULOGD_RETF_NONE,
 		.name = "icmp.code", 
+		.ipfix = {
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_icmpCodeIPv4,
+		},
 	},
 	{
 		.type = ULOGD_RET_UINT16,
