@@ -68,7 +68,8 @@ static ssize_t
 ipulog_netlink_recvfrom(const struct ipulog_handle *h,
 			unsigned char *buf, size_t len)
 {
-	int addrlen, status;
+	socklen_t addrlen;
+	int status;
 	struct nlmsghdr *nlh;
 	
 	if (len < sizeof(struct nlmsgerr)) {
