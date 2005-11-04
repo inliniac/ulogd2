@@ -9,8 +9,12 @@
  * as published by the Free Software Foundation
  */
 
+#include <stdlib.h>
+#include <string.h>
 #include <errno.h>
+
 #include <ulogd/ulogd.h>
+
 #include <libnetfilter_conntrack/libnetfilter_conntrack.h>
 
 struct nfct_pluginstance {
@@ -23,25 +27,25 @@ static struct ulogd_key nfct_okeys[] = {
 	{
 		.type 	= ULOGD_RET_IPADDR,
 		.flags 	= ULOGD_RETF_NONE,
-		.key	= "ip.saddr",
+		.name	= "ip.saddr",
 		.ipfix	= { },
 	},
 	{
 		.type	= ULOGD_RET_IPADDR,
 		.flags	= ULOGD_RETF_NONE,
-		.key	= "ip.daddr",
+		.name	= "ip.daddr",
 		.ipfix	= { },
 	},
 	{
 		.type	= ULOGD_RET_UINT8,
 		.flags	= ULOGD_RETF_NONE,
-		.key	= "ip.protocol",
+		.name	= "ip.protocol",
 		.ipfix	= { },
 	},
 	{
 		.type	= ULOGD_RET_UINT16,
 		.flags 	= ULOGD_RETF_NONE,
-		.key	= "tcp.sport",
+		.name	= "tcp.sport",
 		.ipfix	= {
 			.vendor 	= IPFIX_VENDOR_IETF,
 			.field_id 	= 7,
@@ -50,7 +54,7 @@ static struct ulogd_key nfct_okeys[] = {
 	{
 		.type	= ULOGD_RET_UINT16,
 		.flags 	= ULOGD_RETF_NONE,
-		.key	= "tcp.dport",
+		.name	= "tcp.dport",
 		.ipfix	= {
 			.vendor 	= IPFIX_VENDOR_IETF,
 			.field_id 	= 11,
@@ -79,6 +83,7 @@ static struct ulogd_key nfct_okeys[] = {
 
 static int propagate_ct_flow(struct ulogd_pluginstance *upi, 
 		             struct nfct_conntrack *ct,
+			     unsigned int flags,
 			     int dir)
 {
 	struct ulogd_key *ret = upi->output;
@@ -105,8 +110,8 @@ static int propagate_ct_flow(struct ulogd_pluginstance *upi,
 		break;
 	}
 
-	if (dir == NF_CT_DIR_ORIG && flags & NFCT_COUNTERS_ORIG ||
-	    dir == NF_CT_DIR_REPLY && flags & NFCT_COUNTERS_REPLY) {
+	if ((dir == NFCT_DIR_ORIGINAL && flags & NFCT_COUNTERS_ORIG) ||
+	    (dir == NFCT_DIR_REPLY && flags & NFCT_COUNTERS_RPLY)) {
 		ret[5].u.value.ui64 = ct->counters[dir].bytes;
 		ret[5].flags |= ULOGD_RETF_VALID;
 
@@ -114,29 +119,35 @@ static int propagate_ct_flow(struct ulogd_pluginstance *upi,
 		ret[6].flags |= ULOGD_RETF_VALID;
 	}
 	
-	return ulogd_propagate_results(upi);
+	ulogd_propagate_results(upi);
+
+	return 0;
 }
 
 static int propagate_ct(struct ulogd_pluginstance *upi,
-			struct nfct_conntrack *ct)
+			struct nfct_conntrack *ct,
+			unsigned int flags)
 {
 	int rc;
 
-	rc = propagate_ct_flow(upi, ct, NF_CT_DIR_ORIGINAL);
+	rc = propagate_ct_flow(upi, ct, flags, NFCT_DIR_ORIGINAL);
 	if (rc < 0)
 		return rc;
-	return propagate_ct_flow(upi, ct, NF_CT_DIR_REPLY);
+	return propagate_ct_flow(upi, ct, flags, NFCT_DIR_REPLY);
 }
 
-static int event_handler(void *arg, unsigned int flags, int type)
+static int event_handler(void *arg, unsigned int flags, int type,
+			 void *data)
 {
-	struct nfct_conntrack *ct = foo;
+	struct nfct_conntrack *ct = arg;
+	struct ulogd_pluginstance *upi = data;
 
-	if (type == NFCT_MSG_NEW)
+	if (type == NFCT_MSG_NEW) {
 		/* FIXME: build hash table with timestamp of start of
 		 * connection */
-	} else if (type == NFCT_MSG_DESTROY)
+	} else if (type == NFCT_MSG_DESTROY) {
 		/* We have the final count of bytes for this connection */
+		return propagate_ct(upi, ct, flags);
 	}
 
 	return 0;
@@ -145,13 +156,14 @@ static int event_handler(void *arg, unsigned int flags, int type)
 static int read_cb_nfct(int fd, unsigned int what, void *param)
 {
 	struct nfct_pluginstance *cpi = 
-				(struct ulogd_nfct_pluginstance *) param;
+				(struct nfct_pluginstance *) param;
 
 	if (!(what & ULOGD_FD_READ))
 		return 0;
 
 	/* FIXME: implement this */
-	nfct_event_conntrack(&cpi->cth, AF_INET);
+	nfct_event_conntrack(cpi->cth);
+	return 0;
 }
 
 static int constructor_nfct(struct ulogd_pluginstance *upi)
@@ -159,17 +171,17 @@ static int constructor_nfct(struct ulogd_pluginstance *upi)
 	struct nfct_pluginstance *cpi = 
 			(struct nfct_pluginstance *)upi->private;
 
-	memset(cpi, NULL, sizeof(*cpi));
+	memset(cpi, 0, sizeof(*cpi));
 
 	/* FIXME: make eventmask configurable */
 	cpi->cth = nfct_open(NFNL_SUBSYS_CTNETLINK, NF_NETLINK_CONNTRACK_NEW|
 			     NF_NETLINK_CONNTRACK_DESTROY);
-	if (!cph->cth) {
-		print("error opening ctnetlink\n");
+	if (!cpi->cth) {
+		ulogd_log(ULOGD_FATAL, "error opening ctnetlink\n");
 		return -1;
 	}
 
-	nfct_register_callback(cpi->cth, &event_handler);
+	nfct_register_callback(cpi->cth, &event_handler, upi);
 
 	cpi->nfct_fd.fd = nfct_fd(cpi->cth);
 	cpi->nfct_fd.cb = &read_cb_nfct;
@@ -178,7 +190,7 @@ static int constructor_nfct(struct ulogd_pluginstance *upi)
 
 	ulogd_register_fd(&cpi->nfct_fd);
 	
-	return &cpi->upi;
+	return 0;
 }
 
 
@@ -200,13 +212,13 @@ static struct ulogd_plugin nfct_plugin = {
 		.type = ULOGD_DTYPE_SOURCE,
 	},
 	.output = {
-		.keys = &nfct_okeys,
+		.keys = nfct_okeys,
 		.num_keys = ARRAY_SIZE(nfct_okeys),
 		.type = ULOGD_DTYPE_FLOW,
 	},
-	.config_kset 	= ,
-	.interp 	= ,
-	.configure	=
+	.config_kset 	= NULL,
+	.interp 	= NULL,
+	.configure	= NULL,
 	.start		= &constructor_nfct,
 	.stop		= &destructor_nfct,
 };
