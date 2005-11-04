@@ -14,6 +14,7 @@
 #include <errno.h>
 
 #include <ulogd/ulogd.h>
+#include <ulogd/ipfix_protocol.h>
 
 #include <libnetfilter_conntrack/libnetfilter_conntrack.h>
 
@@ -28,19 +29,28 @@ static struct ulogd_key nfct_okeys[] = {
 		.type 	= ULOGD_RET_IPADDR,
 		.flags 	= ULOGD_RETF_NONE,
 		.name	= "ip.saddr",
-		.ipfix	= { },
+		.ipfix	= { 
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_sourceIPv4Address,
+		},
 	},
 	{
 		.type	= ULOGD_RET_IPADDR,
 		.flags	= ULOGD_RETF_NONE,
 		.name	= "ip.daddr",
-		.ipfix	= { },
+		.ipfix	= {
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_destinationIPv4Address,
+		},
 	},
 	{
 		.type	= ULOGD_RET_UINT8,
 		.flags	= ULOGD_RETF_NONE,
 		.name	= "ip.protocol",
-		.ipfix	= { },
+		.ipfix	= { 
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_protocolIdentifier,
+		},
 	},
 	{
 		.type	= ULOGD_RET_UINT16,
@@ -48,7 +58,7 @@ static struct ulogd_key nfct_okeys[] = {
 		.name	= "tcp.sport",
 		.ipfix	= {
 			.vendor 	= IPFIX_VENDOR_IETF,
-			.field_id 	= 7,
+			.field_id 	= IPFIX_sourceTransportPort,
 		},
 	},
 	{
@@ -57,7 +67,7 @@ static struct ulogd_key nfct_okeys[] = {
 		.name	= "tcp.dport",
 		.ipfix	= {
 			.vendor 	= IPFIX_VENDOR_IETF,
-			.field_id 	= 11,
+			.field_id 	= IPFIX_destinationTransportPort,
 		},
 	},
 	{
@@ -66,7 +76,8 @@ static struct ulogd_key nfct_okeys[] = {
 		.name = "raw.pktlen",
 		.ipfix = { 
 			.vendor 	= IPFIX_VENDOR_IETF,
-			.field_id 	= 1,
+			.field_id 	= IPFIX_octetTotalCount,
+			/* FIXME: this could also be octetDeltaCount */
 		},
 	},
 	{
@@ -75,7 +86,26 @@ static struct ulogd_key nfct_okeys[] = {
 		.name = "raw.pktcount",
 		.ipfix = { 
 			.vendor 	= IPFIX_VENDOR_IETF,
-			.field_id 	= 2,
+			.field_id 	= IPFIX_packetTotalCount,
+			/* FIXME: this could also be packetDeltaCount */
+		},
+	},
+	{
+		.type = ULOGD_RET_UINT8,
+		.flags = ULOGD_RETF_NONE,
+		.name = "icmp.code",
+		.ipfix = {
+			.vendor		= IPFIX_VENDOR_IETF,
+			.field_id	= IPFIX_icmpCodeIPv4,
+		},
+	},
+	{
+		.type = ULOGD_RET_UINT8,
+		.flags = ULOGD_RETF_NONE,
+		.name = "icmp.type",
+		.ipfix = {
+			.vendor		= IPFIX_VENDOR_IETF,
+			.field_id	= IPFIX_icmpTypeIPv4,
 		},
 	},
 
@@ -99,14 +129,19 @@ static int propagate_ct_flow(struct ulogd_pluginstance *upi,
 
 	switch (ct->tuple[1].protonum) {
 	case IPPROTO_TCP:
+	case IPPROTO_UDP:
+	case IPPROTO_SCTP:
+		/* FIXME: DCCP */
 		ret[3].u.value.ui16 = ct->tuple[dir].l4src.tcp.port;
 		ret[3].flags |= ULOGD_RETF_VALID;
 		ret[4].u.value.ui16 = ct->tuple[dir].l4dst.tcp.port;
 		ret[4].flags |= ULOGD_RETF_VALID;
 		break;
-	case IPPROTO_UDP:
-		break;
-	case IPPROTO_SCTP:
+	case IPPROTO_ICMP:
+		ret[7].u.value.ui8 = ct->tuple[dir].l4src.icmp.code;
+		ret[7].flags |= ULOGD_RETF_VALID;
+		ret[8].u.value.ui8 = ct->tuple[dir].l4src.icmp.type;
+		ret[8].flags |= ULOGD_RETF_VALID;
 		break;
 	}
 
