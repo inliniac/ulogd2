@@ -8,7 +8,7 @@
 #include <netinet/in.h>
 
 #include <ulogd/ulogd.h>
-#include <libnfnetlink_log/libnfnetlink_log.h>
+#include <libnetfilter_log/libnetfilter_log.h>
 
 #ifndef NFLOG_GROUP_DEFAULT
 #define NFLOG_GROUP_DEFAULT	0
