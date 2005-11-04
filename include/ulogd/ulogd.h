@@ -60,7 +60,7 @@
 
 
 /* maximum length of ulogd key */
-#define ULOGD_MAX_KEYLEN 32
+#define ULOGD_MAX_KEYLEN 31
 
 #define ULOGD_DEBUG	1	/* debugging information */
 #define ULOGD_INFO	3
@@ -80,8 +80,6 @@ enum ulogd_dtype {
 
 /* structure describing an input  / output parameter of a plugin */
 struct ulogd_key {
-	/* next interpreter return (key) in the global list */
-	struct ulogd_key *next;
 	/* length of the returned value (only for lengthed types */
 	u_int32_t len;
 	/* type of the returned value (ULOGD_DTYPE_...) */
@@ -89,7 +87,7 @@ struct ulogd_key {
 	/* flags (i.e. free, ...) */
 	u_int16_t flags;
 	/* name of this key */
-	char name[ULOGD_MAX_KEYLEN];
+	char name[ULOGD_MAX_KEYLEN+1];
 	/* IETF IPFIX attribute ID */
 	struct {
 		u_int32_t	vendor;
@@ -191,13 +189,6 @@ struct ulogd_pluginstance_stack {
 	/* list of plugins in this stack */
 	struct list_head list;
 	char *name;
-};
-
-/* entries of the key hash */
-struct ulogd_keyh_entry {
-	struct ulogd_plugin *interp;	/* interpreter for this key */
-	unsigned int offset;		/* offset within interpreter */
-	const char *name;		/* name of this particular key */
 };
 
 /***********************************************************************
