@@ -326,15 +326,19 @@ pluginstance_alloc_init(struct ulogd_plugin *pl, char *pi_id,
 		pi->config_kset = NULL;
 
 	/* copy input keys */
-	pi->input = ptr;
-	memcpy(pi->input, pl->input.keys, 
-	       pl->input.num_keys * sizeof(struct ulogd_key));
-	ptr += pl->input.num_keys * sizeof(struct ulogd_key);
+	if (pl->input.num_keys) {
+		pi->input = ptr;
+		memcpy(pi->input, pl->input.keys, 
+		       pl->input.num_keys * sizeof(struct ulogd_key));
+		ptr += pl->input.num_keys * sizeof(struct ulogd_key);
+	}
 	
 	/* copy input keys */
-	pi->output = ptr;
-	memcpy(pi->output, pl->output.keys, 
-	       pl->output.num_keys * sizeof(struct ulogd_key));
+	if (pl->output.num_keys) {
+		pi->output = ptr;
+		memcpy(pi->output, pl->output.keys, 
+		       pl->output.num_keys * sizeof(struct ulogd_key));
+	}
 
 	return pi;
 }
