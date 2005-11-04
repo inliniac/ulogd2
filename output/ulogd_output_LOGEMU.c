@@ -103,9 +103,13 @@ static int start_logemu(struct ulogd_pluginstance *pi)
 {
 	struct logemu_instance *li = (struct logemu_instance *) &pi->private;
 
+	ulogd_log(ULOGD_DEBUG, "starting logemu\n");
+
 #ifdef DEBUG_LOGEMU
 	li->of = stdout;
 #else
+	ulogd_log(ULOGD_DEBUG, "opening file: %s\n",
+		  pi->config_kset->ces[0].u.string);
 	li->of = fopen(pi->config_kset->ces[0].u.string, "a");
 	if (!li->of) {
 		ulogd_log(ULOGD_FATAL, "can't open syslogemu: %s\n", 
@@ -134,7 +138,8 @@ static int configure_logemu(struct ulogd_pluginstance *pi,
 			    struct ulogd_pluginstance_stack *stack)
 {
 	/* FIXME: error handling */
-	config_parse_file(pi->id, &logemu_kset);
+	ulogd_log(ULOGD_DEBUG, "parsing config file section %s\n", pi->id);
+	config_parse_file(pi->id, pi->config_kset);
 
 	return 0;
 }
