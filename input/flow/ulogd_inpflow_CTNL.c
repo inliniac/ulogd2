@@ -11,16 +11,15 @@
 
 #include <errno.h>
 #include <ulogd/ulogd.h>
-#include <libnfnetlink/libnfnetlink.h>
-#include <libnfnetlink_conntrack/libnfnetlink_conntrack.h>
+#include <libnetfilter_conntrack/libnetfilter_conntrack.h>
 
-struct ctnl_pluginstance {
+struct nfct_pluginstance {
 	struct nfct_handle *cth;
 	struct ulogd_fd nfct_fd;
 };
 
 
-static struct ulogd_key ctnl_okeys[] = {
+static struct ulogd_key nfct_okeys[] = {
 	{
 		.type 	= ULOGD_RET_IPADDR,
 		.flags 	= ULOGD_RETF_NONE,
@@ -143,22 +142,22 @@ static int event_handler(void *arg, unsigned int flags, int type)
 	return 0;
 }
 
-static int read_cb_ctnl(int fd, unsigned int what, void *param)
+static int read_cb_nfct(int fd, unsigned int what, void *param)
 {
-	struct ctnl_pluginstance *cpi = 
-				(struct ulogd_ctnl_pluginstance *) param;
+	struct nfct_pluginstance *cpi = 
+				(struct ulogd_nfct_pluginstance *) param;
 
 	if (!(what & ULOGD_FD_READ))
 		return 0;
 
 	/* FIXME: implement this */
-	ctnl_event_conntrack(&cpi->cth, AF_INET);
+	nfct_event_conntrack(&cpi->cth, AF_INET);
 }
 
-static int constructor_ctnl(struct ulogd_pluginstance *upi)
+static int constructor_nfct(struct ulogd_pluginstance *upi)
 {
-	struct ctnl_pluginstance *cpi = 
-			(struct ctnl_pluginstance *)upi->private;
+	struct nfct_pluginstance *cpi = 
+			(struct nfct_pluginstance *)upi->private;
 
 	memset(cpi, NULL, sizeof(*cpi));
 
@@ -170,10 +169,10 @@ static int constructor_ctnl(struct ulogd_pluginstance *upi)
 		return -1;
 	}
 
-	ctnl_register_callback(cpi->cth, &event_handler);
+	nfct_register_callback(cpi->cth, &event_handler);
 
 	cpi->nfct_fd.fd = nfct_fd(cpi->cth);
-	cpi->nfct_fd.cb = &read_cb_ctnl;
+	cpi->nfct_fd.cb = &read_cb_nfct;
 	cpi->nfct_fd.data = cpi;
 	cpi->nfct_fd.when = ULOGD_FD_READ;
 
@@ -183,9 +182,9 @@ static int constructor_ctnl(struct ulogd_pluginstance *upi)
 }
 
 
-static int destructor_ctnl(struct ulogd_pluginstance *pi)
+static int destructor_nfct(struct ulogd_pluginstance *pi)
 {
-	struct ctnl_pluginstance *cpi = (void *) pi;
+	struct nfct_pluginstance *cpi = (void *) pi;
 	int rc;
 
 	rc = nfct_close(cpi->cth);
@@ -195,27 +194,27 @@ static int destructor_ctnl(struct ulogd_pluginstance *pi)
 	return 0;
 }
 
-static struct ulogd_plugin ctnl_plugin = {
+static struct ulogd_plugin nfct_plugin = {
 	.name = "CTNL",
 	.input = {
 		.type = ULOGD_DTYPE_SOURCE,
 	},
 	.output = {
-		.keys = &ctnl_okeys,
-		.num_keys = ARRAY_SIZE(ctnl_okeys),
+		.keys = &nfct_okeys,
+		.num_keys = ARRAY_SIZE(nfct_okeys),
 		.type = ULOGD_DTYPE_FLOW,
 	},
 	.config_kset 	= ,
 	.interp 	= ,
 	.configure	=
-	.start		= &constructor_ctnl,
-	.stop		= &destructor_ctnl,
+	.start		= &constructor_nfct,
+	.stop		= &destructor_nfct,
 };
 
 void __attribute__ ((constructor)) init(void);
 
 void init(void)
 {
-	ulogd_register_plugin(&ctnl_plugin);
+	ulogd_register_plugin(&nfct_plugin);
 }
 
