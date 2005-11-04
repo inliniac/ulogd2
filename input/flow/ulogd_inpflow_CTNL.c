@@ -15,126 +15,10 @@
 #include <libnfnetlink_conntrack/libnfnetlink_conntrack.h>
 
 struct ctnl_pluginstance {
-	struct ctnl_handle *cth;
-	struct ulogd_fd ctnl_fd;
+	struct nfct_handle *cth;
+	struct ulogd_fd nfct_fd;
 };
 
-#if 0
-static int ctnl_parser(struct ulogd_pluginstance *pi,
-		       struct nfattr *_attr, struct nlmsghdr *nlh)
-{
-	struct nfattr *attr = NFM_NFA(NLMSG_DATA(nlh));
-	struct ip_conntrack_tuple *orig;
-	struct cta_countrs *ctr;
-
-	/* FIXME: what about reply direction ? */
-	while (NFA_OK(attr, attrlen)) {
-		switch (attr->nfa_type) {
-		case CTA_ORIG:
-			orig = NFA_DATA(attr);
-			pi->output.keys[0].u.ui32 = orig->src.ip;
-			pi->output.keys[1].u.ui32 = orig->dst.ip;
-			pi->output.keys[2].u.value.ui8 = orig->dst.protonum;
-			/* FIXME: l4 port numbers */
-			break;
-		case CTA_COUNTERS:
-			ctr = NFA_DATA(attr);
-			pi->output.keys[5].u.value.ui32 = ctr->orig.bytes;
-			pi->output.keys[6].u.value.ui32 = ctr->prog.packets;
-			break;
-		}
-		attr = NFA_NEXT(attr, attrlen);
-	}
-	return 0;
-}
-#endif
-
-static int event_handler(struct sockaddr_nl *sock, struct nlmsghdr *nlh,
-			 void *arg)
-{
-	struct nfgenmsg *nfmsg;
-	struct nfattr *nfa;
-	int min_len = 0;
-	int type = NFNL_MSG_TYPE(nlh->nlmsg_type);
-
-	nfmsg = NLMSG_DATA(nlh);
-
-	min_len = sizeof(struct nfgenmsg);
-	if (nlh->nlmsg_len < min_len)
-		return -EINVAL;
-
-#if 0 
-	if (type == IPCTNL_MSG_CT_NEW && flags & NLM_F_CREATE) {
-		/* FIXME: build hash table with timestamp of start of
-		 * connection */
-	} else if (type == IPCTNL_MSG_CT_DELETE) {
-		/* We have the final count of bytes for this connection */
-	}
-#endif
-	return 0;
-}
-
-static struct ctnl_msg_handler new_h = {
-	.type = IPCTNL_MSG_CT_NEW,
-	.handler = event_handler,
-};
-
-static struct ctnl_msg_handler destroy_h = {
-	.type = IPCTNL_MSG_CT_DELETE,
-	.handler = event_handler,
-};
-
-static int read_cb_ctnl(int fd, unsigned int what, void *param)
-{
-	struct ctnl_pluginstance *cpi = 
-				(struct ulogd_ctnl_pluginstance *) param;
-
-	if (!(what & ULOGD_FD_READ))
-		return 0;
-
-	/* FIXME: implement this */
-	ctnl_event_conntrack(&cpi->cth, AF_INET);
-}
-
-static int constructor_ctnl(struct ulogd_pluginstance *upi)
-{
-	struct ctnl_pluginstance *cpi = 
-			(struct ctnl_pluginstance *)upi->private;
-
-	memset(cpi, NULL, sizeof(*cpi));
-
-	/* FIXME: make eventmask configurable */
-	cpi->cth = ctnl_open(NFNL_SUBSYS_CTNETLINK, NF_NETLINK_CONNTRACK_NEW|
-			     NF_NETLINK_CONNTRACK_DESTROY);
-	if (!cph->cth) {
-		print("error opening ctnetlink\n");
-		return -1;
-	}
-
-	ctnl_register_handler(cpi->cth, &new_h);
-	ctnl_register_handler(cpi->cth, &destroy_h);
-
-	cpi->ctnl_fd.fd = ctnl_fd(cpi->cth);
-	cpi->ctnl_fd.cb = &read_cb_ctnl;
-	cpi->ctnl_fd.data = cpi;
-
-	ulogd_register_fd(&cpi->ctnl_fd);
-	
-	return &cpi->upi;
-}
-
-
-static int destructor_ctnl(struct ulogd_pluginstance *pi)
-{
-	struct ctnl_pluginstance *cpi = (void *) pi;
-
-	if (ctnl_close(&cpi->cth) < 0) {
-		print("error2\n");
-		return -1;
-	}
-
-	return 0;
-}
 
 static struct ulogd_key ctnl_okeys[] = {
 	{
@@ -193,6 +77,123 @@ static struct ulogd_key ctnl_okeys[] = {
 	},
 
 };
+
+static int propagate_ct_flow(struct ulogd_pluginstance *upi, 
+		             struct nfct_conntrack *ct,
+			     int dir)
+{
+	struct ulogd_key *ret = upi->output;
+
+	ret[0].u.value.ui32 = ct->tuple[dir].src.v4;
+	ret[0].flags |= ULOGD_RETF_VALID;
+
+	ret[1].u.value.ui32 = ct->tuple[dir].dst.v4;
+	ret[1].flags |= ULOGD_RETF_VALID;
+
+	ret[2].u.value.ui8 = ct->tuple[dir].protonum;
+	ret[2].flags |= ULOGD_RETF_VALID;
+
+	switch (ct->tuple[1].protonum) {
+	case IPPROTO_TCP:
+		ret[3].u.value.ui16 = ct->tuple[dir].l4src.tcp.port;
+		ret[3].flags |= ULOGD_RETF_VALID;
+		ret[4].u.value.ui16 = ct->tuple[dir].l4dst.tcp.port;
+		ret[4].flags |= ULOGD_RETF_VALID;
+		break;
+	case IPPROTO_UDP:
+		break;
+	case IPPROTO_SCTP:
+		break;
+	}
+
+	if (dir == NF_CT_DIR_ORIG && flags & NFCT_COUNTERS_ORIG ||
+	    dir == NF_CT_DIR_REPLY && flags & NFCT_COUNTERS_REPLY) {
+		ret[5].u.value.ui64 = ct->counters[dir].bytes;
+		ret[5].flags |= ULOGD_RETF_VALID;
+
+		ret[6].u.value.ui64 = ct->counters[dir].packets;
+		ret[6].flags |= ULOGD_RETF_VALID;
+	}
+	
+	return ulogd_propagate_results(upi);
+}
+
+static int propagate_ct(struct ulogd_pluginstance *upi,
+			struct nfct_conntrack *ct)
+{
+	int rc;
+
+	rc = propagate_ct_flow(upi, ct, NF_CT_DIR_ORIGINAL);
+	if (rc < 0)
+		return rc;
+	return propagate_ct_flow(upi, ct, NF_CT_DIR_REPLY);
+}
+
+static int event_handler(void *arg, unsigned int flags, int type)
+{
+	struct nfct_conntrack *ct = foo;
+
+	if (type == NFCT_MSG_NEW)
+		/* FIXME: build hash table with timestamp of start of
+		 * connection */
+	} else if (type == NFCT_MSG_DESTROY)
+		/* We have the final count of bytes for this connection */
+	}
+
+	return 0;
+}
+
+static int read_cb_ctnl(int fd, unsigned int what, void *param)
+{
+	struct ctnl_pluginstance *cpi = 
+				(struct ulogd_ctnl_pluginstance *) param;
+
+	if (!(what & ULOGD_FD_READ))
+		return 0;
+
+	/* FIXME: implement this */
+	ctnl_event_conntrack(&cpi->cth, AF_INET);
+}
+
+static int constructor_ctnl(struct ulogd_pluginstance *upi)
+{
+	struct ctnl_pluginstance *cpi = 
+			(struct ctnl_pluginstance *)upi->private;
+
+	memset(cpi, NULL, sizeof(*cpi));
+
+	/* FIXME: make eventmask configurable */
+	cpi->cth = nfct_open(NFNL_SUBSYS_CTNETLINK, NF_NETLINK_CONNTRACK_NEW|
+			     NF_NETLINK_CONNTRACK_DESTROY);
+	if (!cph->cth) {
+		print("error opening ctnetlink\n");
+		return -1;
+	}
+
+	ctnl_register_callback(cpi->cth, &event_handler);
+
+	cpi->nfct_fd.fd = nfct_fd(cpi->cth);
+	cpi->nfct_fd.cb = &read_cb_ctnl;
+	cpi->nfct_fd.data = cpi;
+	cpi->nfct_fd.when = ULOGD_FD_READ;
+
+	ulogd_register_fd(&cpi->nfct_fd);
+	
+	return &cpi->upi;
+}
+
+
+static int destructor_ctnl(struct ulogd_pluginstance *pi)
+{
+	struct ctnl_pluginstance *cpi = (void *) pi;
+	int rc;
+
+	rc = nfct_close(cpi->cth);
+	if (rc < 0)
+		return rc;
+
+	return 0;
+}
 
 static struct ulogd_plugin ctnl_plugin = {
 	.name = "CTNL",
