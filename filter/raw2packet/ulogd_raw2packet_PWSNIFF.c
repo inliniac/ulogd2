@@ -1,4 +1,4 @@
-/* ulogd_PWSNIFF.c, Version $Revision: 1.9 $
+/* ulogd_PWSNIFF.c, Version $Revision$
  *
  * ulogd logging interpreter for POP3 / FTP like plaintext passwords.
  *
@@ -62,21 +62,30 @@ static char *_get_next_blank(char* begp, char *endp)
 	return NULL;
 }
 
-static ulog_iret_t *_interp_pwsniff(ulog_interpreter_t *ip, ulog_packet_msg_t *pkt)
+static int interp_pwsniff(ulogd_pluginstance *pi);
 {
-	struct iphdr *iph = (struct iphdr *) pkt->payload;
-	void *protoh = (u_int32_t *)iph + iph->ihl;
-	struct tcphdr *tcph = protoh;
-	u_int32_t tcplen = ntohs(iph->tot_len) - iph->ihl * 4;
+	struct ulogd_key *inp = pi->input;
+	struct ulogd_key *ret = pi->output;
+	struct iphdr *iph;
+	void *protoh;
+	struct tcphdr *tcph;	
+	unsigned int tcplen;
 	unsigned char  *ptr, *begp, *pw_begp, *endp, *pw_endp;
-	ulog_iret_t *ret = ip->result;
 	int len, pw_len, i, cont = 0;
+
+	if (!IS_VALID(pi->input[0]))
+		return 0;
+	
+	iph = (struct iphdr *) pi->input[0].u.value.ptr;
+	protoh = (u_int32_t *)iph + iph->ihl;
+	tcph = protoh;
+	cplen = ntohs(iph->tot_len) - iph->ihl * 4;
 
 	len = pw_len = 0;
 	begp = pw_begp = NULL;
 
 	if (iph->protocol != IPPROTO_TCP)
-		return NULL;
+		return 0;
 	
 	for (i = 0; i < PWSNIFF_MAX_PORTS; i++)
 	{
@@ -86,9 +95,11 @@ static ulog_iret_t *_interp_pwsniff(ulog_interpreter_t *ip, ulog_packet_msg_t *p
 		}
 	}
 	if (!cont)
-		return NULL;
+		return 0;
 
-	DEBUGP("----> pwsniff detected, tcplen=%d, struct=%d, iphtotlen=%d, ihl=%d\n", tcplen, sizeof(struct tcphdr), ntohs(iph->tot_len), iph->ihl);
+	DEBUGP("----> pwsniff detected, tcplen=%d, struct=%d, iphtotlen=%d, "
+		"ihl=%d\n", tcplen, sizeof(struct tcphdr), ntohs(iph->tot_len),
+		iph->ihl);
 
 	for (ptr = (unsigned char *) tcph + sizeof(struct tcphdr); 
 			ptr < (unsigned char *) tcph + tcplen; ptr++)
@@ -113,7 +124,7 @@ static ulog_iret_t *_interp_pwsniff(ulog_interpreter_t *ip, ulog_packet_msg_t *p
 		ret[0].flags |= ULOGD_RETF_VALID;
 		if (!ret[0].value.ptr) {
 			ulogd_log(ULOGD_ERROR, "OOM (size=%u)\n", len);
-			return NULL;
+			return 0;
 		}
 		strncpy(ret[0].value.ptr, begp, len);
 		*((char *)ret[0].value.ptr + len + 1) = '\0';
@@ -123,38 +134,50 @@ static ulog_iret_t *_interp_pwsniff(ulog_interpreter_t *ip, ulog_packet_msg_t *p
 		ret[1].flags |= ULOGD_RETF_VALID;
 		if (!ret[1].value.ptr){
 			ulogd_log(ULOGD_ERROR, "OOM (size=%u)\n", pw_len);
-			return NULL;
+			return 0;
 		}
 		strncpy(ret[1].value.ptr, pw_begp, pw_len);
 		*((char *)ret[1].value.ptr + pw_len + 1) = '\0';
 
 	}
-	return ret;
+	return 0;
 }
 
-static ulog_iret_t pwsniff_rets[] = {
-	{ NULL, NULL, 0, ULOGD_RET_STRING, ULOGD_RETF_FREE, "pwsniff.user", 
-		{ ptr: NULL } },
-	{ NULL, NULL, 0, ULOGD_RET_STRING, ULOGD_RETF_FREE, "pwsniff.pass", 
-		{ ptr: NULL } },
+static struct ulogd_key pwsniff_inp = {
+	{
+		.name 	= "raw.pkt",
+	},
 };
-static ulog_interpreter_t base_ip[] = { 
 
-	{ NULL, "pwsniff", 0, &_interp_pwsniff, 2, pwsniff_rets },
-	{ NULL, "", 0, NULL, 0, NULL }, 
+static struct ulogd_key pwsniff_outp = {
+	{
+		.name	= "pwsniff.user",
+		.type	= ULOGD_RETF_STRING,
+		.flags	= ULOGD_RETF_FREE,
+	},
+	{
+		.name 	= "pwsniff.pass",
+		.type	= ULOGD_RETF_STRING,
+		.flags	= ULOGD_RETF_FREE,
+	},
 };
-void _base_reg_ip(void)
+
+static struct ulogd_plugin pwsniff_plugin = {
+	.name	= "PWSNIFF",
+	.input	= {
+		.keys = pwsniff_inp,
+		.num_keys = ARRAY_SIZE(pwsniff_inp),
+		.type = ULOGD_DTYPE_PACKET,
+	},
+	.output	= {
+		.keys = pwsniff_outp,
+		.num_keys = ARRAY_SIZE(pwsniff_outp),
+		.type = ULOGD_DTYPE_PACKET,
+	},
+	.interp = &interp_pwsniff,
+};
+
+void __attribute__ ((constructor)) init(void)
 {
-	ulog_interpreter_t *ip = base_ip;
-	ulog_interpreter_t *p;
-
-	for (p = ip; p->interp; p++)
-		register_interpreter(p);
-
-}
-
-
-void _init(void)
-{
-	_base_reg_ip();
+	ulogd_register_plugin(&pwsniff_plugin);
 }
