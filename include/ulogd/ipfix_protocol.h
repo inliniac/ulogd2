@@ -208,5 +208,13 @@ enum {
 	IPFIX_mplsPayloadLength		= 214,
 };
 
+/* Information elements of the netfilter vendor id */
+enum {
+	IPFIX_NF_rawpacket		= 1,	/* pointer */
+	IPFIX_NF_rawpacket_length	= 2,	/* u_int32_t */
+	IPFIX_NF_prefix			= 3,	/* string */
+	IPFIX_NF_mark			= 4,	/* u_int32_t */
+	IPFIX_NF_hook			= 5,	/* u_int8_t */
+};
 
 #endif
