@@ -86,17 +86,26 @@ static int oprint_interp(struct ulogd_pluginstance *upi)
 				break;
 		}
 	}
+	if (upi->config_kset->ces[1].u.value != 0)
+		fflush(opi->of);
+
 	return 0;
 }
 
 static struct config_keyset oprint_kset = {
-	.num_ces = 1,
+	.num_ces = 2,
 	.ces = {
 		{
-		.key = "file", 
-		.type = CONFIG_TYPE_STRING, 
-		.options = CONFIG_OPT_NONE,
-		.u = {.string = ULOGD_OPRINT_DEFAULT },
+			.key = "file", 
+			.type = CONFIG_TYPE_STRING, 
+			.options = CONFIG_OPT_NONE,
+			.u = {.string = ULOGD_OPRINT_DEFAULT },
+		},
+		{
+			.key = "sync",
+			.type = CONFIG_TYPE_INT,
+			.options = CONFIG_OPT_NONE,
+			.u = { .value = 0 },
 		},
 	},
 };
