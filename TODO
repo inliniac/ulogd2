@@ -4,4 +4,5 @@
 - support for static linking
 - issues with ulogd_BASE and partially copied packets (--ulog-cprange)
 - problem wrt. ulogd_BASE and fragments
-
+- fix problem "we're opening the logfile too late"
+- cleanup keys after we've propagatet through the whole stack (RETF_VALID, FREE)
