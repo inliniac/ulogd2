@@ -55,11 +55,6 @@ static struct config_keyset libulog_kset = {
 	}
 };
 
-#define bufsiz_ce(x)	(x[0])
-#define nlgroup_ce(x)	(x[1])
-#define rmem_ce(x)	(x[2])
-
-
 static struct ulogd_key output_keys[] = {
 	{ 
 		.type = ULOGD_RET_STRING, 
@@ -181,21 +176,22 @@ static int interp_packet(struct ulogd_pluginstance *ip, ulog_packet_msg_t *pkt)
 	ret[9].u.value.ptr = pkt->outdev_name;
 	ret[9].flags |= ULOGD_RETF_VALID;
 	
+	ulogd_propagate_results(ip);
 	return 0;
 }
 
 static int ulog_read_cb(int fd, unsigned int what, void *param)
 {
 	struct ulogd_pluginstance *upi = (struct ulogd_pluginstance *)param;
-	struct ulog_input *u = (struct ulog_input *)upi->private;
+	struct ulog_input *u = (struct ulog_input *) &upi->private;
 	ulog_packet_msg_t *upkt;
 	int len;
 
 	if (!(what & ULOGD_FD_READ))
 		return 0;
 
-	while (len = ipulog_read(u->libulog_h, u->libulog_buf,
-				 bufsiz_ce(upi->configs).u.value, 1)) {
+	while ((len = ipulog_read(u->libulog_h, u->libulog_buf,
+				 upi->config_kset->ces[0].u.value, 1))) {
 		if (len <= 0) {
 			/* this is not supposed to happen */
 			ulogd_log(ULOGD_ERROR, "ipulog_read = %d! "
@@ -212,28 +208,28 @@ static int ulog_read_cb(int fd, unsigned int what, void *param)
 	return 0;
 }
 
-static struct ulogd_pluginstance *init(struct ulogd_plugin *pl)
+static int configure(struct ulogd_pluginstance *upi,
+		     struct ulogd_pluginstance_stack *stack)
 {
-	struct ulog_input *ui;
-	struct ulogd_pluginstance *upi = malloc(sizeof(*upi)+sizeof(*ui));
+	return config_parse_file(upi->id, upi->config_kset);
+}
+static int init(struct ulogd_pluginstance *upi)
+{
+	struct ulog_input *ui = (struct ulog_input *) &upi->private;
 
-	if (!upi)
-		return NULL;
-
-	ui = (struct ulog_input *) upi->private;
-	upi->plugin = pl;
-	upi->input = NULL;
-	/* FIXME: upi->output = */
-
-	ui->libulog_buf = malloc(bufsiz_ce(upi->configs).u.value);
-	if (!ui->libulog_buf)
+	ui->libulog_buf = malloc(upi->config_kset->ces[0].u.value);
+	if (!ui->libulog_buf) {
+		ulogd_log(ULOGD_ERROR, "Out of memory\n");
 		goto out_buf;
+	}
 
 	ui->libulog_h = ipulog_create_handle(
-				ipulog_group2gmask(nlgroup_ce(upi->configs).u.value),
-				rmem_ce(upi->configs).u.value);
-	if (!ui->libulog_h)
+				ipulog_group2gmask(upi->config_kset->ces[1].u.value),
+				upi->config_kset->ces[2].u.value);
+	if (!ui->libulog_h) {
+		ulogd_log(ULOGD_ERROR, "Can't create ULOG handle\n");
 		goto out_handle;
+	}
 
 	ui->ulog_fd.fd = ipulog_get_fd(ui->libulog_h);
 	ui->ulog_fd.cb = &ulog_read_cb;
@@ -241,12 +237,12 @@ static struct ulogd_pluginstance *init(struct ulogd_plugin *pl)
 
 	ulogd_register_fd(&ui->ulog_fd);
 
-	return upi;
+	return 0;
+
 out_handle:
 	free(ui->libulog_buf);
 out_buf:
-	free(upi);
-	return NULL;
+	return -1;
 }
 
 static int fini(struct ulogd_pluginstance *pi)
@@ -262,19 +258,22 @@ static int fini(struct ulogd_pluginstance *pi)
 struct ulogd_plugin libulog_plugin = {
 	.name = "ULOG",
 	.input = {
-			.type = ULOGD_DTYPE_NULL,
-		},
+		.type = ULOGD_DTYPE_SOURCE,
+		.keys = NULL,
+		.num_keys = 0,
+	},
 	.output = {
-			.type = ULOGD_DTYPE_RAW,
-			.keys = &output_keys,
-			.num_keys = sizeof(output_keys)/sizeof(struct ulogd_key),
-		},
-	.constructor = &init,
-	.destructor = &fini,
+		.type = ULOGD_DTYPE_RAW,
+		.keys = &output_keys,
+		.num_keys = sizeof(output_keys)/sizeof(struct ulogd_key),
+	},
+	.configure = &configure,
+	.start = &init,
+	.stop = &fini,
 	.config_kset = &libulog_kset,
 };
 
-void _init(void)
+void __attribute__ ((constructor)) initializer(void)
 {
 	ulogd_register_plugin(&libulog_plugin);
 }
