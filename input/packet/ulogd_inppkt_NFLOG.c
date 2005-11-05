@@ -78,9 +78,13 @@ static struct config_keyset libulog_kset = {
 
 static struct ulogd_key output_keys[] = {
 	{ 
-		.type = ULOGD_RET_STRING, 
-		.flags = ULOGD_RETF_FREE, 
+		.type = ULOGD_RET_RAW, 
+		.flags = ULOGD_RETF_NONE,
 		.name = "raw.mac", 
+		.ipfix = {
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_sourceMacAddress,
+		},
 	},
 	{
 		.type = ULOGD_RET_RAW,
@@ -88,16 +92,16 @@ static struct ulogd_key output_keys[] = {
 		.name = "raw.pkt",
 		.ipfix = {
 			.vendor = IPFIX_VENDOR_NETFILTER,
-			.field_id = 1,
-			},
+			.field_id = IPFIX_NF_rawpacket,
+		},
 	},
 	{
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "raw.pktlen",
 		.ipfix = { 
-			.vendor = IPFIX_VENDOR_IETF,
-			.field_id = 1
+			.vendor = IPFIX_VENDOR_NETFILTER,
+			.field_id = IPFIX_NF_rawpacket_length,
 		},
 	},
 	{
@@ -106,50 +110,82 @@ static struct ulogd_key output_keys[] = {
 		.name = "raw.pktcount",
 		.ipfix = { 
 			.vendor = IPFIX_VENDOR_IETF,
-			.field_id = 2
+			.field_id = IPFIX_packetDeltaCount,
 		},
 	},
 	{
 		.type = ULOGD_RET_STRING,
 		.flags = ULOGD_RETF_NONE, 
 		.name = "oob.prefix", 
+		.ipfix = {
+			.vendor = IPFIX_VENDOR_NETFILTER,
+			.field_id = IPFIX_NF_prefix,  
+		},
 	},
 	{ 	.type = ULOGD_RET_UINT32, 
 		.flags = ULOGD_RETF_NONE, 
 		.name = "oob.time.sec", 
 		.ipfix = { 
 			.vendor = IPFIX_VENDOR_IETF, 
-			.field_id = 22 
+			.field_id = IPFIX_flowStartSeconds, 
 		},
 	},
 	{
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.time.usec", 
+		.ipfix = {
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_flowStartMicroSeconds,
+		},
 	},
 	{
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.mark", 
+		.ipfix = {
+			.vendor = IPFIX_VENDOR_NETFILTER,
+			.field_id = IPFIX_NF_mark,
+		},
 	},
 	{
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.ifindex_in", 
+		.ipfix = {
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_ingressInterface,
+		},
 	},
 	{
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.ifindex_out", 
+		.ipfix = {
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_egressInterface,
+		},
 	},
+	{
+		.type = ULOGD_RET_UINT8,
+		.flags = ULOGD_RETF_NONE,
+		.name = "oob.hook",
+		.ipfix = {
+			.vendor = IPFIX_VENDOR_NETFILTER,
+			.field_id = IPFIX_NF_hook,
+		},
+	},
+	{ 
+		.type = ULOGD_RET_STRING, 
+		.flags = ULOGD_RETF_FREE, 
+		.name = "raw.mac_len", 
+	},
+
 };
 
 static inline int 
 interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 {
-	unsigned char *p;
-	int i;
-	char *buf, *oldbuf = NULL;
 	struct ulogd_key *ret = upi->output;
 
 	struct nfulnl_msg_packet_hdr *ph = nflog_get_msg_packet_hdr(ldata);
@@ -164,27 +200,16 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 
 	if (ph) {
 		/* FIXME */
+		ret[10].u.value.ui8 = ph->hook;
+		ret[10].flags |= ULOGD_RETF_VALID;
 	}
 
 	if (hw) {
-		int addr_len = ntohs(hw->hw_addrlen);
-
-		buf = (char *) malloc(3 * addr_len + 1);
-		if (!buf)
-			ulogd_log(ULOGD_ERROR, "OOM!!!\n");
-		else {
-			*buf = '\0';
-
-			p = hw->hw_addr;
-			oldbuf = buf;
-			for (i = 0; i < addr_len; i++, p++)
-				sprintf(buf, "%s%02x%c", oldbuf, *p, 
-					i==addr_len-1 ? ' ':':');
-			ret[0].u.value.ptr = buf;
-			ret[0].flags |= ULOGD_RETF_VALID;
-		}
+		ret[0].u.value.ptr = &hw->hw_addr;
+		ret[0].flags |= ULOGD_RETF_VALID;
+		ret[11].u.value.ui16 = ntohs(hw->hw_addrlen);
+		ret[11].flags |= ULOGD_RETF_VALID;
 	}
-
 
 	if (payload_len >= 0) {
 		/* include pointer to raw packet */
@@ -204,20 +229,14 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 		ret[4].flags |= ULOGD_RETF_VALID;
 	}
 
-	if (ts) {
+	/* god knows why timestamp_usec contains crap if timestamp_sec
+	 * == 0 if (pkt->timestamp_sec || pkt->timestamp_usec) { */
+	if (ts && ts->sec) {
 		/* FIXME: convert endianness */
-
-		/* god knows why timestamp_usec contains crap if timestamp_sec
-		 * == 0 if (pkt->timestamp_sec || pkt->timestamp_usec) { */
-		if (ts->sec) {
-			ret[5].u.value.ui32 = ts->sec;
-			ret[5].flags |= ULOGD_RETF_VALID;
-			ret[6].u.value.ui32 = ts->usec;
-			ret[6].flags |= ULOGD_RETF_VALID;
-		} else {
-			ret[5].flags &= ~ULOGD_RETF_VALID;
-			ret[6].flags &= ~ULOGD_RETF_VALID;
-		}
+		ret[5].u.value.ui32 = ts->sec & 0xffffffff;
+		ret[5].flags |= ULOGD_RETF_VALID;
+		ret[6].u.value.ui32 = ts->usec & 0xffffffff;
+		ret[6].flags |= ULOGD_RETF_VALID;
 	}
 
 	ret[7].u.value.ui32 = mark;
