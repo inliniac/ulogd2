@@ -118,10 +118,10 @@ static int propagate_ct_flow(struct ulogd_pluginstance *upi,
 {
 	struct ulogd_key *ret = upi->output;
 
-	ret[0].u.value.ui32 = ct->tuple[dir].src.v4;
+	ret[0].u.value.ui32 = htonl(ct->tuple[dir].src.v4);
 	ret[0].flags |= ULOGD_RETF_VALID;
 
-	ret[1].u.value.ui32 = ct->tuple[dir].dst.v4;
+	ret[1].u.value.ui32 = htonl(ct->tuple[dir].dst.v4);
 	ret[1].flags |= ULOGD_RETF_VALID;
 
 	ret[2].u.value.ui8 = ct->tuple[dir].protonum;
@@ -132,9 +132,9 @@ static int propagate_ct_flow(struct ulogd_pluginstance *upi,
 	case IPPROTO_UDP:
 	case IPPROTO_SCTP:
 		/* FIXME: DCCP */
-		ret[3].u.value.ui16 = ct->tuple[dir].l4src.tcp.port;
+		ret[3].u.value.ui16 = htons(ct->tuple[dir].l4src.tcp.port);
 		ret[3].flags |= ULOGD_RETF_VALID;
-		ret[4].u.value.ui16 = ct->tuple[dir].l4dst.tcp.port;
+		ret[4].u.value.ui16 = htons(ct->tuple[dir].l4dst.tcp.port);
 		ret[4].flags |= ULOGD_RETF_VALID;
 		break;
 	case IPPROTO_ICMP:
@@ -242,7 +242,7 @@ static int destructor_nfct(struct ulogd_pluginstance *pi)
 }
 
 static struct ulogd_plugin nfct_plugin = {
-	.name = "CTNL",
+	.name = "NFCT",
 	.input = {
 		.type = ULOGD_DTYPE_SOURCE,
 	},
@@ -256,6 +256,7 @@ static struct ulogd_plugin nfct_plugin = {
 	.configure	= NULL,
 	.start		= &constructor_nfct,
 	.stop		= &destructor_nfct,
+	.priv_size	= sizeof(struct nfct_pluginstance),
 };
 
 void __attribute__ ((constructor)) init(void);
