@@ -2,10 +2,7 @@
  *
  * ulogd output target for writing pcap-style files (like tcpdump)
  *
- * FIXME: descr.
- * 
- *
- * (C) 2002 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2002-2005 by Harald Welte <laforge@gnumonks.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 
