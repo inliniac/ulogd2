@@ -4,14 +4,15 @@
 
 <article>
 
-<title>ULOGD - the Userspace Logging Daemon</title>
-<author>Harald Welte &lt;laforge@gnumonks.org&gt</author>
+<title>ULOGD 2.x - the Netfilter Userspace Logging Daemon</title>
+<author>Harald Welte &lt;laforge@netfilter.org&gt</author>
 <date>Revision $Revision$, $Date$</date>
 
 <abstract>
-This is the documentation for <tt>ulogd</tt>, the Userspace logging daemon.
-ulogd makes use of the Linux &gt;= 2.4.x packet filter subsystem (iptables) and
-the ULOG target for iptables.
+This is the documentation for <tt>ulogd-2.x</tt>, the second generation
+Netfilter Userspace logging daemon.  ulogd makes use of the Linux &gt;= 2.6.14
+nfnetlink_log subsystem, but also provides backwards compatibility for Linux
+&gt;= 2.4.0 ipt_ULOG.
 </abstract>
 
 <toc>
@@ -20,74 +21,55 @@ the ULOG target for iptables.
 
 <sect1>CONCEPT
 <p>
-I want to provide a flexible, almost universal logging daemon for my netfilter 
-ULOG target. It is not optimized in any way, the goal is to keep as simple as 
-possible. These are my thoughts about how the architecture which is most 
-capable of doing that:
+ulogd-2.x wants to provide a flexible, almost universal logging daemon for 
+netfilter logging.  This encompasses both packet-based logging (logging of
+policy violations) and flow-based logging, e.g. for accounting purpose.
+<p>
+ulogd consists of a small core and a number of plugins.  All the real power
+lies in the plugins, and in the user who configures the interactions between those
+plugins.
 <p>
 <descrip>
-<tag>Interpreter plugins</tag>
-It should be possible to add plugins / runtime modules for new protocols, etc.
-For example the standard logging daemon provides source-ip, dest-ip, 
-source-port, dest-port, etc. Logging for various other protocols (GRE, 
-IPsec, ...) may be implemented as modules.
-
-<tag>Output plugins</tag>
-... describe how and where to put the information gained by logging plugins. 
+<tag>Input Plugins</tag>
+Input plugins acts data source.  They get data from somewhere outside of ulogd,
+and convert it into a list of ulogd keys.
+<tag>Filter Plugins</tag>
+Filter plugins interpret and/or filter data that was received from the Input
+Plugin.  A good example is parsing a raw packet into IPv4 / TCP / ... header
+information.
+<tag>Output Plugins</tag>
+Output plugins describe how and where to put the information gained by the
+Input Plugin and processed by one or more Filter Plugins.
 The easiest way is to build a line per packet and fprint it to a file. 
 Some people might want to log into a SQL database or want an output 
-conforming to the intrusion detection systems communication draft from the
-IETF.
-
+conforming to the IETF IPFIX language.
 </descrip>
+<p>
+By means of the configuration file, the administrator can build any number
+of Plugin Stacks.  A plugin stack is a seris of plugins, starting with an Input
+plugin, none, one or multiple filter plugins, and one output plugin on top.
+</p>
 
 <sect1>DETAILS
 <p>
 The major clue is providing a framework which is as flexible as possible. 
-Nobody knows what strange network protocols are out there :) Flexibility
-depends on the communication between the output of the logging plugins 
-and input of the output plugins.
-<p>
-Rusty advised me to use some kind of type-key-value triples, which is in fact
-what I implemented.
-<p>
-One issue is, of course, performance. Up to ulogd 0.3, ulogd did several
-linked list iterations and about 30 malloc() calls _per packet_. This 
-changed with the new &gt;= 0.9 revisions:
-<itemize>
-<item>Not a single dynamic allocation in the core during runtime. 
-Everything is pre-allocated at start of ulogd to provide the highest
-possible throughput.
-<item>Hash tables in addition to the linked lists. Linked lists are only
-traversed if we really want to access each element of the list.
-</itemize>
+Nobody knows what strange network protocols are out there :) But at the same
+time, logging of a packet filter is often very performance critical.
+Like all ulogd releases since 0.3.x, the ulogd-2.x core doesn't do any
+dynamic allocations at runtime.  Yes, obviously, at startup time the config
+file is parsed, and allocations are made.  But after that, everything is
+pre-allocated.  As an additional improvement over ulogd-1.x, there are also no
+hashtable lookups for key resolval.  All input/output keys of plugins within
+every stakc are resolved at config file parsing time, and directly
+interconnected  by pointers.
 
 <sect>INSTALLATION
 <p>
 <sect1>Linux kernel
 <p>
-First you will need a recent 2.4.x kernel.  If you have a kernel &gt;=
-2.4.18-pre8, it already has the kernel support for ULOG (ipt_ULOG.o).
-<p>
-If you have an older kernel version (between 2.4.0 and 2.4.18-pre6), you
-can use the patch-o-matic system of netfilter/iptables, as described in
-the following section.
+To use the NFCT or NFLOG input plugin, you will need a 2.6.14 or later kernel.
+For old-style ULOG logging, you need a kernel &gt;= 2.4.18.
 
-<sect1>ipt_ULOG from netfilter/iptables patch-o-matic
-<p>
-You only need to read this chapter if you have a 2.4.x kernel &lt;=
-2.4.18-pre6.
-<p>
-In order to put the ipt_ULOG module into your kernel source,you need the latest
-iptables package, or even better: the latest CVS snapshot. A description how to
-obtain this is provided on the netfilter
-homepage <URL URL="http://www.netfilter.org/">.
-<p>
-To run patch-o-matic, just type 
-<tscreen><verb>
-make patch-o-matic
-</verb></tscreen>
-in the userspace directory of netfilter CVS.
 
 <sect1>ulogd
 <sect2>Recompiling the source
@@ -230,31 +212,61 @@ There are two kinds of plugins, interpreter and output plugins.  Interpreter
 plugins parse the packet, output plugins write the interpreted information to
 some logfile/database/...
 
+<sect1>Input plugins
+<p>
+ulogd comes with the following input plugins:
+
+<sect2>ulogd_inppkt_ULOG.so
+<p>
+The good old ipt_ULOG input plugin.  This basically emulates ulogd-1.x which
+didn't have input plugins.
+
+<sect2>ulogd_inppkt_NFLOG.so
+<p>
+This interfaces the new nfnetlink_log interface.  To compile, you need
+libnetfilter_log installed in your system.
+
+<sect2>ulogd_inpflow_NFCT.so
+<p>
+This interfaces the nfnetlink_conntrack kernel subsystem, and provides
+flow-based logging.  To compile, you need libnetfilter_conntrack installed on
+your system.
+
+
 <sect1>Interpreter plugins
 <p>
 ulogd comes with the following interpreter plugins:
-<sect2>ulogd_BASE.so
+
+<sect2>ulogd_raw2packet_BASE.so
 <p>
 Basic interpreter plugin for nfmark, timestamp, mac address, ip header, tcp
 header, udp header, icmp header, ah/esp header... Most people will want to load
 this very important plugin.
-<sect2>ulogd_PWSNIFF.so
+
+<sect2>ulogd_filter_PWSNIFF.so
 <p>
 Example interpreter plugin to log plaintext passwords as used with FTP and
 POP3. Don't blame me for writing this plugin! The protocols are inherently
 insecure, and there are a lot of other tools for sniffing passwords... it's
 just an example.
+
+<sect2>ulogd_filter_IFINDEX.so
+<p>
+Filter plugin that provides translation from the numerical ifindex (e.g. '1') to the
+network interface name (e.g. 'eth4').
+
 <sect2>ulogd_LOCAL.so
 <p>
 This is a 'virtual interpreter'.  It doesn't really return any information on
 the packet itself, rather the local system time and hostname.  Please note that
 the time is the time at the time of logging, not the packets receive time.
 
+
 <sect1>Output plugins
 <p>
 ulogd comes with the following output plugins:
 
-<sect2>ulogd_OPRINT.so
+<sect2>ulogd_output_OPRINT.so
 <p>
 A very simple output module, dumping all packets in the format
 <tscreen><verb>
@@ -273,7 +285,7 @@ The filename where it should log to. The default is
 <tt>/var/log/ulogd.pktlog</tt>
 </descrip>
 
-<sect2>ulogd_LOGEMU.so
+<sect2>ulogd_output_LOGEMU.so
 <p>
 An output module which tries to emulate the old syslog-based LOG targed as far
 as possible. Logging is done to a seperate textfile instead of syslog, though.
@@ -287,7 +299,7 @@ synchronously. This may reduce performance, but makes your log-lines appear
 immediately.  The default is <tt>0</tt>
 </descrip>
 
-<sect2>ulogd_MYSQL.so
+<sect2>ulogd_output_MYSQL.so
 <p>
 An output plugin for logging into a mysql database. This is only compiled if
 you have the mysql libraries installed, and the configure script was able to
@@ -327,7 +339,7 @@ Name of the mysql user.
 Password for mysql.
 </descrip>
 
-<sect2>ulogd_PGSQL.so
+<sect2>ulogd_output_PGSQL.so
 <p>
 An output plugin for logging into a postgresql database. This is only compiled
 if you have the mysql libraries installed, and the configure script was able to
@@ -367,7 +379,7 @@ Name of the sql user.
 Password for sql user.
 </descrip>
 
-<sect2>ulogd_PCAP.so
+<sect2>ulogd_output_PCAP.so
 <p>
 An output plugin that can be used to generate libpcap-style packet logfiles.
 This can be useful for later analysing the packet log with tools like tcpdump
@@ -384,7 +396,7 @@ synchronously.  This may reduce performance, but makes your packets appear
 immediately in the file on disk.  The default is <tt>0</tt>
 </descrip>
 
-<sect2>ulogd_SQLITE3.so
+<sect2>ulogd_output_SQLITE3.so
 <p>
 An output plugin for logging into a SQLITE v3 database. This is only compiled
 if you have the sqlite libraries installed, and the configure script was able to
@@ -419,7 +431,7 @@ Size of the sqlite buffer.
 </descrip>
 </sect2>
 
-<sect2>ulogd_SYSLOG.so
+<sect2>ulogd_output_SYSLOG.so
 <p>
 An output plugin that really logs via syslogd. Lines will look exactly like printed with traditional LOG target.
 
