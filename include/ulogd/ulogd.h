@@ -21,6 +21,7 @@
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
+#define ULOGD_VERSION "2.0.0beta"
 
 /* All types with MSB = 1 make use of value.ptr
  * other types use one of the union's member */
@@ -117,6 +118,8 @@ struct ulogd_pluginstance;
 struct ulogd_plugin {
 	/* global list of plugins */
 	struct list_head list;
+	/* version */
+	char *version;
 	/* name of this plugin (predefined by plugin) */
 	char name[ULOGD_MAX_KEYLEN];
 	/* ID for this plugin (dynamically assigned) */
@@ -223,7 +226,7 @@ struct ulogd_key *keyh_getres(unsigned int id);
 /* the key hash itself */
 extern struct ulogd_keyh_entry *ulogd_keyh;
 
-#define IS_VALID(x)	(x.flags & ULOGD_RETF_VALID)
+#define IS_VALID(x)	((x).flags & ULOGD_RETF_VALID)
 #define SET_VALID(x)	(x.flags |= ULOGD_RETF_VALID)
 #define IS_NEEDED(x)	(x.flags & ULOGD_RETF_NEEDED)
 #define SET_NEEDED(x)	(x.flags |= ULOGD_RETF_NEEDED)

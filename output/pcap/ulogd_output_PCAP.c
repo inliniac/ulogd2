@@ -279,6 +279,7 @@ static struct ulogd_plugin pcap_plugin = {
 	.stop		= &stop_pcap,
 	.signal		= &signal_pcap,
 	.interp		= &interp_pcap,
+	.version	= ULOGD_VERSION,
 };
 
 void __attribute__ ((constructor)) init(void);

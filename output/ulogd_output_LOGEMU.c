@@ -163,6 +163,7 @@ static struct ulogd_plugin logemu_plugin = {
 
 	.interp 	= &_output_logemu, 
 	.signal 	= &signal_handler_logemu,
+	.version	= ULOGD_VERSION,
 };
 
 void __attribute__ ((constructor)) init(void);

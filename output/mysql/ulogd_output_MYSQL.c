@@ -515,6 +515,7 @@ static struct ulogd_plugin mysql_plugin = {
 	.stop	   = &stop_mysql,
 	.signal	   = &signal_mysql,
 	.interp	   = &interp_mysql,
+	.version   = ULOGD_VERSION,
 };
 
 void __attribute__ ((constructor)) init(void);

@@ -176,6 +176,7 @@ static struct ulogd_plugin ipfix_plugin = {
 
 	.interp 	= &_output_ipfix, 
 	.signal 	= &signal_handler_ipfix,
+	.version	= ULOGD_VERSION,
 };
 
 void __attribute__ ((constructor)) init(void);

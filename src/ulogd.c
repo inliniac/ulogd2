@@ -40,14 +40,10 @@
  * 		- further unification towards generic network event logging
  * 		  and support for lnstat
  *
- * 	17 Apr 2005 Harald Welte <laforge@gnumonks.org>
- * 		- 
- *
  * 	07 Oct 2005 Harald Welte <laforge@gnumonks.org>
  * 		- finally get ulogd2 into a running state
+ *
  */
-
-#define ULOGD_VERSION	"2.00alpha"
 
 #include <unistd.h>
 #include <stdio.h>
@@ -156,6 +152,11 @@ static struct ulogd_plugin *find_plugin(const char *name)
 /* the function called by all plugins for registering themselves */
 void ulogd_register_plugin(struct ulogd_plugin *me)
 {
+	if (strcmp(me->version, ULOGD_VERSION)) { 
+		ulogd_log(ULOGD_NOTICE, "plugin `%s' has incompatible version %s\n",
+			  me->version);
+		return;
+	}
 	if (find_plugin(me->name)) {
 		ulogd_log(ULOGD_NOTICE, "plugin `%s' already registered\n",
 				me->name);
