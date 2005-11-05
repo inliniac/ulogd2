@@ -1,7 +1,6 @@
 - autoconf/automake detection of libulog, mysql, pgsql, sqlite3, pcap
 - add support for capabilities to run as non-root
 - IPv6 support (core and extensions)
-- enable user to specify directory where to look for kernel include files
 - support for static linking
 - issues with ulogd_BASE and partially copied packets (--ulog-cprange)
 - problem wrt. ulogd_BASE and fragments
