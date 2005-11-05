@@ -28,7 +28,6 @@
 #include <netinet/ip.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#include "chtons.h"
 #include <ulogd/ulogd.h>
 
 #ifdef DEBUG_PWSNIFF
@@ -42,27 +41,24 @@
 #define PORT_FTP	21
 
 static u_int16_t pwsniff_ports[] = {
-	__constant_htons(PORT_POP3),
-	__constant_htons(PORT_FTP),
+	PORT_POP3,
+	PORT_FTP,
 	/* feel free to include any other ports here, provided that their
 	 * user/password syntax is the same */
 };
 
-#define PWSNIFF_MAX_PORTS 2
-
-static char *_get_next_blank(char* begp, char *endp)
+static unsigned char *_get_next_blank(unsigned char* begp, unsigned char *endp)
 {
-	char *ptr;
+	unsigned char *ptr;
 
 	for (ptr = begp; ptr < endp; ptr++) {
-		if (*ptr == ' ' || *ptr == '\n' || *ptr == '\r') {
+		if (*ptr == ' ' || *ptr == '\n' || *ptr == '\r')
 			return ptr-1;	
-		}
 	}
 	return NULL;
 }
 
-static int interp_pwsniff(ulogd_pluginstance *pi);
+static int interp_pwsniff(struct ulogd_pluginstance *pi)
 {
 	struct ulogd_key *inp = pi->input;
 	struct ulogd_key *ret = pi->output;
@@ -79,7 +75,7 @@ static int interp_pwsniff(ulogd_pluginstance *pi);
 	iph = (struct iphdr *) pi->input[0].u.value.ptr;
 	protoh = (u_int32_t *)iph + iph->ihl;
 	tcph = protoh;
-	cplen = ntohs(iph->tot_len) - iph->ihl * 4;
+	tcplen = ntohs(iph->tot_len) - iph->ihl * 4;
 
 	len = pw_len = 0;
 	begp = pw_begp = NULL;
@@ -87,9 +83,9 @@ static int interp_pwsniff(ulogd_pluginstance *pi);
 	if (iph->protocol != IPPROTO_TCP)
 		return 0;
 	
-	for (i = 0; i < PWSNIFF_MAX_PORTS; i++)
+	for (i = 0; i < ARRAY_SIZE(pwsniff_ports); i++)
 	{
-		if (tcph->dest == pwsniff_ports[i]) {
+		if (ntohs(tcph->dest) == pwsniff_ports[i]) {
 			cont = 1; 
 			break;
 		}
@@ -104,60 +100,60 @@ static int interp_pwsniff(ulogd_pluginstance *pi);
 	for (ptr = (unsigned char *) tcph + sizeof(struct tcphdr); 
 			ptr < (unsigned char *) tcph + tcplen; ptr++)
 	{
-		if (!strncasecmp(ptr, "USER ", 5)) {
+		if (!strncasecmp((char *)ptr, "USER ", 5)) {
 			begp = ptr+5;
-			endp = _get_next_blank(begp, (char *)tcph + tcplen);
+			endp = _get_next_blank(begp, (unsigned char *)tcph + tcplen);
 			if (endp)
 				len = endp - begp + 1;
 		}
-		if (!strncasecmp(ptr, "PASS ", 5)) {
+		if (!strncasecmp((char *)ptr, "PASS ", 5)) {
 			pw_begp = ptr+5;
 			pw_endp = _get_next_blank(pw_begp, 
-					(char *)tcph + tcplen);
+					(unsigned char *)tcph + tcplen);
 			if (pw_endp)
 				pw_len = pw_endp - pw_begp + 1;
 		}
 	}
 
 	if (len) {
-		ret[0].value.ptr = (char *) malloc(len+1);
+		ret[0].u.value.ptr = (char *) malloc(len+1);
 		ret[0].flags |= ULOGD_RETF_VALID;
-		if (!ret[0].value.ptr) {
+		if (!ret[0].u.value.ptr) {
 			ulogd_log(ULOGD_ERROR, "OOM (size=%u)\n", len);
 			return 0;
 		}
-		strncpy(ret[0].value.ptr, begp, len);
-		*((char *)ret[0].value.ptr + len + 1) = '\0';
+		strncpy((char *) ret[0].u.value.ptr, (char *)begp, len);
+		*((char *)ret[0].u.value.ptr + len + 1) = '\0';
 	}
 	if (pw_len) {
-		ret[1].value.ptr = (char *) malloc(pw_len+1);
+		ret[1].u.value.ptr = (char *) malloc(pw_len+1);
 		ret[1].flags |= ULOGD_RETF_VALID;
-		if (!ret[1].value.ptr){
+		if (!ret[1].u.value.ptr){
 			ulogd_log(ULOGD_ERROR, "OOM (size=%u)\n", pw_len);
 			return 0;
 		}
-		strncpy(ret[1].value.ptr, pw_begp, pw_len);
-		*((char *)ret[1].value.ptr + pw_len + 1) = '\0';
+		strncpy((char *)ret[1].u.value.ptr, (char *)pw_begp, pw_len);
+		*((char *)ret[1].u.value.ptr + pw_len + 1) = '\0';
 
 	}
 	return 0;
 }
 
-static struct ulogd_key pwsniff_inp = {
+static struct ulogd_key pwsniff_inp[] = {
 	{
 		.name 	= "raw.pkt",
 	},
 };
 
-static struct ulogd_key pwsniff_outp = {
+static struct ulogd_key pwsniff_outp[] = {
 	{
 		.name	= "pwsniff.user",
-		.type	= ULOGD_RETF_STRING,
+		.type	= ULOGD_RET_STRING,
 		.flags	= ULOGD_RETF_FREE,
 	},
 	{
 		.name 	= "pwsniff.pass",
-		.type	= ULOGD_RETF_STRING,
+		.type	= ULOGD_RET_STRING,
 		.flags	= ULOGD_RETF_FREE,
 	},
 };
