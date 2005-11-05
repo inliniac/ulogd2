@@ -120,7 +120,7 @@ static struct config_keyset ulogd_kset = {
 		{
 			.key = "stack",
 			.type = CONFIG_TYPE_CALLBACK,
-			.options = CONFIG_OPT_NONE,
+			.options = CONFIG_OPT_MULTI,
 			.u.parser = &create_stack,
 		},
 	},
