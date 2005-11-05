@@ -29,7 +29,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <net/if.h>
-#include <libipulog/libipulog.h>
+#include "libipulog.h"
 
 struct ipulog_handle
 {
