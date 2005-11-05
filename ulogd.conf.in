@@ -1,20 +1,18 @@
 # Example configuration for ulogd
-# $Id: ulogd.conf.in,v 1.2 2003/05/04 10:00:10 laforge Exp $
-#
+# $Id$
+# Adapted to Debian by Achilleas Kotsis <achille@debian.gr>
 
 [global]
 ######################################################################
 # GLOBAL OPTIONS
 ######################################################################
 
-# netlink multicast group (the same as the iptables --ulog-nlgroup param)
-nlgroup=1
 
 # logfile for status messages
 logfile="/var/log/ulogd.log"
 
 # loglevel: debug(1), info(3), notice(5), error(7) or fatal(8)
-loglevel=5
+loglevel=1
 
 # socket receive buffer size (should be at least the size of the
 # in-kernel buffer (ipt_ULOG.o 'nlbufsiz' parameter)
@@ -34,42 +32,28 @@ bufsize=150000
 # 2. options for each plugin in seperate section below
 
 
-#
-# ulogd_BASE.so - interpreter plugin for basic IPv4 header fields
-# 		  you will always need this
-plugin="@libdir@/ulogd_BASE.so"
+plugin="@libdir@/ulogd/ulogd_inppkt_NFLOG.so"
+plugin="@libdir@/ulogd/ulogd_inpflow_NFCT.so"
+plugin="@libdir@/ulogd/ulogd_filter_IFINDEX.so"
+plugin="@libdir@/ulogd/ulogd_output_LOGEMU.so"
+plugin="@libdir@/ulogd/ulogd_output_OPRINT.so"
+plugin="@libdir@/ulogd/ulogd_raw2packet_BASE.so"
 
+# this is a stack for packet-based logging via LOGEMU
+#stack=log1:NFLOG,base1:BASE,ifi1:IFINDEX,emu1:LOGEMU
 
-# output plugins. 
-plugin="@libdir@/ulogd_LOGEMU.so"
-#plugin="@libdir@/ulogd_OPRINT.so"
-#plugin="@libdir@/ulogd_MYSQL.so"
-#plugin="@libdir@/ulogd_PGSQL.so"
-#plugin="@libdir@/ulogd_PCAP.so"
+# this is a stack for flow-based logging via OPRINT
+#stack=ct1:NFCT,op1:OPRINT
 
+[log1]
+# netlink multicast group (the same as the iptables --ulog-nlgroup param)
+nlgroup=1
 
-[LOGEMU]
-file="/var/log/ulogd.syslogemu"
+[emu1]
+file="/var/log/ulogd_syslogemu.log"
 sync=1
 
-[OPRINT]
-file="/var/log/ulogd.pktlog"
-
-[MYSQL]
-table="ulog"
-pass="changeme"
-user="laforge"
-db="ulogd"
-host="localhost"
-
-[PGSQL]
-table="ulog"
-pass="changeme"
-user="postgres"
-db="ulogd"
-host="localhost"
-
-[PCAP]
-file="/var/log/ulogd.pcap"
+[op1]
+file="/var/log/ulogd_oprint.log"
 sync=1
 
