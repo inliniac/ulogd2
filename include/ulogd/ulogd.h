@@ -71,12 +71,12 @@
 
 /* ulogd data type */
 enum ulogd_dtype {
-	ULOGD_DTYPE_NULL,
-	ULOGD_DTYPE_SOURCE,	/* source of data, no input keys */
-	ULOGD_DTYPE_RAW,	/* raw packet data */
-	ULOGD_DTYPE_PACKET,	/* packet metadata */
-	ULOGD_DTYPE_FLOW,	/* flow metadata */
-	ULOGD_DTYPE_SINK,	/* sink of data, no output keys */
+	ULOGD_DTYPE_NULL	= 0x0000,
+	ULOGD_DTYPE_SOURCE	= 0x0001, /* source of data, no input keys */
+	ULOGD_DTYPE_RAW,	= 0x0002, /* raw packet data */
+	ULOGD_DTYPE_PACKET	= 0x0004, /* packet metadata */
+	ULOGD_DTYPE_FLOW	= 0x0008, /* flow metadata */
+	ULOGD_DTYPE_SINK	= 0x0010, /* sink of data, no output keys */
 };
 
 /* structure describing an input  / output parameter of a plugin */
@@ -129,16 +129,16 @@ struct ulogd_plugin {
 		struct ulogd_key *keys;
 		/* number of input keys */
 		unsigned int num_keys;
-		/* type */
-		enum ulogd_dtype type;
+		/* bitmask of possible types */
+		unsigned int type;
 	} input;
 	struct {
 		/* possible input keys of this interpreter */
 		struct ulogd_key *keys;
 		/* number of keys this interpreter has */
 		unsigned int num_keys;
-		/* type */
-		enum ulogd_dtype type;
+		/* bitmask of possible types */
+		unsigned int type;
 	} output;
 
 	/* function to call for each packet */

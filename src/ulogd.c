@@ -415,7 +415,7 @@ create_stack_resolve_keys(struct ulogd_pluginstance_stack *stack)
 
 		if (i == 1) {
 			/* first round: output plugin */
-			if (pi_cur->plugin->output.type != ULOGD_DTYPE_SINK) {
+			if (!(pi_cur->plugin->output.type & ULOGD_DTYPE_SINK)) {
 				ulogd_log(ULOGD_ERROR, "last plugin in stack "
 					  "has to be output plugin\n");
 				return -EINVAL;
@@ -425,7 +425,8 @@ create_stack_resolve_keys(struct ulogd_pluginstance_stack *stack)
 
 		if (&pi_prev->list == &stack->list) {
 			/* this is the last one in the stack */
-			if (pi_cur->plugin->input.type != ULOGD_DTYPE_SOURCE) {
+			if (!(pi_cur->plugin->input.type 
+						& ULOGD_DTYPE_SOURCE)) {
 				ulogd_log(ULOGD_ERROR, "first plugin in stack "
 					  "has to be source plugin\n");
 				return -EINVAL;
@@ -435,8 +436,8 @@ create_stack_resolve_keys(struct ulogd_pluginstance_stack *stack)
 			int j;
 
 			/* not the last one in the stack */
-			if (pi_cur->plugin->input.type != 
-					pi_prev->plugin->output.type) {
+			if (!(pi_cur->plugin->input.type &
+					pi_prev->plugin->output.type)) {
 				ulogd_log(ULOGD_ERROR, "type mismatch between "
 					  "%s and %s in stack\n",
 					  pi_cur->plugin->name,
