@@ -60,8 +60,8 @@ static unsigned char *_get_next_blank(unsigned char* begp, unsigned char *endp)
 
 static int interp_pwsniff(struct ulogd_pluginstance *pi)
 {
-	struct ulogd_key *inp = pi->input;
-	struct ulogd_key *ret = pi->output;
+	struct ulogd_key *inp = pi->input.keys;
+	struct ulogd_key *ret = pi->output.keys;
 	struct iphdr *iph;
 	void *protoh;
 	struct tcphdr *tcph;	
@@ -69,10 +69,10 @@ static int interp_pwsniff(struct ulogd_pluginstance *pi)
 	unsigned char  *ptr, *begp, *pw_begp, *endp, *pw_endp;
 	int len, pw_len, i, cont = 0;
 
-	if (!IS_VALID(pi->input[0]))
+	if (!IS_VALID(pi->input.keys[0]))
 		return 0;
 	
-	iph = (struct iphdr *) pi->input[0].u.value.ptr;
+	iph = (struct iphdr *) pi->input.keys[0].u.value.ptr;
 	protoh = (u_int32_t *)iph + iph->ihl;
 	tcph = protoh;
 	tcplen = ntohs(iph->tot_len) - iph->ihl * 4;

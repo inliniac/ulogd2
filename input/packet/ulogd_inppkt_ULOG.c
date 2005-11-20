@@ -128,7 +128,7 @@ static int interp_packet(struct ulogd_pluginstance *ip, ulog_packet_msg_t *pkt)
 	unsigned char *p;
 	int i;
 	char *buf, *oldbuf = NULL;
-	struct ulogd_key *ret = ip->output;
+	struct ulogd_key *ret = ip->output.keys;
 
 	if (pkt->mac_len) {
 		buf = (char *) malloc(3 * pkt->mac_len + 1);

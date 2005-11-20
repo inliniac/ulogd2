@@ -54,8 +54,8 @@ static struct ulogd_key ifindex_inp[] = {
 
 static int interp_ifindex(struct ulogd_pluginstance *pi)
 {
-	struct ulogd_key *ret = pi->output;
-	struct ulogd_key *inp = pi->input;
+	struct ulogd_key *ret = pi->output.keys;
+	struct ulogd_key *inp = pi->input.keys;
 
 	ret[0].u.value.ptr = ifindex_2name(inp[0].u.source->u.value.ui32);
 	ret[0].flags |= ULOGD_RETF_VALID;

@@ -186,17 +186,18 @@ static struct ulogd_key output_keys[] = {
 static inline int 
 interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 {
-	struct ulogd_key *ret = upi->output;
+	struct ulogd_key *ret = upi->output.keys;
 
 	struct nfulnl_msg_packet_hdr *ph = nflog_get_msg_packet_hdr(ldata);
 	struct nfulnl_msg_packet_hw *hw = nflog_get_packet_hw(ldata);
 	void *payload;
 	int payload_len = nflog_get_payload(ldata, payload);
 	char *prefix = nflog_get_prefix(ldata);
-	struct nfulnl_msg_packet_timestamp *ts = nflog_get_timestamp(ldata);
+	struct timeval ts;
 	u_int32_t mark = nflog_get_nfmark(ldata);
 	u_int32_t indev = nflog_get_indev(ldata);
 	u_int32_t outdev = nflog_get_outdev(ldata);
+	
 
 	if (ph) {
 		/* FIXME */
@@ -231,11 +232,11 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 
 	/* god knows why timestamp_usec contains crap if timestamp_sec
 	 * == 0 if (pkt->timestamp_sec || pkt->timestamp_usec) { */
-	if (ts && ts->sec) {
+	if (nflog_get_timestamp(ldata, &ts) == 0 && ts.tv_sec) {
 		/* FIXME: convert endianness */
-		ret[5].u.value.ui32 = ts->sec & 0xffffffff;
+		ret[5].u.value.ui32 = ts.tv_sec & 0xffffffff;
 		ret[5].flags |= ULOGD_RETF_VALID;
-		ret[6].u.value.ui32 = ts->usec & 0xffffffff;
+		ret[6].u.value.ui32 = ts.tv_usec & 0xffffffff;
 		ret[6].flags |= ULOGD_RETF_VALID;
 	}
 
@@ -273,7 +274,7 @@ static int nful_read_cb(int fd, unsigned int what, void *param)
 	if (len < 0)
 		return len;
 
-	nflog_handle_packet(ui->nful_h, ui->nfulog_buf, len);
+	nflog_handle_packet(ui->nful_h, (char *)ui->nfulog_buf, len);
 
 	return 0;
 }

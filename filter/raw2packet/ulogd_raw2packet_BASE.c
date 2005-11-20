@@ -339,8 +339,9 @@ static struct ulogd_key iphdr_rets[] = {
 
 static int _interp_tcp(struct ulogd_pluginstance *pi)
 {
-	struct ulogd_key *ret = &pi->output[10];
-	struct iphdr *iph = (struct iphdr *) pi->input[0].u.source->u.value.ptr;
+	struct ulogd_key *ret = &pi->output.keys[10];
+	struct iphdr *iph = (struct iphdr *)
+				pi->input.keys[0].u.source->u.value.ptr;
 	void *protoh = (u_int32_t *)iph + iph->ihl;
 	struct tcphdr *tcph = (struct tcphdr *) protoh;
 
@@ -395,8 +396,9 @@ static int _interp_tcp(struct ulogd_pluginstance *pi)
 static int _interp_udp(struct ulogd_pluginstance *pi)
 		
 {
-	struct ulogd_key *ret = &pi->output[27];
-	struct iphdr *iph = (struct iphdr *) pi->input[0].u.source->u.value.ptr;
+	struct ulogd_key *ret = &pi->output.keys[27];
+	struct iphdr *iph = (struct iphdr *) 
+				pi->input.keys[0].u.source->u.value.ptr;
 	void *protoh = (u_int32_t *)iph + iph->ihl;
 	struct udphdr *udph = protoh;
 
@@ -421,8 +423,9 @@ static int _interp_udp(struct ulogd_pluginstance *pi)
 
 static int _interp_icmp(struct ulogd_pluginstance *pi)
 {
-	struct ulogd_key *ret = &pi->output[31];
-	struct iphdr *iph = (struct iphdr *) pi->input[0].u.source->u.value.ptr;
+	struct ulogd_key *ret = &pi->output.keys[31];
+	struct iphdr *iph = (struct iphdr *) 
+				pi->input.keys[0].u.source->u.value.ptr;
 	void *protoh = (u_int32_t *)iph + iph->ihl;
 	struct icmphdr *icmph = protoh;
 
@@ -466,8 +469,9 @@ static int _interp_icmp(struct ulogd_pluginstance *pi)
 
 static int _interp_ahesp(struct ulogd_pluginstance *pi)
 {
-	struct ulogd_key *ret = &pi->output[38];
-	struct iphdr *iph = (struct iphdr *) pi->input[0].u.source->u.value.ptr;
+	struct ulogd_key *ret = &pi->output.keys[38];
+	struct iphdr *iph = (struct iphdr *) 
+				pi->input.keys[0].u.source->u.value.ptr;
 	void *protoh = (u_int32_t *)iph + iph->ihl;
 
 #if 0
@@ -480,13 +484,14 @@ static int _interp_ahesp(struct ulogd_pluginstance *pi)
 	ret[0].flags |= ULOGD_RETF_VALID;
 #endif
 
-	return ret;
+	return 0;
 }
 
 static int _interp_iphdr(struct ulogd_pluginstance *pi)
 {
-	struct ulogd_key *ret = pi->output;
-	struct iphdr *iph = (struct iphdr *) pi->input[0].u.source->u.value.ptr;
+	struct ulogd_key *ret = pi->output.keys;
+	struct iphdr *iph = (struct iphdr *) 
+				pi->input.keys[0].u.source->u.value.ptr;
 
 	ret[0].u.value.ui32 = ntohl(iph->saddr);
 	ret[0].flags |= ULOGD_RETF_VALID;

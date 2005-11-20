@@ -66,7 +66,7 @@ struct syslog_instance {
 static int _output_syslog(struct ulogd_pluginstance *upi)
 {
 	struct syslog_instance *li = (struct syslog_instance *) &upi->private;
-	struct ulogd_key *res = upi->input;
+	struct ulogd_key *res = upi->input.keys;
 	static char buf[4096];
 	
 	printpkt_print(res, buf, 0);

@@ -116,7 +116,7 @@ static int propagate_ct_flow(struct ulogd_pluginstance *upi,
 			     unsigned int flags,
 			     int dir)
 {
-	struct ulogd_key *ret = upi->output;
+	struct ulogd_key *ret = upi->output.keys;
 
 	ret[0].u.value.ui32 = htonl(ct->tuple[dir].src.v4);
 	ret[0].flags |= ULOGD_RETF_VALID;

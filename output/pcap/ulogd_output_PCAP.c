@@ -132,7 +132,7 @@ static struct ulogd_key pcap_keys[INTR_IDS] = {
 static int interp_pcap(struct ulogd_pluginstance *upi)
 {
 	struct pcap_instance *pi = (struct pcap_instance *) &upi->private;
-	struct ulogd_key *res = upi->input;
+	struct ulogd_key *res = upi->input.keys;
 	struct pcap_sf_pkthdr pchdr;
 
 	pchdr.caplen = GET_VALUE(res, 1).ui32;
@@ -208,7 +208,7 @@ static int append_create_outfile(struct ulogd_pluginstance *upi)
 				  strerror(errno));
 			return -EPERM;
 		}
-		if (!write_pcap_header(upi)) {
+		if (!write_pcap_header(pi)) {
 			ulogd_log(ULOGD_ERROR, "can't write pcap header: %s\n",
 				  strerror(errno));
 			return -ENOSPC;

@@ -55,7 +55,7 @@ static int oprint_interp(struct ulogd_pluginstance *upi)
 	
 	fprintf(opi->of, "===>PACKET BOUNDARY\n");
 	for (i = 0; i < upi->plugin->input.num_keys; i++) {
-		struct ulogd_key *ret = upi->input[i].u.source;
+		struct ulogd_key *ret = upi->input.keys[i].u.source;
 
 		if (!IS_VALID(*ret))
 			continue;
@@ -152,8 +152,8 @@ static int oprint_configure(struct ulogd_pluginstance *upi,
 	}
 
 	ulogd_log(ULOGD_DEBUG, "allocating %u input keys\n", num_keys);
-	upi->input = malloc(sizeof(struct ulogd_key) * num_keys);
-	if (!upi->input)
+	upi->input.keys = malloc(sizeof(struct ulogd_key) * num_keys);
+	if (!upi->input.keys)
 		return -ENOMEM;
 
 	/* second pass: copy key names */
@@ -162,13 +162,13 @@ static int oprint_configure(struct ulogd_pluginstance *upi,
 		int i;
 
 		for (i = 0; i < pi_cur->plugin->output.num_keys; i++)
-			upi->input[index++] = pi_cur->output[i];
+			upi->input.keys[index++] = pi_cur->output.keys[i];
 	}
 
 	config_parse_file(upi->id, upi->config_kset);
 
-	/* FIXME: the count needs to be per-instance */
-	upi->plugin->input.num_keys = num_keys;
+	/* the count needs to be per-instance */
+	upi->input.num_keys = num_keys;
 
 	return 0;
 }

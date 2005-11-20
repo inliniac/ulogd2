@@ -73,7 +73,7 @@
 enum ulogd_dtype {
 	ULOGD_DTYPE_NULL	= 0x0000,
 	ULOGD_DTYPE_SOURCE	= 0x0001, /* source of data, no input keys */
-	ULOGD_DTYPE_RAW,	= 0x0002, /* raw packet data */
+	ULOGD_DTYPE_RAW		= 0x0002, /* raw packet data */
 	ULOGD_DTYPE_PACKET	= 0x0004, /* packet metadata */
 	ULOGD_DTYPE_FLOW	= 0x0008, /* flow metadata */
 	ULOGD_DTYPE_SINK	= 0x0010, /* sink of data, no output keys */
@@ -113,6 +113,15 @@ struct ulogd_key {
 	} u;
 };
 
+struct ulogd_keyset {
+	/* possible input keys of this interpreter */
+	struct ulogd_key *keys;
+	/* number of input keys */
+	unsigned int num_keys;
+	/* bitmask of possible types */
+	unsigned int type;
+};
+
 struct ulogd_pluginstance_stack;
 struct ulogd_pluginstance;
 struct ulogd_plugin {
@@ -121,25 +130,12 @@ struct ulogd_plugin {
 	/* version */
 	char *version;
 	/* name of this plugin (predefined by plugin) */
-	char name[ULOGD_MAX_KEYLEN];
+	char name[ULOGD_MAX_KEYLEN+1];
 	/* ID for this plugin (dynamically assigned) */
 	unsigned int id;
-	struct {
-		/* possible input keys of this interpreter */
-		struct ulogd_key *keys;
-		/* number of input keys */
-		unsigned int num_keys;
-		/* bitmask of possible types */
-		unsigned int type;
-	} input;
-	struct {
-		/* possible input keys of this interpreter */
-		struct ulogd_key *keys;
-		/* number of keys this interpreter has */
-		unsigned int num_keys;
-		/* bitmask of possible types */
-		unsigned int type;
-	} output;
+
+	struct ulogd_keyset input;
+	struct ulogd_keyset output;
 
 	/* function to call for each packet */
 	int (*interp)(struct ulogd_pluginstance *instance);
@@ -175,11 +171,11 @@ struct ulogd_pluginstance {
 	/* stack that we're part of */
 	struct ulogd_pluginstance_stack *stack;
 	/* name / id  of this instance*/
-	char id[ULOGD_MAX_KEYLEN];
+	char id[ULOGD_MAX_KEYLEN+1];
 	/* per-instance input keys */
-	struct ulogd_key *input;
+	struct ulogd_keyset input;
 	/* per-instance output keys */
-	struct ulogd_key *output;
+	struct ulogd_keyset output;
 	/* per-instance config parameters (array) */
 	struct config_keyset *config_kset;
 	/* private data */

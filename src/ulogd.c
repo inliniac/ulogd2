@@ -207,7 +207,7 @@ void __ulogd_log(int level, char *file, int line, const char *format, ...)
 	if (level < loglevel_ce.u.value)
 		return;
 
-	if (logfile == &syslog_dummy) {
+	if (logfile == syslog_dummy) {
 		/* FIXME: this omits the 'file' string */
 		va_start(ap, format);
 		vsyslog(ulogd2syslog_level(level), format, ap);
@@ -328,16 +328,18 @@ pluginstance_alloc_init(struct ulogd_plugin *pl, char *pi_id,
 
 	/* copy input keys */
 	if (pl->input.num_keys) {
-		pi->input = ptr;
-		memcpy(pi->input, pl->input.keys, 
+		pi->input.num_keys = pl->input.num_keys;
+		pi->input.keys = ptr;
+		memcpy(pi->input.keys, pl->input.keys, 
 		       pl->input.num_keys * sizeof(struct ulogd_key));
 		ptr += pl->input.num_keys * sizeof(struct ulogd_key);
 	}
 	
 	/* copy input keys */
 	if (pl->output.num_keys) {
-		pi->output = ptr;
-		memcpy(pi->output, pl->output.keys, 
+		pi->output.num_keys = pl->output.num_keys;
+		pi->output.keys = ptr;
+		memcpy(pi->output.keys, pl->output.keys, 
 		       pl->output.num_keys * sizeof(struct ulogd_key));
 	}
 
@@ -370,8 +372,8 @@ find_okey_in_stack(char *name,
 		if ((void *)&pi->list == &stack->list)
 			return NULL;
 
-		for (i = 0; i < pi->plugin->output.num_keys; i++) {
-			struct ulogd_key *okey = &pi->output[i];
+		for (i = 0; i < pi->output.num_keys; i++) {
+			struct ulogd_key *okey = &pi->output.keys[i];
 			if (!strcmp(name, okey->name)) {
 				ulogd_log(ULOGD_DEBUG, "%s(%s)\n",
 					  pi->id, pi->plugin->name);
@@ -444,9 +446,9 @@ create_stack_resolve_keys(struct ulogd_pluginstance_stack *stack)
 					  pi_prev->plugin->name);
 			}
 	
-			for (j = 0; j < pi_cur->plugin->input.num_keys; j++) {
+			for (j = 0; j < pi_cur->input.num_keys; j++) {
 				struct ulogd_key *okey;
-				struct ulogd_key *ikey = &pi_cur->input[j];
+				struct ulogd_key *ikey = &pi_cur->input.keys[j];
 
 				/* skip those marked as 'inactive' by
 				 * pl->configure() */
@@ -706,7 +708,7 @@ static void signal_handler(int signal)
 	deliver_signal_pluginstances(signal);
 
 	/* reopen logfile */
-	if (logfile != stdout && logfile != &syslog_dummy) {
+	if (logfile != stdout && logfile != syslog_dummy) {
 		fclose(logfile);
 		logfile = fopen(logfile_ce.u.string, "a");
 		if (!logfile)
@@ -842,7 +844,7 @@ int main(int argc, char* argv[])
 		if (fork()) {
 			exit(0);
 		}
-		if (logfile != stdout && logfile != &syslog_dummy)
+		if (logfile != stdout && logfile != syslog_dummy)
 			fclose(stdout);
 		fclose(stderr);
 		fclose(stdin);
