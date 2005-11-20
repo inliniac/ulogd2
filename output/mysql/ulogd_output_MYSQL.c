@@ -41,6 +41,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <time.h>
 #include <arpa/inet.h>
 
@@ -48,6 +49,8 @@
 #include <ulogd/conffile.h>
 
 #include <mysql/mysql.h>
+
+#define DEBUG_MYSQL
 
 #ifdef DEBUG_MYSQL
 #define DEBUGP(x, args...)	fprintf(stderr, x, ## args)
@@ -69,9 +72,9 @@ struct mysql_instance {
 	char *stmt_ins;
 
 	/* Attempt to reconnect if connection is lost */
-	time_t reconnect = 0;
-	#define TIME_ERR		((time_t)-1)	/* Be paranoid */
+	time_t reconnect;
 };
+#define TIME_ERR		((time_t)-1)	/* Be paranoid */
 
 /* our configuration directives */
 static struct config_keyset mysql_kset = {
@@ -135,101 +138,101 @@ static struct ulogd_plugin mysql_plugin;
 // FIXME static int _mysql_init_db(ulog_iret_t *result);
 
 /* our main output function, called by ulogd */
-static int mysql_output(struct ulogd_pluginstance *upi)
+static int interp_mysql(struct ulogd_pluginstance *upi)
 {
 	struct mysql_instance *mi = (struct mysql_instance *) &upi->private;
-	struct _field *f;
 	struct ulogd_key *res;
 	char *tmpstr;		/* need this for --log-ip-as-string */
 	struct in_addr addr;
+	int i;
 
-	stmt_ins = stmt_val;
+	mi->stmt_ins = mi->stmt_val;
 
 	for (i = 0; i < upi->input.num; i++) { 
-		res = upi->input[i].source;
+		res = upi->input[i].u.source;
 
 		if (!res)
-			ulogd_log(ULOGD_NOTICE,
-				"no result for %s ?!?\n", f->name);
+			ulogd_log(ULOGD_NOTICE, "no result for %s ?!?\n",
+				  upi->input[i].name);
 			
 		if (!res || !IS_VALID(res)) {
 			/* no result, we have to fake something */
-			sprintf(stmt_ins, "NULL,");
-			stmt_ins = stmt + strlen(stmt);
+			sprintf(mi->stmt_ins, "NULL,");
+			mi->stmt_ins = mi->stmt + strlen(mi->stmt);
 			continue;
 		}
 		
 		switch (res->type) {
-			case ULOGD_RET_INT8:
-				sprintf(stmt_ins, "%d,", res->value.i8);
-				break;
-			case ULOGD_RET_INT16:
-				sprintf(stmt_ins, "%d,", res->value.i16);
-				break;
-			case ULOGD_RET_INT32:
-				sprintf(stmt_ins, "%d,", res->value.i32);
-				break;
-			case ULOGD_RET_INT64:
-				sprintf(stmt_ins, "%lld,", res->value.i64);
-				break;
-			case ULOGD_RET_UINT8:
-				sprintf(stmt_ins, "%u,", res->value.ui8);
-				break;
-			case ULOGD_RET_UINT16:
-				sprintf(stmt_ins, "%u,", res->value.ui16);
-				break;
-			case ULOGD_RET_IPADDR:
-				if (asstring_ce(upi).u.value) {
-					memset(&addr, 0, sizeof(addr));
-					addr.s_addr = ntohl(res->value.ui32);
-					*stmt_ins++ = '\'';
-					tmpstr = inet_ntoa(addr);
-#ifdef OLD_MYSQL
-					mysql_escape_string(stmt_ins, tmpstr,
-							    strlen(tmpstr));
+		case ULOGD_RET_INT8:
+			sprintf(mi->stmt_ins, "%d,", res->u.value.i8);
+			break;
+		case ULOGD_RET_INT16:
+			sprintf(mi->stmt_ins, "%d,", res->u.value.i16);
+			break;
+		case ULOGD_RET_INT32:
+			sprintf(mi->stmt_ins, "%d,", res->u.value.i32);
+			break;
+		case ULOGD_RET_INT64:
+			sprintf(mi->stmt_ins, "%lld,", res->u.value.i64);
+			break;
+		case ULOGD_RET_UINT8:
+			sprintf(mi->stmt_ins, "%u,", res->u.value.ui8);
+			break;
+		case ULOGD_RET_UINT16:
+			sprintf(mi->stmt_ins, "%u,", res->u.value.ui16);
+			break;
+		case ULOGD_RET_IPADDR:
+			if (asstring_ce(upi->config_kset).u.value) {
+				memset(&addr, 0, sizeof(addr));
+				addr.s_addr = ntohl(res->u.value.ui32);
+				*(mi->stmt_ins++) = '\'';
+				tmpstr = inet_ntoa(addr);
+#ifdef LD_MYSQL
+				mysql_escape_string(mi->stmt_ins, tmpstr,
+						    strlen(tmpstr));
 #else
-					mysql_real_escape_string(dbh, stmt_ins,
-								 tmpstr,
-							 	strlen(tmpstr));
+				mysql_real_escape_string(mi->dbh, mi->stmt_ins,
+							 tmpstr,
+						 	strlen(tmpstr));
 #endif /* OLD_MYSQL */
-                	                stmt_ins = stmt + strlen(stmt);
-					sprintf(stmt_ins, "',");
-					break;
-				}
-				/* fallthrough when logging IP as u_int32_t */
-			case ULOGD_RET_UINT32:
-				sprintf(stmt_ins, "%u,", res->value.ui32);
+                                mi->stmt_ins = mi->stmt + strlen(mi->stmt);
+				sprintf(mi->stmt_ins, "',");
 				break;
-			case ULOGD_RET_UINT64:
-				sprintf(stmt_ins, "%llu,", res->value.ui64);
-				break;
-			case ULOGD_RET_BOOL:
-				sprintf(stmt_ins, "'%d',", res->value.b);
-				break;
-			case ULOGD_RET_STRING:
-				*stmt_ins++ = '\'';
+			}
+			/* fallthrough when logging IP as u_int32_t */
+		case ULOGD_RET_UINT32:
+			sprintf(mi->stmt_ins, "%u,", res->u.value.ui32);
+			break;
+		case ULOGD_RET_UINT64:
+			sprintf(mi->stmt_ins, "%llu,", res->u.value.ui64);
+			break;
+		case ULOGD_RET_BOOL:
+			sprintf(mi->stmt_ins, "'%d',", res->u.value.b);
+			break;
+		case ULOGD_RET_STRING:
+			*(mi->stmt_ins++) = '\'';
 #ifdef OLD_MYSQL
-				mysql_escape_string(stmt_ins, res->value.ptr,
-					strlen(res->value.ptr));
+			mysql_escape_string(mi->stmt_ins, res->u.value.ptr,
+				strlen(res->u.value.ptr));
 #else
-				mysql_real_escape_string(dbh, stmt_ins,
-					res->value.ptr, strlen(res->value.ptr));
+			mysql_real_escape_string(mi->dbh, mi->stmt_ins,
+				res->u.value.ptr, strlen(res->u.value.ptr));
 #endif
-				stmt_ins = stmt + strlen(stmt);
-				sprintf(stmt_ins, "',");
-				break;
-			case ULOGD_RET_RAW:
-				ulogd_log(ULOGD_NOTICE,
-					"%s: type RAW not supported by MySQL\n",
-					res->key);
-				break;
-			default:
-				ulogd_log(ULOGD_NOTICE,
-					"unknown type %d for %s\n",
-					res->type, res->key);
-				break;
+			mi->stmt_ins = mi->stmt + strlen(mi->stmt);
+			sprintf(mi->stmt_ins, "',");
+			break;
+		case ULOGD_RET_RAW:
+			ulogd_log(ULOGD_NOTICE,
+				"%s: type RAW not supported by MySQL\n",
+				upi->input[i].name);
+			break;
+		default:
+			ulogd_log(ULOGD_NOTICE,
+				"unknown type %d for %s\n",
+				res->type, upi->input[i].name);
+			break;
 		}
-		mi->stmt_ins = mi->stmt + strlen(mi->stmt);
+	mi->stmt_ins = mi->stmt + strlen(mi->stmt);
 	}
 	*(mi->stmt_ins - 1) = ')';
 	DEBUGP("stmt=#%s#\n", mi->stmt);
@@ -263,6 +266,7 @@ static int mysql_createstmt(struct ulogd_pluginstance *upi)
 	unsigned int size;
 	char buf[ULOGD_MAX_KEYLEN];
 	char *underscore;
+	int i;
 
 	if (mi->stmt)
 		free(mi->stmt);
@@ -285,7 +289,8 @@ static int mysql_createstmt(struct ulogd_pluginstance *upi)
 		return -ENOMEM;
 	}
 
-	sprintf(mi->stmt, "insert into %s (", table_ce(upi).u.string);
+	sprintf(mi->stmt, "insert into %s (",
+		table_ce(upi->config_kset).u.string);
 	mi->stmt_val = mi->stmt + strlen(mi->stmt);
 
 	for (i = 0; i < upi->input.num_keys; i++) {
@@ -295,7 +300,7 @@ static int mysql_createstmt(struct ulogd_pluginstance *upi)
 		sprintf(mi->stmt_val, "%s,", buf);
 		mi->stmt_val = mi->stmt + strlen(mi->stmt);
 	}
-	*(stmt_val - 1) = ')';
+	*(mi->stmt_val - 1) = ')';
 
 	sprintf(mi->stmt_val, " values (");
 	mi->stmt_val = mi->stmt + strlen(mi->stmt);
@@ -306,7 +311,7 @@ static int mysql_createstmt(struct ulogd_pluginstance *upi)
 }
 
 /* find out which columns the table has */
-static int mysql_get_columns(struct ulogd_pluginstance *upi, const char *table)
+static int mysql_get_columns(struct ulogd_pluginstance *upi)
 {
 	struct mysql_instance *mi = (struct mysql_instance *) upi->private;
 	MYSQL_RES *result;
@@ -317,15 +322,16 @@ static int mysql_get_columns(struct ulogd_pluginstance *upi, const char *table)
 	if (!mi->dbh) 
 		return -1;
 
-	result = mysql_list_fields(mi->dbh, table_ce(upi->config_ces).u.string, NULL);
+	result = mysql_list_fields(mi->dbh, 
+				   table_ce(upi->config_kset).u.string, NULL);
 	if (!result)
 		return -1;
 
-	/* Thea idea here is that we can create a pluginstance specific input key
-	 * array by not specifyling a plugin input key list.  ulogd core will then
-	 * set upi->input to NULL.  Yes, this creates a memory hole in case the core
-	 * just calls ->configure() and then aborts (and thus never free()s the memory
-	 * we allocate here.  FIXME. */
+	/* Thea idea here is that we can create a pluginstance specific input
+	 * key array by not specifyling a plugin input key list.  ulogd core
+	 * will then set upi->input to NULL.  Yes, this creates a memory hole
+	 * in case the core just calls ->configure() and then aborts (and thus
+	 * never free()s the memory we allocate here.  FIXME. */
 
 	/* Cleanup before reconnect */
 	if (upi->input) {
@@ -333,7 +339,8 @@ static int mysql_get_columns(struct ulogd_pluginstance *upi, const char *table)
 		upi->input = NULL;
 	}
 
-	upi->input = malloc(sizeof(struct ulogd_key) * mysql_field_count(mi->dbh));
+	upi->input = malloc(sizeof(struct ulogd_key) * 
+						mysql_field_count(mi->dbh));
 	if (!upi->input)
 		return -ENOMEM;
 
@@ -351,7 +358,7 @@ static int mysql_get_columns(struct ulogd_pluginstance *upi, const char *table)
 		DEBUGP("field '%s' found: ", buf);
 
 		/* add it u list of input keys */
-		strncpy(pi->input[i].name, buf, ULOGD_MAX_KEYLEN);
+		strncpy(upi->input[i].name, buf, ULOGD_MAX_KEYLEN);
 		i++;
 	}
 
@@ -434,6 +441,11 @@ static int _mysql_init_db(struct ulogd_pluginstance *upi)
 }
 #endif
 
+static void signal_mysql(struct ulogd_pluginstance *upi,
+			 int signal)
+{
+}
+
 static int configure_mysql(struct ulogd_pluginstance *upi,
 			   struct ulogd_pluginstance_stack *stack)
 {
@@ -501,14 +513,14 @@ static int stop_mysql(struct ulogd_pluginstance *upi)
 static struct ulogd_plugin mysql_plugin = {
 	.name = "MYSQL",
 	.input = {
-		.keys = ,
-		.num_keys = ,
+		.keys = NULL,
+		.num_keys = 0,
 		.type = ULOGD_DTYPE_PACKET,
 	},
 	.output = {
 		.type = ULOGD_DTYPE_SINK,
 	},
-	.config_kset = mysql_kset,
+	.config_kset = &mysql_kset,
 	.priv_size = sizeof(struct mysql_instance),
 	.configure = &configure_mysql,
 	.start	   = &start_mysql,
