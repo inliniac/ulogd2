@@ -148,14 +148,14 @@ static int interp_mysql(struct ulogd_pluginstance *upi)
 
 	mi->stmt_ins = mi->stmt_val;
 
-	for (i = 0; i < upi->input.num; i++) { 
-		res = upi->input[i].u.source;
+	for (i = 0; i < upi->input.num_keys; i++) { 
+		res = upi->input.keys[i].u.source;
 
 		if (!res)
 			ulogd_log(ULOGD_NOTICE, "no result for %s ?!?\n",
-				  upi->input[i].name);
+				  upi->input.keys[i].name);
 			
-		if (!res || !IS_VALID(res)) {
+		if (!res || !IS_VALID(*res)) {
 			/* no result, we have to fake something */
 			sprintf(mi->stmt_ins, "NULL,");
 			mi->stmt_ins = mi->stmt + strlen(mi->stmt);
@@ -187,7 +187,7 @@ static int interp_mysql(struct ulogd_pluginstance *upi)
 				addr.s_addr = ntohl(res->u.value.ui32);
 				*(mi->stmt_ins++) = '\'';
 				tmpstr = inet_ntoa(addr);
-#ifdef LD_MYSQL
+#ifdef OLD_MYSQL
 				mysql_escape_string(mi->stmt_ins, tmpstr,
 						    strlen(tmpstr));
 #else
@@ -224,12 +224,12 @@ static int interp_mysql(struct ulogd_pluginstance *upi)
 		case ULOGD_RET_RAW:
 			ulogd_log(ULOGD_NOTICE,
 				"%s: type RAW not supported by MySQL\n",
-				upi->input[i].name);
+				upi->input.keys[i].name);
 			break;
 		default:
 			ulogd_log(ULOGD_NOTICE,
 				"unknown type %d for %s\n",
-				res->type, upi->input[i].name);
+				res->type, upi->input.keys[i].name);
 			break;
 		}
 	mi->stmt_ins = mi->stmt + strlen(mi->stmt);
@@ -278,7 +278,7 @@ static int mysql_createstmt(struct ulogd_pluginstance *upi)
 	for (i = 0; i < upi->input.num_keys; i++) {
 		/* we need space for the key and a comma, as well as
 		 * enough space for the values */
-		size += strlen(upi->input[i].name) + 1 + MYSQL_VALSIZE;
+		size += strlen(upi->input.keys[i].name) + 1 + MYSQL_VALSIZE;
 	}	
 
 	ulogd_log(ULOGD_DEBUG, "allocating %u bytes for statement\n", size);
@@ -294,7 +294,7 @@ static int mysql_createstmt(struct ulogd_pluginstance *upi)
 	mi->stmt_val = mi->stmt + strlen(mi->stmt);
 
 	for (i = 0; i < upi->input.num_keys; i++) {
-		strncpy(buf, upi->input[i].name, ULOGD_MAX_KEYLEN);	
+		strncpy(buf, upi->input.keys[i].name, ULOGD_MAX_KEYLEN);	
 		while ((underscore = strchr(buf, '.')))
 			*underscore = '_';
 		sprintf(mi->stmt_val, "%s,", buf);
@@ -334,14 +334,14 @@ static int mysql_get_columns(struct ulogd_pluginstance *upi)
 	 * never free()s the memory we allocate here.  FIXME. */
 
 	/* Cleanup before reconnect */
-	if (upi->input) {
-		free(upi->input);
-		upi->input = NULL;
+	if (upi->input.keys) {
+		free(upi->input.keys);
+		upi->input.keys = NULL;
 	}
 
-	upi->input = malloc(sizeof(struct ulogd_key) * 
+	upi->input.keys = malloc(sizeof(struct ulogd_key) * 
 						mysql_field_count(mi->dbh));
-	if (!upi->input)
+	if (!upi->input.keys)
 		return -ENOMEM;
 
 	i = 0;
@@ -358,7 +358,7 @@ static int mysql_get_columns(struct ulogd_pluginstance *upi)
 		DEBUGP("field '%s' found: ", buf);
 
 		/* add it u list of input keys */
-		strncpy(upi->input[i].name, buf, ULOGD_MAX_KEYLEN);
+		strncpy(upi->input.keys[i].name, buf, ULOGD_MAX_KEYLEN);
 		i++;
 	}
 
@@ -503,9 +503,9 @@ static int stop_mysql(struct ulogd_pluginstance *upi)
 	mysql_close(mi->dbh);
 
 	/* try to free our dynamically allocated input key array */
-	if (upi->input) {
-		free(upi->input);
-		upi->input = 0;
+	if (upi->input.keys) {
+		free(upi->input.keys);
+		upi->input.keys = NULL;
 	}
 	return 0;
 }
