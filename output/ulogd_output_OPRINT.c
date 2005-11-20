@@ -199,7 +199,7 @@ static int oprint_fini(struct ulogd_pluginstance *pi)
 static struct ulogd_plugin oprint_plugin = {
 	.name = "OPRINT", 
 	.input = {
-			.type = ULOGD_DTYPE_PACKET,
+			.type = ULOGD_DTYPE_PACKET | ULOGD_DTYPE_FLOW,
 		},
 	.output = {
 			.type = ULOGD_DTYPE_SINK,

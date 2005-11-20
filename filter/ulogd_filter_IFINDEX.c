@@ -132,12 +132,12 @@ static struct ulogd_plugin ifindex_plugin = {
 	.input = {
 		.keys = ifindex_inp,
 		.num_keys = ARRAY_SIZE(ifindex_inp),
-		.type = ULOGD_DTYPE_PACKET,
+		.type = ULOGD_DTYPE_PACKET | ULOGD_DTYPE_FLOW,
 		},
 	.output = {
 		.keys = ifindex_keys,
 		.num_keys = ARRAY_SIZE(ifindex_keys),
-		.type = ULOGD_DTYPE_PACKET,
+		.type = ULOGD_DTYPE_PACKET | ULOGD_DTYPE_FLOW,
 		},
 	.interp = &interp_ifindex,
 

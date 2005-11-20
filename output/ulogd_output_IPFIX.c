@@ -162,7 +162,7 @@ static struct ulogd_plugin ipfix_plugin = {
 	.input = {
 		.keys = printpkt_keys,
 		.num_keys = ARRAY_SIZE(printpkt_keys),
-		.type = ULOGD_DTYPE_PACKET,
+		.type = ULOGD_DTYPE_PACKET | ULOGD_DTYPE_FLOW, 
 	},
 	.output = {
 		.type = ULOGD_DTYPE_SINK,

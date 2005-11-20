@@ -515,7 +515,7 @@ static struct ulogd_plugin mysql_plugin = {
 	.input = {
 		.keys = NULL,
 		.num_keys = 0,
-		.type = ULOGD_DTYPE_PACKET,
+		.type = ULOGD_DTYPE_PACKET | ULOGD_DTYPE_FLOW, 
 	},
 	.output = {
 		.type = ULOGD_DTYPE_SINK,
