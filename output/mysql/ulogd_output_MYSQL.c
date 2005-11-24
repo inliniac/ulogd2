@@ -337,12 +337,16 @@ static int mysql_get_columns(struct ulogd_pluginstance *upi)
 	if (upi->input.keys) {
 		free(upi->input.keys);
 		upi->input.keys = NULL;
+		upi->input.num_keys = 0;
 	}
 
+	upi->input.num_keys = mysql_field_count(mi->dbh);
 	upi->input.keys = malloc(sizeof(struct ulogd_key) * 
-						mysql_field_count(mi->dbh));
-	if (!upi->input.keys)
+						upi->input.num_keys);
+	if (!upi->input.keys) {
+		upi->input.num_keys = 0;
 		return -ENOMEM;
+	}
 
 	i = 0;
 	while ((field = mysql_fetch_field(result))) {
