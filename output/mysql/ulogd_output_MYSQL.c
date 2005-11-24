@@ -272,9 +272,9 @@ static int mysql_createstmt(struct ulogd_pluginstance *upi)
 		free(mi->stmt);
 
 	/* caclulate the size for the insert statement */
-	size = strlen(MYSQL_INSERTTEMPL) + strlen(table_ce(upi->config_kset).u.string);
+	size = strlen(MYSQL_INSERTTEMPL) + 
+				strlen(table_ce(upi->config_kset).u.string);
 
-	/* FIXME: we don't know the number *Sigh* */
 	for (i = 0; i < upi->input.num_keys; i++) {
 		/* we need space for the key and a comma, as well as
 		 * enough space for the values */
