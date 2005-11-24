@@ -347,6 +347,9 @@ static int mysql_get_columns(struct ulogd_pluginstance *upi)
 		upi->input.num_keys = 0;
 		return -ENOMEM;
 	}
+	
+	memset(upi->input.keys, 0, sizeof(struct ulogd_key) *
+						upi->input.num_keys);
 
 	i = 0;
 	while ((field = mysql_fetch_field(result))) {
