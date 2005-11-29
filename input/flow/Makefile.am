@@ -1,6 +1,6 @@
 
 INCLUDES = $(all_includes) -I$(top_srcdir)/include
-CFLAGS=-fPIC -Wall
+AM_CFLAGS=-fPIC -Wall
 
 pkglib_LTLIBRARIES = ulogd_inpflow_NFCT.la # ulogd_inpflow_IPFIX.la
 

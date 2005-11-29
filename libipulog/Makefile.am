@@ -1,5 +1,5 @@
 
-CFLAGS=-fPIC
+AM_CFLAGS=-fPIC
 
 noinst_LIBRARIES = libipulog.a
 

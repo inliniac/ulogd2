@@ -157,8 +157,7 @@ static int interp_mysql(struct ulogd_pluginstance *upi)
 			
 		if (!res || !IS_VALID(*res)) {
 			/* no result, we have to fake something */
-			sprintf(mi->stmt_ins, "NULL,");
-			mi->stmt_ins = mi->stmt + strlen(mi->stmt);
+			mi->stmt_ins += sprintf(mi->stmt_ins, "NULL,");
 			continue;
 		}
 		
@@ -187,14 +186,14 @@ static int interp_mysql(struct ulogd_pluginstance *upi)
 				addr.s_addr = ntohl(res->u.value.ui32);
 				*(mi->stmt_ins++) = '\'';
 				tmpstr = inet_ntoa(addr);
-#ifdef OLD_MYSQL
+			#ifdef OLD_MYSQL
 				mysql_escape_string(mi->stmt_ins, tmpstr,
 						    strlen(tmpstr));
-#else
+			#else
 				mysql_real_escape_string(mi->dbh, mi->stmt_ins,
 							 tmpstr,
 						 	strlen(tmpstr));
-#endif /* OLD_MYSQL */
+			#endif /* OLD_MYSQL */
                                 mi->stmt_ins = mi->stmt + strlen(mi->stmt);
 				sprintf(mi->stmt_ins, "',");
 				break;
@@ -211,14 +210,18 @@ static int interp_mysql(struct ulogd_pluginstance *upi)
 			break;
 		case ULOGD_RET_STRING:
 			*(mi->stmt_ins++) = '\'';
-#ifdef OLD_MYSQL
-			mysql_escape_string(mi->stmt_ins, res->u.value.ptr,
-				strlen(res->u.value.ptr));
-#else
-			mysql_real_escape_string(mi->dbh, mi->stmt_ins,
-				res->u.value.ptr, strlen(res->u.value.ptr));
-#endif
-			mi->stmt_ins = mi->stmt + strlen(mi->stmt);
+			if (res->u.value.ptr) {
+			#ifdef OLD_MYSQL
+				mi->stmt_ins += mysql_escape_string(mi->stmt_ins, 
+							res->u.value.ptr,
+							strlen(res->u.value.ptr));
+			#else
+				mi->stmt_ins += mysql_real_escape_string(
+							mi->dbh, mi->stmt_ins, 
+							res->u.value.ptr, 
+							strlen(res->u.value.ptr));
+			#endif
+			}
 			sprintf(mi->stmt_ins, "',");
 			break;
 		case ULOGD_RET_RAW:
@@ -334,13 +337,10 @@ static int mysql_get_columns(struct ulogd_pluginstance *upi)
 	 * never free()s the memory we allocate here.  FIXME. */
 
 	/* Cleanup before reconnect */
-	if (upi->input.keys) {
+	if (upi->input.keys)
 		free(upi->input.keys);
-		upi->input.keys = NULL;
-		upi->input.num_keys = 0;
-	}
 
-	upi->input.num_keys = mysql_field_count(mi->dbh);
+	upi->input.num_keys = mysql_num_fields(result);
 	upi->input.keys = malloc(sizeof(struct ulogd_key) * 
 						upi->input.num_keys);
 	if (!upi->input.keys) {
@@ -351,8 +351,7 @@ static int mysql_get_columns(struct ulogd_pluginstance *upi)
 	memset(upi->input.keys, 0, sizeof(struct ulogd_key) *
 						upi->input.num_keys);
 
-	i = 0;
-	while ((field = mysql_fetch_field(result))) {
+	for (i = 0; field = mysql_fetch_field(result); i++) {
 		char buf[ULOGD_MAX_KEYLEN+1];
 		char *underscore;
 		int id;
@@ -366,9 +365,10 @@ static int mysql_get_columns(struct ulogd_pluginstance *upi)
 
 		/* add it u list of input keys */
 		strncpy(upi->input.keys[i].name, buf, ULOGD_MAX_KEYLEN);
-		i++;
 	}
-
+	/* MySQL Auto increment ... ID :) */
+	upi->input.keys[0].flags |= ULOGD_KEYF_INACTIVE;
+	
 	mysql_free_result(result);
 	return 0;
 }
@@ -390,7 +390,7 @@ static int open_db(struct ulogd_pluginstance *upi, char *server,
 
 	if (!mysql_real_connect(mi->dbh, server, user, pass, db, port, NULL, 0))
 		return -1;
-
+		
 	return 0;
 }
 
@@ -472,7 +472,7 @@ static int configure_mysql(struct ulogd_pluginstance *upi,
 		      db_ce(upi->config_kset).u.string);
 	if (ret < 0)
 		return ret;
-	
+
 	/* Third: Determine required input keys for given table */
 	ret = mysql_get_columns(upi);
 	

@@ -191,7 +191,7 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 	struct nfulnl_msg_packet_hdr *ph = nflog_get_msg_packet_hdr(ldata);
 	struct nfulnl_msg_packet_hw *hw = nflog_get_packet_hw(ldata);
 	void *payload;
-	int payload_len = nflog_get_payload(ldata, payload);
+	int payload_len = nflog_get_payload(ldata, &payload);
 	char *prefix = nflog_get_prefix(ldata);
 	struct timeval ts;
 	u_int32_t mark = nflog_get_nfmark(ldata);
