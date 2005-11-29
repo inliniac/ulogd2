@@ -54,9 +54,13 @@ static int oprint_interp(struct ulogd_pluginstance *upi)
 	unsigned int i;
 	
 	fprintf(opi->of, "===>PACKET BOUNDARY\n");
-	for (i = 0; i < upi->plugin->input.num_keys; i++) {
+	for (i = 0; i < upi->input.num_keys; i++) {
 		struct ulogd_key *ret = upi->input.keys[i].u.source;
 
+		if (!ret)
+			ulogd_log(ULOGD_NOTICE, "no result for %s ?!?\n",
+				  upi->input.keys[i].name);
+		
 		if (!IS_VALID(*ret))
 			continue;
 
@@ -84,6 +88,7 @@ static int oprint_interp(struct ulogd_pluginstance *upi)
 			case ULOGD_RET_NONE:
 				fprintf(opi->of, "<none>");
 				break;
+			default: fprintf(opi->of, "default");
 		}
 	}
 	if (upi->config_kset->ces[1].u.value != 0)
