@@ -51,7 +51,7 @@ static struct config_keyset syslog_kset = {
 		},
 		{ 
 		.key = "level", 
-		.type = CONFIG_TYPE_INT,
+		.type = CONFIG_TYPE_STRING,
 		.options = CONFIG_OPT_NONE, 
 		.u = { .string = SYSLOG_LEVEL_DEFAULT }
 		},
@@ -134,7 +134,7 @@ static int syslog_configure(struct ulogd_pluginstance *pi,
 		syslog_level = LOG_DEBUG;
 	else {
 		ulogd_log(ULOGD_FATAL, "unknown level '%s'\n",
-			facility);
+			  level);
 		return -EINVAL;
 	}
 
