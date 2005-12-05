@@ -1,5 +1,5 @@
-#ifndef _LINUX_LIST_H
-#define _LINUX_LIST_H
+#ifndef _LINUX_LLIST_H
+#define _LINUX_LLIST_H
 
 #include <stddef.h>
 
@@ -25,43 +25,43 @@ static inline void prefetch(const void *x) {;}
 /*
  * These are non-NULL pointers that will result in page faults
  * under normal circumstances, used to verify that nobody uses
- * non-initialized list entries.
+ * non-initialized llist entries.
  */
-#define LIST_POISON1  ((void *) 0x00100100)
-#define LIST_POISON2  ((void *) 0x00200200)
+#define LLIST_POISON1  ((void *) 0x00100100)
+#define LLIST_POISON2  ((void *) 0x00200200)
 
 /*
- * Simple doubly linked list implementation.
+ * Simple doubly linked llist implementation.
  *
  * Some of the internal functions ("__xxx") are useful when
- * manipulating whole lists rather than single entries, as
+ * manipulating whole llists rather than single entries, as
  * sometimes we already know the next/prev entries and we can
  * generate better code by using them directly rather than
  * using the generic single-entry routines.
  */
 
-struct list_head {
-	struct list_head *next, *prev;
+struct llist_head {
+	struct llist_head *next, *prev;
 };
 
-#define LIST_HEAD_INIT(name) { &(name), &(name) }
+#define LLIST_HEAD_INIT(name) { &(name), &(name) }
 
-#define LIST_HEAD(name) \
-	struct list_head name = LIST_HEAD_INIT(name)
+#define LLIST_HEAD(name) \
+	struct llist_head name = LLIST_HEAD_INIT(name)
 
-#define INIT_LIST_HEAD(ptr) do { \
+#define INIT_LLIST_HEAD(ptr) do { \
 	(ptr)->next = (ptr); (ptr)->prev = (ptr); \
 } while (0)
 
 /*
  * Insert a new entry between two known consecutive entries. 
  *
- * This is only for internal list manipulation where we know
+ * This is only for internal llist manipulation where we know
  * the prev/next entries already!
  */
-static inline void __list_add(struct list_head *new,
-			      struct list_head *prev,
-			      struct list_head *next)
+static inline void __llist_add(struct llist_head *new,
+			      struct llist_head *prev,
+			      struct llist_head *next)
 {
 	next->prev = new;
 	new->next = next;
@@ -70,105 +70,105 @@ static inline void __list_add(struct list_head *new,
 }
 
 /**
- * list_add - add a new entry
+ * llist_add - add a new entry
  * @new: new entry to be added
- * @head: list head to add it after
+ * @head: llist head to add it after
  *
  * Insert a new entry after the specified head.
  * This is good for implementing stacks.
  */
-static inline void list_add(struct list_head *new, struct list_head *head)
+static inline void llist_add(struct llist_head *new, struct llist_head *head)
 {
-	__list_add(new, head, head->next);
+	__llist_add(new, head, head->next);
 }
 
 /**
- * list_add_tail - add a new entry
+ * llist_add_tail - add a new entry
  * @new: new entry to be added
- * @head: list head to add it before
+ * @head: llist head to add it before
  *
  * Insert a new entry before the specified head.
  * This is useful for implementing queues.
  */
-static inline void list_add_tail(struct list_head *new, struct list_head *head)
+static inline void llist_add_tail(struct llist_head *new, struct llist_head *head)
 {
-	__list_add(new, head->prev, head);
+	__llist_add(new, head->prev, head);
 }
 
 /*
- * Delete a list entry by making the prev/next entries
+ * Delete a llist entry by making the prev/next entries
  * point to each other.
  *
- * This is only for internal list manipulation where we know
+ * This is only for internal llist manipulation where we know
  * the prev/next entries already!
  */
-static inline void __list_del(struct list_head * prev, struct list_head * next)
+static inline void __llist_del(struct llist_head * prev, struct llist_head * next)
 {
 	next->prev = prev;
 	prev->next = next;
 }
 
 /**
- * list_del - deletes entry from list.
- * @entry: the element to delete from the list.
- * Note: list_empty on entry does not return true after this, the entry is
+ * llist_del - deletes entry from llist.
+ * @entry: the element to delete from the llist.
+ * Note: llist_empty on entry does not return true after this, the entry is
  * in an undefined state.
  */
-static inline void list_del(struct list_head *entry)
+static inline void llist_del(struct llist_head *entry)
 {
-	__list_del(entry->prev, entry->next);
-	entry->next = LIST_POISON1;
-	entry->prev = LIST_POISON2;
+	__llist_del(entry->prev, entry->next);
+	entry->next = LLIST_POISON1;
+	entry->prev = LLIST_POISON2;
 }
 
 /**
- * list_del_init - deletes entry from list and reinitialize it.
- * @entry: the element to delete from the list.
+ * llist_del_init - deletes entry from llist and reinitialize it.
+ * @entry: the element to delete from the llist.
  */
-static inline void list_del_init(struct list_head *entry)
+static inline void llist_del_init(struct llist_head *entry)
 {
-	__list_del(entry->prev, entry->next);
-	INIT_LIST_HEAD(entry); 
+	__llist_del(entry->prev, entry->next);
+	INIT_LLIST_HEAD(entry); 
 }
 
 /**
- * list_move - delete from one list and add as another's head
- * @list: the entry to move
+ * llist_move - delete from one llist and add as another's head
+ * @llist: the entry to move
  * @head: the head that will precede our entry
  */
-static inline void list_move(struct list_head *list, struct list_head *head)
+static inline void llist_move(struct llist_head *llist, struct llist_head *head)
 {
-        __list_del(list->prev, list->next);
-        list_add(list, head);
+        __llist_del(llist->prev, llist->next);
+        llist_add(llist, head);
 }
 
 /**
- * list_move_tail - delete from one list and add as another's tail
- * @list: the entry to move
+ * llist_move_tail - delete from one llist and add as another's tail
+ * @llist: the entry to move
  * @head: the head that will follow our entry
  */
-static inline void list_move_tail(struct list_head *list,
-				  struct list_head *head)
+static inline void llist_move_tail(struct llist_head *llist,
+				  struct llist_head *head)
 {
-        __list_del(list->prev, list->next);
-        list_add_tail(list, head);
+        __llist_del(llist->prev, llist->next);
+        llist_add_tail(llist, head);
 }
 
 /**
- * list_empty - tests whether a list is empty
- * @head: the list to test.
+ * llist_empty - tests whether a llist is empty
+ * @head: the llist to test.
  */
-static inline int list_empty(const struct list_head *head)
+static inline int llist_empty(const struct llist_head *head)
 {
 	return head->next == head;
 }
 
-static inline void __list_splice(struct list_head *list,
-				 struct list_head *head)
+static inline void __llist_splice(struct llist_head *llist,
+				 struct llist_head *head)
 {
-	struct list_head *first = list->next;
-	struct list_head *last = list->prev;
-	struct list_head *at = head->next;
+	struct llist_head *first = llist->next;
+	struct llist_head *last = llist->prev;
+	struct llist_head *at = head->next;
 
 	first->prev = head;
 	head->next = first;
@@ -178,181 +178,181 @@ static inline void __list_splice(struct list_head *list,
 }
 
 /**
- * list_splice - join two lists
- * @list: the new list to add.
- * @head: the place to add it in the first list.
+ * llist_splice - join two llists
+ * @llist: the new llist to add.
+ * @head: the place to add it in the first llist.
  */
-static inline void list_splice(struct list_head *list, struct list_head *head)
+static inline void llist_splice(struct llist_head *llist, struct llist_head *head)
 {
-	if (!list_empty(list))
-		__list_splice(list, head);
+	if (!llist_empty(llist))
+		__llist_splice(llist, head);
 }
 
 /**
- * list_splice_init - join two lists and reinitialise the emptied list.
- * @list: the new list to add.
- * @head: the place to add it in the first list.
+ * llist_splice_init - join two llists and reinitialise the emptied llist.
+ * @llist: the new llist to add.
+ * @head: the place to add it in the first llist.
  *
- * The list at @list is reinitialised
+ * The llist at @llist is reinitialised
  */
-static inline void list_splice_init(struct list_head *list,
-				    struct list_head *head)
+static inline void llist_splice_init(struct llist_head *llist,
+				    struct llist_head *head)
 {
-	if (!list_empty(list)) {
-		__list_splice(list, head);
-		INIT_LIST_HEAD(list);
+	if (!llist_empty(llist)) {
+		__llist_splice(llist, head);
+		INIT_LLIST_HEAD(llist);
 	}
 }
 
 /**
- * list_entry - get the struct for this entry
- * @ptr:	the &struct list_head pointer.
+ * llist_entry - get the struct for this entry
+ * @ptr:	the &struct llist_head pointer.
  * @type:	the type of the struct this is embedded in.
- * @member:	the name of the list_struct within the struct.
+ * @member:	the name of the llist_struct within the struct.
  */
-#define list_entry(ptr, type, member) \
+#define llist_entry(ptr, type, member) \
 	container_of(ptr, type, member)
 
 /**
- * list_for_each	-	iterate over a list
- * @pos:	the &struct list_head to use as a loop counter.
- * @head:	the head for your list.
+ * llist_for_each	-	iterate over a llist
+ * @pos:	the &struct llist_head to use as a loop counter.
+ * @head:	the head for your llist.
  */
-#define list_for_each(pos, head) \
+#define llist_for_each(pos, head) \
 	for (pos = (head)->next, prefetch(pos->next); pos != (head); \
         	pos = pos->next, prefetch(pos->next))
 
 /**
- * __list_for_each	-	iterate over a list
- * @pos:	the &struct list_head to use as a loop counter.
- * @head:	the head for your list.
+ * __llist_for_each	-	iterate over a llist
+ * @pos:	the &struct llist_head to use as a loop counter.
+ * @head:	the head for your llist.
  *
- * This variant differs from list_for_each() in that it's the
- * simplest possible list iteration code, no prefetching is done.
- * Use this for code that knows the list to be very short (empty
+ * This variant differs from llist_for_each() in that it's the
+ * simplest possible llist iteration code, no prefetching is done.
+ * Use this for code that knows the llist to be very short (empty
  * or 1 entry) most of the time.
  */
-#define __list_for_each(pos, head) \
+#define __llist_for_each(pos, head) \
 	for (pos = (head)->next; pos != (head); pos = pos->next)
 
 /**
- * list_for_each_prev	-	iterate over a list backwards
- * @pos:	the &struct list_head to use as a loop counter.
- * @head:	the head for your list.
+ * llist_for_each_prev	-	iterate over a llist backwards
+ * @pos:	the &struct llist_head to use as a loop counter.
+ * @head:	the head for your llist.
  */
-#define list_for_each_prev(pos, head) \
+#define llist_for_each_prev(pos, head) \
 	for (pos = (head)->prev, prefetch(pos->prev); pos != (head); \
         	pos = pos->prev, prefetch(pos->prev))
         	
 /**
- * list_for_each_safe	-	iterate over a list safe against removal of list entry
- * @pos:	the &struct list_head to use as a loop counter.
- * @n:		another &struct list_head to use as temporary storage
- * @head:	the head for your list.
+ * llist_for_each_safe	-	iterate over a llist safe against removal of llist entry
+ * @pos:	the &struct llist_head to use as a loop counter.
+ * @n:		another &struct llist_head to use as temporary storage
+ * @head:	the head for your llist.
  */
-#define list_for_each_safe(pos, n, head) \
+#define llist_for_each_safe(pos, n, head) \
 	for (pos = (head)->next, n = pos->next; pos != (head); \
 		pos = n, n = pos->next)
 
 /**
- * list_for_each_entry	-	iterate over list of given type
+ * llist_for_each_entry	-	iterate over llist of given type
  * @pos:	the type * to use as a loop counter.
- * @head:	the head for your list.
- * @member:	the name of the list_struct within the struct.
+ * @head:	the head for your llist.
+ * @member:	the name of the llist_struct within the struct.
  */
-#define list_for_each_entry(pos, head, member)				\
-	for (pos = list_entry((head)->next, typeof(*pos), member),	\
+#define llist_for_each_entry(pos, head, member)				\
+	for (pos = llist_entry((head)->next, typeof(*pos), member),	\
 		     prefetch(pos->member.next);			\
 	     &pos->member != (head); 					\
-	     pos = list_entry(pos->member.next, typeof(*pos), member),	\
+	     pos = llist_entry(pos->member.next, typeof(*pos), member),	\
 		     prefetch(pos->member.next))
 
 /**
- * list_for_each_entry_reverse - iterate backwards over list of given type.
+ * llist_for_each_entry_reverse - iterate backwards over llist of given type.
  * @pos:	the type * to use as a loop counter.
- * @head:	the head for your list.
- * @member:	the name of the list_struct within the struct.
+ * @head:	the head for your llist.
+ * @member:	the name of the llist_struct within the struct.
  */
-#define list_for_each_entry_reverse(pos, head, member)			\
-	for (pos = list_entry((head)->prev, typeof(*pos), member),	\
+#define llist_for_each_entry_reverse(pos, head, member)			\
+	for (pos = llist_entry((head)->prev, typeof(*pos), member),	\
 		     prefetch(pos->member.prev);			\
 	     &pos->member != (head); 					\
-	     pos = list_entry(pos->member.prev, typeof(*pos), member),	\
+	     pos = llist_entry(pos->member.prev, typeof(*pos), member),	\
 		     prefetch(pos->member.prev))
 
 /**
- * list_for_each_entry_continue -	iterate over list of given type
+ * llist_for_each_entry_continue -	iterate over llist of given type
  *			continuing after existing point
  * @pos:	the type * to use as a loop counter.
- * @head:	the head for your list.
- * @member:	the name of the list_struct within the struct.
+ * @head:	the head for your llist.
+ * @member:	the name of the llist_struct within the struct.
  */
-#define list_for_each_entry_continue(pos, head, member) 		\
-	for (pos = list_entry(pos->member.next, typeof(*pos), member),	\
+#define llist_for_each_entry_continue(pos, head, member) 		\
+	for (pos = llist_entry(pos->member.next, typeof(*pos), member),	\
 		     prefetch(pos->member.next);			\
 	     &pos->member != (head);					\
-	     pos = list_entry(pos->member.next, typeof(*pos), member),	\
+	     pos = llist_entry(pos->member.next, typeof(*pos), member),	\
 		     prefetch(pos->member.next))
 
 /**
- * list_for_each_entry_safe - iterate over list of given type safe against removal of list entry
+ * llist_for_each_entry_safe - iterate over llist of given type safe against removal of llist entry
  * @pos:	the type * to use as a loop counter.
  * @n:		another type * to use as temporary storage
- * @head:	the head for your list.
- * @member:	the name of the list_struct within the struct.
+ * @head:	the head for your llist.
+ * @member:	the name of the llist_struct within the struct.
  */
-#define list_for_each_entry_safe(pos, n, head, member)			\
-	for (pos = list_entry((head)->next, typeof(*pos), member),	\
-		n = list_entry(pos->member.next, typeof(*pos), member);	\
+#define llist_for_each_entry_safe(pos, n, head, member)			\
+	for (pos = llist_entry((head)->next, typeof(*pos), member),	\
+		n = llist_entry(pos->member.next, typeof(*pos), member);	\
 	     &pos->member != (head); 					\
-	     pos = n, n = list_entry(n->member.next, typeof(*n), member))
+	     pos = n, n = llist_entry(n->member.next, typeof(*n), member))
 
 /**
- * list_for_each_rcu	-	iterate over an rcu-protected list
- * @pos:	the &struct list_head to use as a loop counter.
- * @head:	the head for your list.
+ * llist_for_each_rcu	-	iterate over an rcu-protected llist
+ * @pos:	the &struct llist_head to use as a loop counter.
+ * @head:	the head for your llist.
  */
-#define list_for_each_rcu(pos, head) \
+#define llist_for_each_rcu(pos, head) \
 	for (pos = (head)->next, prefetch(pos->next); pos != (head); \
         	pos = pos->next, ({ smp_read_barrier_depends(); 0;}), prefetch(pos->next))
         	
-#define __list_for_each_rcu(pos, head) \
+#define __llist_for_each_rcu(pos, head) \
 	for (pos = (head)->next; pos != (head); \
         	pos = pos->next, ({ smp_read_barrier_depends(); 0;}))
         	
 /**
- * list_for_each_safe_rcu	-	iterate over an rcu-protected list safe
- *					against removal of list entry
- * @pos:	the &struct list_head to use as a loop counter.
- * @n:		another &struct list_head to use as temporary storage
- * @head:	the head for your list.
+ * llist_for_each_safe_rcu	-	iterate over an rcu-protected llist safe
+ *					against removal of llist entry
+ * @pos:	the &struct llist_head to use as a loop counter.
+ * @n:		another &struct llist_head to use as temporary storage
+ * @head:	the head for your llist.
  */
-#define list_for_each_safe_rcu(pos, n, head) \
+#define llist_for_each_safe_rcu(pos, n, head) \
 	for (pos = (head)->next, n = pos->next; pos != (head); \
 		pos = n, ({ smp_read_barrier_depends(); 0;}), n = pos->next)
 
 /**
- * list_for_each_entry_rcu	-	iterate over rcu list of given type
+ * llist_for_each_entry_rcu	-	iterate over rcu llist of given type
  * @pos:	the type * to use as a loop counter.
- * @head:	the head for your list.
- * @member:	the name of the list_struct within the struct.
+ * @head:	the head for your llist.
+ * @member:	the name of the llist_struct within the struct.
  */
-#define list_for_each_entry_rcu(pos, head, member)			\
-	for (pos = list_entry((head)->next, typeof(*pos), member),	\
+#define llist_for_each_entry_rcu(pos, head, member)			\
+	for (pos = llist_entry((head)->next, typeof(*pos), member),	\
 		     prefetch(pos->member.next);			\
 	     &pos->member != (head); 					\
-	     pos = list_entry(pos->member.next, typeof(*pos), member),	\
+	     pos = llist_entry(pos->member.next, typeof(*pos), member),	\
 		     ({ smp_read_barrier_depends(); 0;}),		\
 		     prefetch(pos->member.next))
 
 
 /**
- * list_for_each_continue_rcu	-	iterate over an rcu-protected list 
+ * llist_for_each_continue_rcu	-	iterate over an rcu-protected llist 
  *			continuing after existing point.
- * @pos:	the &struct list_head to use as a loop counter.
- * @head:	the head for your list.
+ * @pos:	the &struct llist_head to use as a loop counter.
+ * @head:	the head for your llist.
  */
-#define list_for_each_continue_rcu(pos, head) \
+#define llist_for_each_continue_rcu(pos, head) \
 	for ((pos) = (pos)->next, prefetch((pos)->next); (pos) != (head); \
         	(pos) = (pos)->next, ({ smp_read_barrier_depends(); 0;}), prefetch((pos)->next))
 

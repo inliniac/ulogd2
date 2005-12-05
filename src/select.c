@@ -26,7 +26,7 @@
 #include <ulogd/linuxlist.h>
 
 static int maxfd = 0;
-static LIST_HEAD(ulogd_fds);
+static LLIST_HEAD(ulogd_fds);
 
 int ulogd_register_fd(struct ulogd_fd *fd)
 {
@@ -45,14 +45,14 @@ int ulogd_register_fd(struct ulogd_fd *fd)
 	if (fd->fd > maxfd)
 		maxfd = fd->fd;
 
-	list_add_tail(&fd->list, &ulogd_fds);
+	llist_add_tail(&fd->list, &ulogd_fds);
 
 	return 0;
 }
 
 void ulogd_unregister_fd(struct ulogd_fd *fd)
 {
-	list_del(&fd->list);
+	llist_del(&fd->list);
 }
 
 int ulogd_select_main()
@@ -66,7 +66,7 @@ int ulogd_select_main()
 	FD_ZERO(&exceptset);
 
 	/* prepare read and write fdsets */
-	list_for_each_entry(ufd, &ulogd_fds, list) {
+	llist_for_each_entry(ufd, &ulogd_fds, list) {
 		if (ufd->when & ULOGD_FD_READ)
 			FD_SET(ufd->fd, &readset);
 
@@ -80,7 +80,7 @@ int ulogd_select_main()
 	i = select(maxfd+1, &readset, &writeset, &exceptset, NULL);
 	if (i > 0) {
 		/* call registered callback functions */
-		list_for_each_entry(ufd, &ulogd_fds, list) {
+		llist_for_each_entry(ufd, &ulogd_fds, list) {
 			int flags = 0;
 
 			if (FD_ISSET(ufd->fd, &readset))

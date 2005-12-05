@@ -126,7 +126,7 @@ struct ulogd_pluginstance_stack;
 struct ulogd_pluginstance;
 struct ulogd_plugin {
 	/* global list of plugins */
-	struct list_head list;
+	struct llist_head list;
 	/* version */
 	char *version;
 	/* name of this plugin (predefined by plugin) */
@@ -165,7 +165,7 @@ struct ulogd_plugin {
 /* an instance of a plugin, element in a stack */
 struct ulogd_pluginstance {
 	/* local list of plugins in this stack */
-	struct list_head list;
+	struct llist_head list;
 	/* plugin */
 	struct ulogd_plugin *plugin;
 	/* stack that we're part of */
@@ -184,9 +184,9 @@ struct ulogd_pluginstance {
 
 struct ulogd_pluginstance_stack {
 	/* global list of pluginstance stacks */
-	struct list_head stack_list;
+	struct llist_head stack_list;
 	/* list of plugins in this stack */
-	struct list_head list;
+	struct llist_head list;
 	char *name;
 };
 
@@ -236,7 +236,7 @@ extern struct ulogd_keyh_entry *ulogd_keyh;
 #define ULOGD_FD_EXCEPT	0x0004
 
 struct ulogd_fd {
-	struct list_head list;
+	struct llist_head list;
 	int fd;				/* file descriptor */
 	unsigned int when;
 	int (*cb)(int fd, unsigned int what, void *data);

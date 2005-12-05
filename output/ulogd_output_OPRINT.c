@@ -150,7 +150,7 @@ static int oprint_configure(struct ulogd_pluginstance *upi,
 	 * the inter-key pointers, everything will work as expected. */
 
 	/* first pass: count keys */
-	list_for_each_entry(pi_cur, &stack->list, list) {
+	llist_for_each_entry(pi_cur, &stack->list, list) {
 		ulogd_log(ULOGD_DEBUG, "iterating over pluginstance '%s'\n",
 			  pi_cur->id);
 		num_keys += pi_cur->plugin->output.num_keys;
@@ -162,7 +162,7 @@ static int oprint_configure(struct ulogd_pluginstance *upi,
 		return -ENOMEM;
 
 	/* second pass: copy key names */
-	list_for_each_entry(pi_cur, &stack->list, list) {
+	llist_for_each_entry(pi_cur, &stack->list, list) {
 		struct ulogd_key *cur;
 		int i;
 
