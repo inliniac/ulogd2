@@ -312,22 +312,35 @@ static int start(struct ulogd_pluginstance *upi)
 		goto out_handle;
 
 	if (unbind_ce(upi->config_kset).u.value > 0) {
-		ulogd_log(ULOGD_NOTICE, "forcing unbind of existing log handler for "
-			  "protocol %d\n", af_ce(upi->config_kset).u.value);
-		nflog_unbind_pf(ui->nful_h, af_ce(upi->config_kset).u.value);
+		ulogd_log(ULOGD_NOTICE, "forcing unbind of existing log "
+			  "handler for protocol %d\n", 
+			  af_ce(upi->config_kset).u.value);
+		if (nflog_unbind_pf(ui->nful_h, 
+				    af_ce(upi->config_kset).u.value) < 0) {
+			ulogd_log(ULOGD_ERROR, "unable to force-unbind "
+				  "existing log handler for protocol %d\n",
+			  	  af_ce(upi->config_kset).u.value);
+			goto out_handle;
+		}
 	}
 
 	ulogd_log(ULOGD_DEBUG, "binding to protocol family %d\n",
 		  af_ce(upi->config_kset).u.value);
-	if (nflog_bind_pf(ui->nful_h, af_ce(upi->config_kset).u.value) < 0)
+	if (nflog_bind_pf(ui->nful_h, af_ce(upi->config_kset).u.value) < 0) {
+		ulogd_log(ULOGD_ERROR, "unable to bind to protocol family %d\n",
+			  af_ce(upi->config_kset).u.value);
 		goto out_bind_pf;
+	}
 
 	ulogd_log(ULOGD_DEBUG, "binding to log group %d\n",
 		  group_ce(upi->config_kset).u.value);
 	ui->nful_gh = nflog_bind_group(ui->nful_h,
 				       group_ce(upi->config_kset).u.value);
-	if (!ui->nful_gh)
+	if (!ui->nful_gh) {
+		ulogd_log(ULOGD_ERROR, "unable to bind to log group %d\n",
+			  group_ce(upi->config_kset).u.value);
 		goto out_bind;
+	}
 
 	nflog_set_mode(ui->nful_gh, NFULNL_COPY_PACKET, 0xffff);
 
