@@ -86,24 +86,27 @@
 /* global variables */
 static FILE *logfile = NULL;		/* logfile pointer */
 static char *ulogd_configfile = ULOGD_CONFIGFILE;
-static FILE *syslog_dummy;
+static char *ulogd_logfile = ULOGD_LOGFILE_DEFAULT;
+static FILE syslog_dummy;
 
 /* linked list for all registered plugins */
 static LLIST_HEAD(ulogd_plugins);
 static LLIST_HEAD(ulogd_pi_stacks);
 
 
-static int load_plugin(char *file);
-static int create_stack(char *file);
+static int load_plugin(const char *file);
+static int create_stack(const char *file);
+static int logfile_open(const char *name);
 
 static struct config_keyset ulogd_kset = {
 	.num_ces = 4,
 	.ces = {
 		{
 			.key = "logfile",
-			.type = CONFIG_TYPE_STRING, 
+			.type = CONFIG_TYPE_CALLBACK,
 			.options = CONFIG_OPT_NONE,
 			.u.string = ULOGD_LOGFILE_DEFAULT,
+			.u.parser = &logfile_open,
 		},
 		{
 			.key = "plugin",
@@ -207,7 +210,7 @@ void __ulogd_log(int level, char *file, int line, const char *format, ...)
 	if (level < loglevel_ce.u.value)
 		return;
 
-	if (logfile == syslog_dummy) {
+	if (logfile == &syslog_dummy) {
 		/* FIXME: this omits the 'file' string */
 		va_start(ap, format);
 		vsyslog(ulogd2syslog_level(level), format, ap);
@@ -348,7 +351,7 @@ pluginstance_alloc_init(struct ulogd_plugin *pl, char *pi_id,
 
 
 /* plugin loader to dlopen() a plugins */
-static int load_plugin(char *file)
+static int load_plugin(const char *file)
 {
 	if (!dlopen(file, RTLD_NOW)) {
 		ulogd_log(ULOGD_ERROR, "load_plugin: '%s': %s\n", file,
@@ -505,7 +508,7 @@ static int create_stack_start_instances(struct ulogd_pluginstance_stack *stack)
 }
 
 /* create a new stack of plugins */
-static int create_stack(char *option)
+static int create_stack(const char *option)
 {
 	struct ulogd_pluginstance_stack *stack;
 	char *buf = strdup(option);
@@ -620,10 +623,15 @@ static int ulogd_main_loop(void)
 /* open the logfile */
 static int logfile_open(const char *name)
 {
-	if (!strcmp(name,"stdout")) {
+	if (name)
+		ulogd_logfile = name;
+
+	if (!strcmp(name, "stdout")) {
 		logfile = stdout;
+	} else if (!strcmp(name, "syslog")) {
+		logfile = &syslog_dummy;
 	} else {
-		logfile = fopen(name, "a");
+		logfile = fopen(ulogd_logfile, "a");
 		if (!logfile) {
 			fprintf(stderr, "ERROR: can't open logfile %s: %s\n", 
 				name, strerror(errno));
@@ -671,9 +679,7 @@ static int parse_conffile(const char *section, struct config_keyset *ce)
 			break;
 	}
 	return 1;
-
 }
-
 
 static void deliver_signal_pluginstances(int signal)
 {
@@ -705,15 +711,21 @@ static void signal_handler(int signal)
 {
 	ulogd_log(ULOGD_NOTICE, "signal received, calling pluginstances\n");
 	
-	deliver_signal_pluginstances(signal);
-
-	/* reopen logfile */
-	if (logfile != stdout && logfile != syslog_dummy) {
-		fclose(logfile);
-		logfile = fopen(logfile_ce.u.string, "a");
-		if (!logfile)
-			sigterm_handler(signal);
+	switch (signal) {
+	case SIGHUP:
+		/* reopen logfile */
+		if (logfile != stdout && logfile != &syslog_dummy) {
+			fclose(logfile);
+			logfile = fopen(ulogd_logfile, "a");
+			if (!logfile)
+				sigterm_handler(signal);
+		}
+		break;
+	default:
+		break;
 	}
+
+	deliver_signal_pluginstances(signal);
 }
 
 static void print_usage(void)
@@ -838,13 +850,11 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	logfile_open(logfile_ce.u.string);
-
 	if (daemonize){
 		if (fork()) {
 			exit(0);
 		}
-		if (logfile != stdout && logfile != syslog_dummy)
+		if (logfile != stdout && logfile != &syslog_dummy)
 			fclose(stdout);
 		fclose(stderr);
 		fclose(stdin);
@@ -853,6 +863,7 @@ int main(int argc, char* argv[])
 
 	signal(SIGTERM, &sigterm_handler);
 	signal(SIGHUP, &signal_handler);
+	signal(SIGUSR1, &signal_handler);
 
 	ulogd_log(ULOGD_INFO, 
 		  "initialization finished, entering main loop\n");
