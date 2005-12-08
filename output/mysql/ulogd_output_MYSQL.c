@@ -322,13 +322,17 @@ static int mysql_get_columns(struct ulogd_pluginstance *upi)
 	struct ulogd_key *f, *f2;
 	int i;
 
-	if (!mi->dbh)
+	if (!mi->dbh) {
+		ulogd_log(ULOGD_ERROR, "no database handle\n");
 		return -1;
+	}
 
 	result = mysql_list_fields(mi->dbh, 
 				   table_ce(upi->config_kset).u.string, NULL);
-	if (!result)
+	if (!result) {
+		ulogd_log(ULOGD_ERROR, "error in list_fields()\n");
 		return -1;
+	}
 
 	/* Thea idea here is that we can create a pluginstance specific input
 	 * key array by not specifyling a plugin input key list.  ulogd core
@@ -341,10 +345,12 @@ static int mysql_get_columns(struct ulogd_pluginstance *upi)
 		free(upi->input.keys);
 
 	upi->input.num_keys = mysql_num_fields(result);
+	ulogd_log(ULOGD_DEBUG, "%u fields in table\n", upi->input.num_keys);
 	upi->input.keys = malloc(sizeof(struct ulogd_key) * 
 						upi->input.num_keys);
 	if (!upi->input.keys) {
 		upi->input.num_keys = 0;
+		ulogd_log(ULOGD_ERROR, "ENOMEM\n");
 		return -ENOMEM;
 	}
 	
@@ -361,7 +367,7 @@ static int mysql_get_columns(struct ulogd_pluginstance *upi)
 		while ((underscore = strchr(buf, '_')))
 			*underscore = '.';
 
-		DEBUGP("field '%s' found: ", buf);
+		DEBUGP("field '%s' found\n", buf);
 
 		/* add it u list of input keys */
 		strncpy(upi->input.keys[i].name, buf, ULOGD_MAX_KEYLEN);
@@ -452,21 +458,6 @@ static int _mysql_init_db(struct ulogd_pluginstance *upi)
 }
 #endif
 
-static void signal_mysql(struct ulogd_pluginstance *upi,
-			 int signal)
-{
-	switch (signal) {
-	case SIGHUP:
-		stop_mysql(upi);
-		if (configure_mysql(upi) < 0)
-			return;
-		start_mysql(upi);
-		break;
-	default:
-		break;
-	}
-}
-
 static int configure_mysql(struct ulogd_pluginstance *upi,
 			   struct ulogd_pluginstance_stack *stack)
 {
@@ -488,11 +479,15 @@ static int configure_mysql(struct ulogd_pluginstance *upi,
 		      user_ce(upi->config_kset).u.string,
 		      pass_ce(upi->config_kset).u.string,
 		      db_ce(upi->config_kset).u.string);
-	if (ret < 0)
+	if (ret < 0) {
+		ulogd_log(ULOGD_ERROR, "error in open_db\n");
 		return ret;
+	}
 
 	/* Third: Determine required input keys for given table */
 	ret = mysql_get_columns(upi);
+	if (ret < 0)
+		ulogd_log(ULOGD_ERROR, "error in get_columns\n");
 	
 	/* Close database, since ulogd core could just call configure
 	 * but abort during input key resolving routines.  configure
@@ -538,6 +533,21 @@ static int stop_mysql(struct ulogd_pluginstance *upi)
 	}
 	return 0;
 }
+
+static void signal_mysql(struct ulogd_pluginstance *upi,
+			 int signal)
+{
+	switch (signal) {
+	case SIGHUP:
+		/* reopen database connection */
+		stop_mysql(upi);
+		start_mysql(upi);
+		break;
+	default:
+		break;
+	}
+}
+
 
 static struct ulogd_plugin mysql_plugin = {
 	.name = "MYSQL",
