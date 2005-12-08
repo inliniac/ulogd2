@@ -78,7 +78,7 @@ struct mysql_instance {
 
 /* our configuration directives */
 static struct config_keyset mysql_kset = {
-	.num_ces = 8,
+	.num_ces = 9,
 	.ces = {
 		{
 			.key = "db", 
@@ -322,7 +322,7 @@ static int mysql_get_columns(struct ulogd_pluginstance *upi)
 	struct ulogd_key *f, *f2;
 	int i;
 
-	if (!mi->dbh) 
+	if (!mi->dbh)
 		return -1;
 
 	result = mysql_list_fields(mi->dbh, 
@@ -381,15 +381,19 @@ static int open_db(struct ulogd_pluginstance *upi, char *server,
 	unsigned int connect_timeout = timeout_ce(upi->config_kset).u.value;
 
 	mi->dbh = mysql_init(NULL);
-	if (!mi->dbh)
+	if (!mi->dbh) {
+		ulogd_log(ULOGD_ERROR, "error in mysql_init()\n");
 		return -1;
+	}
 
 	if (connect_timeout)
 		mysql_options(mi->dbh, MYSQL_OPT_CONNECT_TIMEOUT, 
 			      (const char *) &connect_timeout);
 
-	if (!mysql_real_connect(mi->dbh, server, user, pass, db, port, NULL, 0))
+	if (!mysql_real_connect(mi->dbh, server, user, pass, db, port, NULL, 0)) {
+		ulogd_log(ULOGD_ERROR, "can't connect to db\n");
 		return -1;
+	}
 		
 	return 0;
 }
@@ -451,6 +455,16 @@ static int _mysql_init_db(struct ulogd_pluginstance *upi)
 static void signal_mysql(struct ulogd_pluginstance *upi,
 			 int signal)
 {
+	switch (signal) {
+	case SIGHUP:
+		stop_mysql(upi);
+		if (configure_mysql(upi) < 0)
+			return;
+		start_mysql(upi);
+		break;
+	default:
+		break;
+	}
 }
 
 static int configure_mysql(struct ulogd_pluginstance *upi,
@@ -459,10 +473,14 @@ static int configure_mysql(struct ulogd_pluginstance *upi,
 	struct mysql_instance *mi = (struct mysql_instance *) upi->private;
 	int ret;
 
+	ulogd_log(ULOGD_NOTICE, "(re)configuring\n");
+
 	/* First: Parse configuration file section for this instance */
 	ret = config_parse_file(upi->id, upi->config_kset);
-	if (ret < 0)
+	if (ret < 0) {
+		ulogd_log(ULOGD_ERROR, "error parsing config file\n");
 		return ret;
+	}
 
 	/* Second: Open Database */
 	ret = open_db(upi, host_ce(upi->config_kset).u.string,
@@ -489,6 +507,8 @@ static int start_mysql(struct ulogd_pluginstance *upi)
 	struct mysql_instance *mi = (struct mysql_instance *) upi->private;
 	int ret;
 
+	ulogd_log(ULOGD_NOTICE, "starting\n");
+
 	ret = open_db(upi, host_ce(upi->config_kset).u.string,
 		      port_ce(upi->config_kset).u.value,
 		      user_ce(upi->config_kset).u.string,
@@ -496,7 +516,7 @@ static int start_mysql(struct ulogd_pluginstance *upi)
 		      db_ce(upi->config_kset).u.string);
 	if (ret < 0)
 		return ret;
-	
+
 	ret = mysql_createstmt(upi);
 	if (ret < 0)
 		mysql_close(mi->dbh);
@@ -507,6 +527,8 @@ static int start_mysql(struct ulogd_pluginstance *upi)
 static int stop_mysql(struct ulogd_pluginstance *upi)
 {
 	struct mysql_instance *mi = (struct mysql_instance *) upi->private;
+
+	ulogd_log(ULOGD_NOTICE, "stopping\n");
 	mysql_close(mi->dbh);
 
 	/* try to free our dynamically allocated input key array */
