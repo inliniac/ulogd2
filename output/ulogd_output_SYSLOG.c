@@ -130,7 +130,7 @@ static int syslog_configure(struct ulogd_pluginstance *pi,
 		syslog_level = LOG_NOTICE;
 	else if (!strcmp(level, "LOG_INFO"))
 		syslog_level = LOG_INFO;
-	else if (!strcmp(level, "LOG_DEBUg"))
+	else if (!strcmp(level, "LOG_DEBUG"))
 		syslog_level = LOG_DEBUG;
 	else {
 		ulogd_log(ULOGD_FATAL, "unknown level '%s'\n",
