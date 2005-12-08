@@ -44,13 +44,9 @@
 #include <errno.h>
 #include <time.h>
 #include <arpa/inet.h>
-
+#include <mysql/mysql.h>
 #include <ulogd/ulogd.h>
 #include <ulogd/conffile.h>
-
-#include <mysql/mysql.h>
-
-#define DEBUG_MYSQL
 
 #ifdef DEBUG_MYSQL
 #define DEBUGP(x, args...)	fprintf(stderr, x, ## args)
@@ -142,18 +138,18 @@ static int interp_mysql(struct ulogd_pluginstance *upi)
 static int __interp_mysql(struct ulogd_pluginstance *upi)
 {
 	struct mysql_instance *mi = (struct mysql_instance *) &upi->private;
-	struct ulogd_key *res;
-	char *tmpstr;		/* need this for --log-ip-as-string */
-	struct in_addr addr;
 	int i;
 
 	mi->stmt_ins = mi->stmt_val;
 
 	for (i = 0; i < upi->input.num_keys; i++) { 
-		res = upi->input.keys[i].u.source;
+		struct ulogd_key *res = upi->input.keys[i].u.source;
+
+		if (upi->input.keys[i].flags & ULOGD_KEYF_INACTIVE)
+			continue;
 
 		if (!res)
-			ulogd_log(ULOGD_NOTICE, "no result for %s ?!?\n",
+			ulogd_log(ULOGD_NOTICE, "no source for `%s' ?!?\n",
 				  upi->input.keys[i].name);
 			
 		if (!res || !IS_VALID(*res)) {
@@ -163,6 +159,8 @@ static int __interp_mysql(struct ulogd_pluginstance *upi)
 		}
 		
 		switch (res->type) {
+			char *tmpstr;
+			struct in_addr addr;
 		case ULOGD_RET_INT8:
 			sprintf(mi->stmt_ins, "%d,", res->u.value.i8);
 			break;
@@ -236,7 +234,7 @@ static int __interp_mysql(struct ulogd_pluginstance *upi)
 				res->type, upi->input.keys[i].name);
 			break;
 		}
-	mi->stmt_ins = mi->stmt + strlen(mi->stmt);
+		mi->stmt_ins = mi->stmt + strlen(mi->stmt);
 	}
 	*(mi->stmt_ins - 1) = ')';
 	DEBUGP("stmt=#%s#\n", mi->stmt);
@@ -279,6 +277,8 @@ static int mysql_createstmt(struct ulogd_pluginstance *upi)
 				strlen(table_ce(upi->config_kset).u.string);
 
 	for (i = 0; i < upi->input.num_keys; i++) {
+		if (upi->input.keys[i].flags & ULOGD_KEYF_INACTIVE)
+			continue;
 		/* we need space for the key and a comma, as well as
 		 * enough space for the values */
 		size += strlen(upi->input.keys[i].name) + 1 + MYSQL_VALSIZE;
@@ -297,6 +297,9 @@ static int mysql_createstmt(struct ulogd_pluginstance *upi)
 	mi->stmt_val = mi->stmt + strlen(mi->stmt);
 
 	for (i = 0; i < upi->input.num_keys; i++) {
+		if (upi->input.keys[i].flags & ULOGD_KEYF_INACTIVE)
+			continue;
+
 		strncpy(buf, upi->input.keys[i].name, ULOGD_MAX_KEYLEN);	
 		while ((underscore = strchr(buf, '.')))
 			*underscore = '_';
@@ -451,7 +454,7 @@ static int _mysql_init_db(struct ulogd_pluginstance *upi)
 	mysql_createstmt();
 #endif	
 	/* enable 'real' logging */
-	mi->interp = &interp_mysql;
+	mi->interp = &__interp_mysql;
 
 	mi->reconnect = 0;
 
@@ -469,7 +472,7 @@ static int configure_mysql(struct ulogd_pluginstance *upi,
 	ulogd_log(ULOGD_NOTICE, "(re)configuring\n");
 
 	/* Assign the default interp function */
-	mi->interp = &interp_mysql;
+	mi->interp = &__interp_mysql;
 
 	/* First: Parse configuration file section for this instance */
 	ret = config_parse_file(upi->id, upi->config_kset);
