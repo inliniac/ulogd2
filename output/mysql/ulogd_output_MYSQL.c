@@ -59,20 +59,13 @@
 #endif
 
 struct mysql_instance {
-	/* the database handle we are using */
-	MYSQL *dbh;
+	MYSQL *dbh; /* the database handle we are using */
+	char *stmt; /* buffer for our insert statement */
+	char *stmt_val; /* pointer to the beginning of the "VALUES" part */
+	char *stmt_ins; /* pointer to current inser position in statement */
+	time_t reconnect; /* Attempt to reconnect if connection is lost */
 
-	/* buffer for our insert statement */
-	char *stmt;
-
-	/* pointer to the beginning of the "VALUES" part */
-	char *stmt_val;
-
-	/* pointer to current inser position in statement */
-	char *stmt_ins;
-
-	/* Attempt to reconnect if connection is lost */
-	time_t reconnect;
+	int (*interp)(struct ulogd_pluginstance *upi);
 };
 #define TIME_ERR		((time_t)-1)	/* Be paranoid */
 
@@ -135,10 +128,18 @@ static struct config_keyset mysql_kset = {
 
 static struct ulogd_plugin mysql_plugin;
 
-// FIXME static int _mysql_init_db(ulog_iret_t *result);
+static int _mysql_init_db(struct ulogd_pluginstance *upi);
+
+/* this is a wrapper that just calls the current real
+ * interp function */
+static int interp_mysql(struct ulogd_pluginstance *upi)
+{
+	struct mysql_instance *mi = (struct mysql_instance *) &upi->private;
+	return mi->interp(upi);
+}
 
 /* our main output function, called by ulogd */
-static int interp_mysql(struct ulogd_pluginstance *upi)
+static int __interp_mysql(struct ulogd_pluginstance *upi)
 {
 	struct mysql_instance *mi = (struct mysql_instance *) &upi->private;
 	struct ulogd_key *res;
@@ -245,8 +246,7 @@ static int interp_mysql(struct ulogd_pluginstance *upi)
 	if (mysql_real_query(mi->dbh, mi->stmt, strlen(mi->stmt))) {
 		ulogd_log(ULOGD_ERROR, "sql error during insert: %s\n",
 			  mysql_error(mi->dbh));
-
-		// FIXME return _mysql_init_db(upi);
+		return _mysql_init_db(upi);
 	}
 
 	return 0;
@@ -404,7 +404,6 @@ static int open_db(struct ulogd_pluginstance *upi, char *server,
 	return 0;
 }
 
-#if 0
 static int init_reconnect(struct ulogd_pluginstance *upi)
 {
 	struct mysql_instance *mi = (struct mysql_instance *) upi->private;
@@ -412,16 +411,17 @@ static int init_reconnect(struct ulogd_pluginstance *upi)
 		mi->reconnect = time(NULL);
 		if (mi->reconnect != TIME_ERR) {
 			ulogd_log(ULOGD_ERROR, "no connection to database, "
-					       "attempting to reconnect "
-					       "after %u seconds\n",
-					       reconnect_ce(upi).u.value);
-			mi->reconnect += reconnect_ce(upi).u.value;
-			mysql_plugin.interp = &_mysql_init_db;
+				  "attempting to reconnect after %u seconds\n",
+				  reconnect_ce(upi->config_kset).u.value);
+			mi->reconnect += reconnect_ce(upi->config_kset).u.value;
+			mi->interp = &_mysql_init_db;
 			return -1;
 		}
 	}
+
 	/* Disable plugin permanently */
-	mysql_plugin.interp = &mysql_output_disabled;
+	ulogd_log(ULOGD_ERROR, "permanently disabling plugin\n");
+	mi->interp = &mysql_output_disabled;
 	
 	return 0;
 }
@@ -429,6 +429,7 @@ static int init_reconnect(struct ulogd_pluginstance *upi)
 static int _mysql_init_db(struct ulogd_pluginstance *upi)
 {
 	struct mysql_instance *mi = (struct mysql_instance *) upi->private;
+
 	if (mi->reconnect && mi->reconnect > time(NULL))
 		return 0;
 	
@@ -449,14 +450,15 @@ static int _mysql_init_db(struct ulogd_pluginstance *upi)
 	}
 	mysql_createstmt();
 #endif	
-	/* enable plugin */
-	mysql_plugin.output = &mysql_output;
+	/* enable 'real' logging */
+	mi->interp = &interp_mysql;
 
 	mi->reconnect = 0;
 
-	return mysql_output(result);
+	/* call the interpreter function to actually write the
+	 * log line that we wanted to write */
+	return __interp_mysql(upi);
 }
-#endif
 
 static int configure_mysql(struct ulogd_pluginstance *upi,
 			   struct ulogd_pluginstance_stack *stack)
@@ -465,6 +467,9 @@ static int configure_mysql(struct ulogd_pluginstance *upi,
 	int ret;
 
 	ulogd_log(ULOGD_NOTICE, "(re)configuring\n");
+
+	/* Assign the default interp function */
+	mi->interp = &interp_mysql;
 
 	/* First: Parse configuration file section for this instance */
 	ret = config_parse_file(upi->id, upi->config_kset);
