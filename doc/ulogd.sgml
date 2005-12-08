@@ -204,6 +204,17 @@ Using this commandline option, an alternate config file can be used.  This is
 important if multiple instances of ulogd are to be run on a single machine.
 </descrip>
 
+<sect>Signals / Logrotate
+<p>
+ulogd understands two kinds of signals:
+<descrip>
+<tag>SIGHUP</tag>
+Close and re-open all logfiles.  This is mainly intended for logrotate scripts.
+Also closes and re-opens database connections.
+<tag>SIGUSR1</tag>
+Reload configuration file.  This is not fully implemented yet.
+</descrip>
+
 <sect>Available plugins
 <p>
 It is important to understand that ulogd without plugins does nothing.  It will receive packets, and do nothing with them.
