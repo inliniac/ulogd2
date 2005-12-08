@@ -12,11 +12,13 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <arpa/inet.h>
+#include <libpq-fe.h>
 #include <ulogd/ulogd.h>
 #include <ulogd/conffile.h>
-#include <libpq-fe.h>
 
+#include "../../utils/db.c"
 
 #ifdef DEBUG_PGSQL
 #define DEBUGP(x, args...)	fprintf(stderr, x, ## args)
@@ -24,79 +26,60 @@
 #define DEBUGP(x, args...)
 #endif
 
-struct _field {
-	char name[ULOGD_MAX_KEYLEN];
-	unsigned int id;
-	struct _field *next;
-};
+struct pgsql_instance {
+	struct db_instance db_inst;
 
-/* the database handle we are using */
-static PGconn *dbh;
-
-/* a linked list of the fields the table has */
-static struct _field *fields;
-
-/* buffer for our insert statement */
-static char *stmt;
-
-/* pointer to the beginning of the "VALUES" part */
-static char *stmt_val;
-
-/* pointer to current inser position in statement */
-static char *stmt_ins;
+	PGconn *dbh;
+	PGresult *pgres;
+	unsigned char pgsql_have_schemas;
+}
+#define TIME_ERR	((time_t)-1)
 
 /* our configuration directives */
-static config_entry_t db_ce = { 
-	.key = "db", 
-	.type = CONFIG_TYPE_STRING,
-	.options = CONFIG_OPT_MANDATORY,
+static struct config_keyset pgsql_kset = {
+	.num_ces = DB_CE_NUM + 6,
+	.ces = {
+		DB_CES,
+		{ 
+			.key = "db", 
+			.type = CONFIG_TYPE_STRING,
+			.options = CONFIG_OPT_MANDATORY,
+		},
+		{
+			.key = "host", 
+			.type = CONFIG_TYPE_STRING,
+			.options = CONFIG_OPT_NONE,
+		},
+		{ 
+			.key = "user", 
+			.type = CONFIG_TYPE_STRING,
+			.options = CONFIG_OPT_MANDATORY,
+		},
+		{
+			.key = "pass", 
+			.type = CONFIG_TYPE_STRING,
+			.options = CONFIG_OPT_NONE,
+		},
+		{
+			.next = &schema_ce,
+			.key = "port",
+			.type = CONFIG_TYPE_INT,
+		},
+		{
+			.key = "schema", 
+			.type = CONFIG_TYPE_STRING,
+			.u.string = "public",
+		},
+	},
 };
+#define db_ce(x)	(x->ces[DB_CE_NUM+0])
+#define host_ce(x)	(x->ces[DB_CE_NUM+1])
+#define user_ce(x)	(x->ces[DB_CE_NUM+2])
+#define pass_ce(x)	(x->ces[DB_CE_NUM+3])
+#define port_ce(x)	(x->ces[DB_CE_NUM+5])
+#define schema_ce(x)	(x->ces[DB_CE_NUM+6])
 
-static config_entry_t host_ce = { 
-	.next = &db_ce, 
-	.key = "host", 
-	.type = CONFIG_TYPE_STRING,
-	.options = CONFIG_OPT_NONE,
-};
-
-static config_entry_t user_ce = { 
-	.next = &host_ce, 
-	.key = "user", 
-	.type = CONFIG_TYPE_STRING,
-	.options = CONFIG_OPT_MANDATORY,
-};
-
-static config_entry_t pass_ce = { 
-	.next = &user_ce, 
-	.key = "pass", 
-	.type = CONFIG_TYPE_STRING,
-	.options = CONFIG_OPT_NONE,
-};
-
-static config_entry_t table_ce = { 
-	.next = &pass_ce, 
-	.key = "table", 
-	.type = CONFIG_TYPE_STRING,
-	.options = CONFIG_OPT_MANDATORY,
-};
-
-static config_entry_t schema_ce = { 
-	.next = &table_ce, 
-	.key = "schema", 
-	.type = CONFIG_TYPE_STRING,
-	.options = CONFIG_OPT_NONE,
-	.u.string = "public",
-};
-
-static config_entry_t port_ce = {
-	.next = &schema_ce,
-	.key = "port",
-	.type = CONFIG_TYPE_INT,
-	.options = CONFIG_OPT_NONE,
-};
-
-static unsigned char pgsql_have_schemas;
-
+#if 0
 /* our main output function, called by ulogd */
 static int pgsql_output(ulog_iret_t *result)
 {
@@ -199,11 +182,13 @@ static int pgsql_output(ulog_iret_t *result)
 
 	return 0;
 }
+#endif
 
 #define PGSQL_HAVE_NAMESPACE_TEMPLATE "SELECT nspname FROM pg_namespace n WHERE n.nspname='%s'"
 
 /* Determine if server support schemas */
-static int pgsql_namespace(void) {
+static int pgsql_namespace(void)
+{
 	PGresult *result;
 	char pgbuf[strlen(PGSQL_HAVE_NAMESPACE_TEMPLATE)+strlen(schema_ce.u.string)+1];
 
@@ -231,104 +216,66 @@ static int pgsql_namespace(void) {
 	return 0;
 }
 
-#define PGSQL_INSERTTEMPL   "insert into X (Y) values (Z)"
-#define PGSQL_VALSIZE	100
-
-/* create the static part of our insert statement */
-static int pgsql_createstmt(void)
-{
-	struct _field *f;
-	unsigned int size;
-	char buf[ULOGD_MAX_KEYLEN];
-	char *underscore;
-
-	if (stmt) {
-		ulogd_log(ULOGD_NOTICE, "createstmt called, but stmt"
-			" already existing\n");
-		return 1;
-	}
-
-	/* caclulate the size for the insert statement */
-	size = strlen(PGSQL_INSERTTEMPL) + strlen(table_ce.u.string) + strlen(schema_ce.u.string) + 1;
-
-	for (f = fields; f; f = f->next) {
-		/* we need space for the key and a comma, as well as
-		 * enough space for the values */
-		size += strlen(f->name) + 1 + PGSQL_VALSIZE;
-	}
-
-	ulogd_log(ULOGD_DEBUG, "allocating %u bytes for statement\n", size);
-
-	stmt = (char *) malloc(size);
-
-	if (!stmt) {
-		ulogd_log(ULOGD_ERROR, "OOM!\n");
-		return 1;
-	}
-
-	if (pgsql_have_schemas) {
-		sprintf(stmt, "insert into %s.%s (", schema_ce.u.string, table_ce.u.string);
-	} else {
-		sprintf(stmt, "insert into %s (", table_ce.u.string);
-	}
-
-	stmt_val = stmt + strlen(stmt);
-
-	for (f = fields; f; f = f->next) {
-		strncpy(buf, f->name, ULOGD_MAX_KEYLEN);
-		while ((underscore = strchr(buf, '.')))
-			*underscore = '_';
-		sprintf(stmt_val, "%s,", buf);
-		stmt_val = stmt + strlen(stmt);
-	}
-	*(stmt_val - 1) = ')';
-
-	sprintf(stmt_val, " values (");
-	stmt_val = stmt + strlen(stmt);
-
-	ulogd_log(ULOGD_DEBUG, "stmt='%s'\n", stmt);
-
-	return 0;
-}
-
 #define PGSQL_GETCOLUMN_TEMPLATE "SELECT  a.attname FROM pg_class c, pg_attribute a WHERE c.relname ='%s' AND a.attnum>0 AND a.attrelid=c.oid ORDER BY a.attnum"
 
 #define PGSQL_GETCOLUMN_TEMPLATE_SCHEMA "SELECT a.attname FROM pg_attribute a, pg_class c LEFT JOIN pg_namespace n ON c.relnamespace=n.oid WHERE c.relname ='%s' AND n.nspname='%s' AND a.attnum>0 AND a.attrelid=c.oid AND a.attisdropped=FALSE ORDER BY a.attnum"
 
 /* find out which columns the table has */
-static int pgsql_get_columns(const char *table)
+static int get_columns_pgsql(struct ulogd_pluginstance *upi)
 {
+	struct pgsql_instance *pi = (struct pgsql_instance *) upi->private;
 	PGresult *result;
-	char buf[ULOGD_MAX_KEYLEN];
-	char pgbuf[strlen(PGSQL_GETCOLUMN_TEMPLATE_SCHEMA)+strlen(table)+strlen(schema_ce.u.string)+2];
-	char *underscore;
-	struct _field *f;
-	int id;
+	char pgbuf[strlen(PGSQL_GETCOLUMN_TEMPLATE_SCHEMA)
+		   + strlen(table) + strlen(schema_ce.u.string) + 2];
 	int intaux;
 
-	if (!dbh)
+	if (!pi->dbh) {
+		ulogd_log(ULOGD_ERROR, "no database handle\n");
 		return 1;
+	}
 
 	if (pgsql_have_schemas) {
-		snprintf(pgbuf, sizeof(pgbuf)-1, PGSQL_GETCOLUMN_TEMPLATE_SCHEMA, table, schema_ce.u.string);
+		snprintf(pgbuf, sizeof(pgbuf)-1, PGSQL_GETCOLUMN_TEMPLATE_SCHEMA,
+			 table_ce(upi->config_kset).u.string,
+			 schema_ce(upi->config_kset).u.string);
 	} else {
-		snprintf(pgbuf, sizeof(pgbuf)-1, PGSQL_GETCOLUMN_TEMPLATE, table);
+		snprintf(pgbuf, sizeof(pgbuf)-1, PGSQL_GETCOLUMN_TEMPLATE,
+			 table_ce(upi->config_kset).u.string);
 	}
 
 	ulogd_log(ULOGD_DEBUG, "%s\n", pgbuf);
 
 	result = PQexec(dbh, pgbuf);
 	if (!result) {
-		ulogd_log(ULOGD_DEBUG, "\n result false");
-		return 1;
+		ulogd_log(ULOGD_DEBUG, "result false");
+		return -1;
 	}
 
 	if (PQresultStatus(result) != PGRES_TUPLES_OK) {
-		ulogd_log(ULOGD_DEBUG, "\n pres_command_not_ok");
-		return 1;
+		ulogd_log(ULOGD_DEBUG, "pres_command_not_ok");
+		return -1;
 	}
 
-	for (intaux=0; intaux<PQntuples(result); intaux++) {
+	if (upi->input.keys)
+		free(upi->input.keys);
+
+	upi->input.num_keys = PQntuples(result);
+	ulogd_log(ULOGD_DEBUG, "%u fields in table\n", upi->input.num_keys);
+	upi->input.keys = malloc(sizeof(struct ulogd_key) *
+						upi->input.num_keys);
+	if (!upi->input.keys) {
+		upi->input.num_keys = 0;
+		ulogd_log(ULOGD_ERROR, "ENOMEM\n");
+		return -ENOMEM;
+	}
+
+	memset(upi->input.keys, 0, sizeof(struct ulogd_key) *
+						upi->input.num_keys);
+
+	for (intaux = 0; intaux < PQntuples(result); intaux++) {
+		char buf[ULOGD_MAX_KEYLEN+1];
+		char *underscore;
+		int id;
 
 		/* replace all underscores with dots */
 		strncpy(buf, PQgetvalue(result, intaux, 0), ULOGD_MAX_KEYLEN);
@@ -337,41 +284,34 @@ static int pgsql_get_columns(const char *table)
 
 		DEBUGP("field '%s' found: ", buf);
 
-		if (!(id = keyh_getid(buf))) {
-			DEBUGP(" no keyid!\n");
-			continue;
-		}
-
-		DEBUGP("keyid %u\n", id);
-
-		/* prepend it to the linked list */
-		f = (struct _field *) malloc(sizeof *f);
-		if (!f) {
-			ulogd_log(ULOGD_ERROR, "OOM!\n");
-			return 1;
-		}
-		strncpy(f->name, buf, ULOGD_MAX_KEYLEN);
-		f->id = id;
-		f->next = fields;
-		fields = f;
+		/* add it to list of input keys */
+		strncpy(upi->input.keys[i].name, buf, ULOGD_MAX_KEYLEN);
 	}
+
+	/* FIXME: id? */
 
 	PQclear(result);
 	return 0;
 }
 
-static int exit_nicely(PGconn *conn)
+static int close_db_pgsql(struct ulogd_pluginstance *upi)
 {
-	PQfinish(conn);
-	return 0;;
+	struct pgsql_instance *pi = (struct pgsql_instance *) upi->private;
+
+	return PQfinish(pi->dbh);
 }
 
 /* make connection and select database */
-static int pgsql_open_db(char *server, int port, char *user, char *pass, 
-			 char *db)
+static int open_db_pgsql(struct ulogd_pluginstance *upi)
 {
+	struct pgsql_instance *pi = (struct pgsql_instance *) upi->private;
 	int len;
 	char *connstr;
+	char *server = host_ce(upi->config_kset).u.string;
+	char *port = port_ce(upi->config_kset).u.string;
+	char *user = user_ce(upi->config_kset).u.string;
+	char *pass = pass_ce(upi->config_kset).u.string;
+	char *db = db_ce(upi->config_kset).u.string;
 
 	/* 80 is more than what we need for the fixed parts below */
 	len = 80 + strlen(user) + strlen(db);
@@ -385,8 +325,8 @@ static int pgsql_open_db(char *server, int port, char *user, char *pass,
 		len += 20;
 
 	connstr = (char *) malloc(len);
-	if (!connstr)
-		return 1;
+	if (!connstr) 
+		return -ENOMEM;
 
 	if (server) {
 		strcpy(connstr, " host=");
@@ -410,53 +350,86 @@ static int pgsql_open_db(char *server, int port, char *user, char *pass,
 	}
 	
 	dbh = PQconnectdb(connstr);
-	if (PQstatus(dbh)!=CONNECTION_OK) {
-		exit_nicely(dbh);
-		return 1;
-	}
-
-	return 0;
-}
-
-static int pgsql_init(void)
-{
-	/* have the opts parsed */
-	config_parse_file("PGSQL", &port_ce);
-
-	if (pgsql_open_db(host_ce.u.string, port_ce.u.value, user_ce.u.string,
-			   pass_ce.u.string, db_ce.u.string)) {
-		ulogd_log(ULOGD_ERROR, "can't establish database connection\n");
-		return 1;
+	if (PQstatus(dbh) != CONNECTION_OK) {
+		close_db(upi);
+		return -1;
 	}
 
 	if (pgsql_namespace()) {
-		return 1;
 		ulogd_log(ULOGD_ERROR, "unable to test for pgsql schemas\n");
+		close_db(upi);
+		return -1;
 	}
-
-	/* read the fieldnames to know which values to insert */
-	if (pgsql_get_columns(table_ce.u.string)) {
-		ulogd_log(ULOGD_ERROR, "unable to get pgsql columns\n");
-		return 1;
-	}
-	pgsql_createstmt();
 
 	return 0;
 }
 
-static void pgsql_fini(void)
+static int escape_string_pgsql(struct ulogd_pluginstance *upi,
+			       char *dst, const char *src, unsigned int len)
 {
-	PQfinish(dbh);
+	PQescapeString(dst, src, strlen(res->value.ptr)); 
+	return 0;
 }
 
-static ulog_output_t pgsql_plugin = { 
-	.name = "pgsql", 
-	.output = &pgsql_output,
-	.init = &pgsql_init,
-	.fini = &pgsql_fini,
+static int execute_pgsql(struct ulogd_pluginstance *upi,
+			 const char *stmt, unsigned int len)
+{
+	struct pgsql_instance *pi = (struct pgsql_instance *) upi->private;
+
+	pi->pgres = PQexec(dbh, stmt);
+	if (!pi->pgres || PQresultStatus(pi->pgres) != PGRES_COMMAND_OK)
+		return -1;
+
+	return 0;
+}
+
+static char *strerror_pgsql(struct ulogd_pluginstance *upi)
+{
+	struct pgsql_instance *pi = (struct pgsql_instance *) upi->private;
+	return PQresultErrorMessage(pi->pgres);
+}
+
+static struct db_driver db_driver_pgsql = {
+	.get_columns	= &get_columns_pgsql,
+	.open_db	= &open_db_pgsql,
+	.close_db	= &close_db_pgsql,
+	.escape_string	= &escape_string_pgsql,
+	.execute	= &execute_pgsql,
+	.strerror	= &strerror_pgsql,
 };
+
+static int configure_pgsql(struct ulogd_pluginstance *upi,
+			   struct ulogd_pluginstance_stack *stack)
+{
+	struct pgsql_instance *pi = (struct pgsql_instance *) upi->private;
+
+	di->driver = &db_driver_pgsql;
+
+	return configure_db(upi, stack);
+}
+
+static struct ulogd_plugin pgsql_plugin = { 
+	.name 		= "PGSQL", 
+	.input 		= {
+		.keys	= NULL,
+		.num_keys = 0,
+		.type	= ULOGD_DTYPE_PACKET | ULOGD_DTYPE_FLOW,
+	},
+	.output 	= {
+		.type	= ULOGD_DTYPE_SINK,
+	},
+	.config_kset 	= &pgsql_kset,
+	.priv_size	= sizeof(struct pgsql_instance),
+	.start		= &start_pgsql,
+	.stop		= &stop_db,
+	.signal		= &signal_db,
+	.interp		= &interp_pgsql,
+	.version	= ULOGD_VERSION,
+};
+
+void __attribute__ ((constructor)) init(void);
 
 void _init(void)
 {
-	register_output(&pgsql_plugin);
+	ulogd_register_plugin(&pgsql_plugin);
 }
