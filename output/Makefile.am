@@ -1,5 +1,5 @@
 
-SUBDIRS = pcap
+SUBDIRS = pcap mysql pgsql
 
 INCLUDES = $(all_includes) -I$(top_srcdir)/include
 LIBS=
