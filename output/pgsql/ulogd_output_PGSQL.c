@@ -18,7 +18,7 @@
 #include <ulogd/ulogd.h>
 #include <ulogd/conffile.h>
 
-#include "../../utils/db.c"
+#include "../../util/db.c"
 
 #ifdef DEBUG_PGSQL
 #define DEBUGP(x, args...)	fprintf(stderr, x, ## args)
@@ -32,7 +32,7 @@ struct pgsql_instance {
 	PGconn *dbh;
 	PGresult *pgres;
 	unsigned char pgsql_have_schemas;
-}
+};
 #define TIME_ERR	((time_t)-1)
 
 /* our configuration directives */
@@ -61,7 +61,6 @@ static struct config_keyset pgsql_kset = {
 			.options = CONFIG_OPT_NONE,
 		},
 		{
-			.next = &schema_ce,
 			.key = "port",
 			.type = CONFIG_TYPE_INT,
 		},
@@ -187,31 +186,34 @@ static int pgsql_output(ulog_iret_t *result)
 #define PGSQL_HAVE_NAMESPACE_TEMPLATE "SELECT nspname FROM pg_namespace n WHERE n.nspname='%s'"
 
 /* Determine if server support schemas */
-static int pgsql_namespace(void)
+static int pgsql_namespace(struct ulogd_pluginstance *upi)
 {
-	PGresult *result;
-	char pgbuf[strlen(PGSQL_HAVE_NAMESPACE_TEMPLATE)+strlen(schema_ce.u.string)+1];
+	struct pgsql_instance *pi = (struct pgsql_instance *) upi->private;
+	char pgbuf[strlen(PGSQL_HAVE_NAMESPACE_TEMPLATE) + 
+		   strlen(schema_ce(upi->config_kset).u.string) + 1];
 
-	if (!dbh)
+	if (!pi->dbh)
 		return 1;
 
-	sprintf(pgbuf, PGSQL_HAVE_NAMESPACE_TEMPLATE, schema_ce.u.string);
+	sprintf(pgbuf, PGSQL_HAVE_NAMESPACE_TEMPLATE,
+		schema_ce(upi->config_kset).u.string);
 	ulogd_log(ULOGD_DEBUG, "%s\n", pgbuf);
 	
-	result = PQexec(dbh, pgbuf);
-	if (!result) {
+	pi->pgres = PQexec(pi->dbh, pgbuf);
+	if (!pi->pgres) {
 		ulogd_log(ULOGD_DEBUG, "\n result false");
 		return 1;
 	}
 
-	if (PQresultStatus(result) == PGRES_TUPLES_OK) {
-		ulogd_log(ULOGD_DEBUG, "using schema %s\n", schema_ce.u.string);
-		pgsql_have_schemas = 1;
+	if (PQresultStatus(pi->pgres) == PGRES_TUPLES_OK) {
+		ulogd_log(ULOGD_DEBUG, "using schema %s\n",
+			  schema_ce(upi->config_kset).u.string);
+		pi->db_inst.schema = schema_ce(upi->config_kset).u.string;
 	} else {
-		pgsql_have_schemas = 0;
+		pi->db_inst.schema = NULL;
 	}
 
-	PQclear(result);
+	PQclear(pi->pgres);
 	
 	return 0;
 }
@@ -224,20 +226,21 @@ static int pgsql_namespace(void)
 static int get_columns_pgsql(struct ulogd_pluginstance *upi)
 {
 	struct pgsql_instance *pi = (struct pgsql_instance *) upi->private;
-	PGresult *result;
 	char pgbuf[strlen(PGSQL_GETCOLUMN_TEMPLATE_SCHEMA)
-		   + strlen(table) + strlen(schema_ce.u.string) + 2];
-	int intaux;
+		   + strlen(table_ce(upi->config_kset).u.string) 
+		   + strlen(pi->db_inst.schema) + 2];
+	int i;
 
 	if (!pi->dbh) {
 		ulogd_log(ULOGD_ERROR, "no database handle\n");
 		return 1;
 	}
 
-	if (pgsql_have_schemas) {
-		snprintf(pgbuf, sizeof(pgbuf)-1, PGSQL_GETCOLUMN_TEMPLATE_SCHEMA,
+	if (pi->db_inst.schema) {
+		snprintf(pgbuf, sizeof(pgbuf)-1,
+			 PGSQL_GETCOLUMN_TEMPLATE_SCHEMA,
 			 table_ce(upi->config_kset).u.string,
-			 schema_ce(upi->config_kset).u.string);
+			 pi->db_inst.schema);
 	} else {
 		snprintf(pgbuf, sizeof(pgbuf)-1, PGSQL_GETCOLUMN_TEMPLATE,
 			 table_ce(upi->config_kset).u.string);
@@ -245,13 +248,13 @@ static int get_columns_pgsql(struct ulogd_pluginstance *upi)
 
 	ulogd_log(ULOGD_DEBUG, "%s\n", pgbuf);
 
-	result = PQexec(dbh, pgbuf);
-	if (!result) {
+	pi->pgres = PQexec(pi->dbh, pgbuf);
+	if (!pi->pgres) {
 		ulogd_log(ULOGD_DEBUG, "result false");
 		return -1;
 	}
 
-	if (PQresultStatus(result) != PGRES_TUPLES_OK) {
+	if (PQresultStatus(pi->pgres) != PGRES_TUPLES_OK) {
 		ulogd_log(ULOGD_DEBUG, "pres_command_not_ok");
 		return -1;
 	}
@@ -259,7 +262,7 @@ static int get_columns_pgsql(struct ulogd_pluginstance *upi)
 	if (upi->input.keys)
 		free(upi->input.keys);
 
-	upi->input.num_keys = PQntuples(result);
+	upi->input.num_keys = PQntuples(pi->pgres);
 	ulogd_log(ULOGD_DEBUG, "%u fields in table\n", upi->input.num_keys);
 	upi->input.keys = malloc(sizeof(struct ulogd_key) *
 						upi->input.num_keys);
@@ -272,13 +275,13 @@ static int get_columns_pgsql(struct ulogd_pluginstance *upi)
 	memset(upi->input.keys, 0, sizeof(struct ulogd_key) *
 						upi->input.num_keys);
 
-	for (intaux = 0; intaux < PQntuples(result); intaux++) {
+	for (i = 0; i < PQntuples(pi->pgres); i++) {
 		char buf[ULOGD_MAX_KEYLEN+1];
 		char *underscore;
 		int id;
 
 		/* replace all underscores with dots */
-		strncpy(buf, PQgetvalue(result, intaux, 0), ULOGD_MAX_KEYLEN);
+		strncpy(buf, PQgetvalue(pi->pgres, i, 0), ULOGD_MAX_KEYLEN);
 		while ((underscore = strchr(buf, '_')))
 			*underscore = '.';
 
@@ -290,7 +293,7 @@ static int get_columns_pgsql(struct ulogd_pluginstance *upi)
 
 	/* FIXME: id? */
 
-	PQclear(result);
+	PQclear(pi->pgres);
 	return 0;
 }
 
@@ -298,7 +301,9 @@ static int close_db_pgsql(struct ulogd_pluginstance *upi)
 {
 	struct pgsql_instance *pi = (struct pgsql_instance *) upi->private;
 
-	return PQfinish(pi->dbh);
+	PQfinish(pi->dbh);
+
+	return 0;
 }
 
 /* make connection and select database */
@@ -349,13 +354,13 @@ static int open_db_pgsql(struct ulogd_pluginstance *upi)
 		strcat(connstr, pass);
 	}
 	
-	dbh = PQconnectdb(connstr);
-	if (PQstatus(dbh) != CONNECTION_OK) {
+	pi->dbh = PQconnectdb(connstr);
+	if (PQstatus(pi->dbh) != CONNECTION_OK) {
 		close_db(upi);
 		return -1;
 	}
 
-	if (pgsql_namespace()) {
+	if (pgsql_namespace(upi)) {
 		ulogd_log(ULOGD_ERROR, "unable to test for pgsql schemas\n");
 		close_db(upi);
 		return -1;
@@ -367,7 +372,7 @@ static int open_db_pgsql(struct ulogd_pluginstance *upi)
 static int escape_string_pgsql(struct ulogd_pluginstance *upi,
 			       char *dst, const char *src, unsigned int len)
 {
-	PQescapeString(dst, src, strlen(res->value.ptr)); 
+	PQescapeString(dst, src, strlen(src)); 
 	return 0;
 }
 
@@ -376,7 +381,7 @@ static int execute_pgsql(struct ulogd_pluginstance *upi,
 {
 	struct pgsql_instance *pi = (struct pgsql_instance *) upi->private;
 
-	pi->pgres = PQexec(dbh, stmt);
+	pi->pgres = PQexec(pi->dbh, stmt);
 	if (!pi->pgres || PQresultStatus(pi->pgres) != PGRES_COMMAND_OK)
 		return -1;
 
@@ -403,7 +408,7 @@ static int configure_pgsql(struct ulogd_pluginstance *upi,
 {
 	struct pgsql_instance *pi = (struct pgsql_instance *) upi->private;
 
-	di->driver = &db_driver_pgsql;
+	pi->db_inst.driver = &db_driver_pgsql;
 
 	return configure_db(upi, stack);
 }
@@ -420,16 +425,16 @@ static struct ulogd_plugin pgsql_plugin = {
 	},
 	.config_kset 	= &pgsql_kset,
 	.priv_size	= sizeof(struct pgsql_instance),
-	.start		= &start_pgsql,
+	.start		= &start_db,
 	.stop		= &stop_db,
 	.signal		= &signal_db,
-	.interp		= &interp_pgsql,
+	.interp		= &interp_db,
 	.version	= ULOGD_VERSION,
 };
 
 void __attribute__ ((constructor)) init(void);
 
-void _init(void)
+void init(void)
 {
 	ulogd_register_plugin(&pgsql_plugin);
 }
