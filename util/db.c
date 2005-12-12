@@ -34,13 +34,14 @@ struct db_driver {
 			     char *dst, const char *src, unsigned int len);
 	int (*execute)(struct ulogd_pluginstance *upi,
 			const char *stmt, unsigned int len);
-	char (*strerror)(struct ulogd_pluginstance *upi);
+	char *(*strerror)(struct ulogd_pluginstance *upi);
 };
 
 struct db_instance {
 	char *stmt; /* buffer for our insert statement */
 	char *stmt_val; /* pointer to the beginning of the "VALUES" part */
 	char *stmt_ins; /* pointer to current inser position in statement */
+	char *schema;
 	time_t reconnect;
 	int (*interp)(struct ulogd_pluginstance *upi);
 	struct db_driver *driver;
@@ -358,7 +359,7 @@ static int __interp_db(struct ulogd_pluginstance *upi)
 
 	/* now we have created our statement, insert it */
 
-	if (di->driver->execute(upi, di->stmt, strlen(di->stmt))) {
+	if (di->driver->execute(upi, di->stmt, strlen(di->stmt)) < 0) {
 		ulogd_log(ULOGD_ERROR, "sql error during insert: %s\n",
 			  di->driver->strerror(upi));
 		return _init_db(upi);
