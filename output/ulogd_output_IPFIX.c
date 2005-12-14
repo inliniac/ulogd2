@@ -29,6 +29,11 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+
 #include <ulogd/ulogd.h>
 #include <ulogd/conffile.h>
 #include <ulogd/ipfix_protocol.h>
@@ -45,7 +50,7 @@ static struct config_keyset ipfix_kset = {
 		},
 		{
 			.key	 = "port",
-			.type	 = CONFIG_TYPE_INT,
+			.type	 = CONFIG_TYPE_STRING,
 			.options = CONFIG_OPT_NONE,
 			.u	 = { .value = IPFIX_DEFAULT_TCPUDP_PORT },
 		},
@@ -58,13 +63,23 @@ static struct config_keyset ipfix_kset = {
 	},
 };
 
+#define host_ce(x)	(x->ces[0])
+#define port_ce(x)	(x->ces[1])
+#define proto_ce(x)	(x->ces[2])
+
+struct ipfix_template {
+	struct ipfix_templ_rec_hdr hdr;
+	char buf[0];
+};
+
 struct ipfix_instance {
 	int fd;		/* socket that we use for sending IPFIX data */
+	int sock_type;
+	int sock_proto;
 
-	struct {
-		char *buf;
-		unsigned int len;
-	} template;
+	struct ipfix_template *tmpl;
+	unsigned int tmpl_len;
+	char *tmpl_cur;
 };
 
 
@@ -72,8 +87,51 @@ struct ipfix_instance {
 static int build_template(struct ulogd_pluginstance *upi)
 {
 	struct ipfix_instance *ii = (struct ipfix_instance *) &upi->private;
+	struct ipfix_templ_rec_hdr *rhdr;
+	int i, j;
 
+	if (ii->template.buf)
+		free(ii->template.buf);
 
+	ii->tmpl = malloc(sizeof(struct ipfix_template) +
+			 (upi->input.num_keys*sizeof(struct ipfix_vendor_field)));
+	if (!ii->tmpl)
+		return -ENOMEM;
+
+#define ULOGD_IPFIX_TEMPL_BASE 1024
+
+	/* initialize template header */
+	ii->tmpl->hdr.tmpl_id = htons(ULOGD_IPFIX_TEMPL_BASE);
+
+	ii->tmpl_cur = ii->tmpl->buf;
+
+	for (i = 0; i < upi->input.num_keys; i++) {
+		struct ulogd_key *key = ulogd->input.keys[i];
+
+		if (key->ipfix.field_id == 0)
+			continue;
+		if (key->ipfix.vendor_id == IPFIX_VENDOR_IETF) {
+			struct ipfix_ietf_field *field = 
+				(struct ipfix_ietf_field *) ii->tmpl_cur;
+
+			field->type = htons(key->ipfix.field_id);
+			/* FIXME: field->length */
+			ii->tmpl_cur += sizeof(*field);
+		} else {
+			struct ipfix_vendor_field *field =
+				(struct ipfix_vendor_field *) ii->tmpl_cur;
+
+			field->enterprise_num = htonl(key->ipfix.vendor);
+			field->type = htons(key->ipfix.field_id);
+			/* FIXME: field->length */
+
+			ii->tmpl_cur += sizeof(*field);
+		}
+		j++;
+	}
+
+	ii->tmpl->hdr.field_count = htons(j);
+	return 0;
 }
 
 static int _output_ipfix(struct ulogd_pluginstance *upi)
@@ -112,37 +170,82 @@ static void signal_handler_ipfix(struct ulogd_pluginstance *pi, int signal)
 }
 		
 
+static int open_connect_socket(struct ulogd_pluginstance *pi)
+{
+	struct ipfix_instance *ii = (struct ipfix_instance *) &pi->private;
+	struct addrinfo hint, *res, *resave;
+	int ret;
+
+	memset(&hint, 0, sizeof(hint));
+	hint.ai_socktype = ii->sock_type;
+	hint.ai_protocol = ii->sock_proto;
+	hint.ai_flags = AI_ADDRCONFIG;
+
+	ret = getaddrinfo(host_ce(pi->config_kset).u.value.ptr,
+			  port_ce(pi->config_kset).u.value.ptr,
+			  &hint, &res);
+	if (ret != 0) {
+		ulogd_log(ULOGD_ERROR, "can't resolve host/service: %s\n",
+			  gaai_strerror(ret));
+		return -1;
+	}
+
+	resave = res;
+
+	for (; res; res = res->ai_next) {
+		li->fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+		if (li->fd < 0) {
+			switch (errno) {
+			case EACCES:
+			case EAFNOSUPPORT:
+			case EINVAL:
+			case EPROTONOSUPPORT:
+				/* try next result */
+				continue;
+			default:
+				ulogd_log(ULOGD_ERROR, "error: %s\n",
+					  strerror(errno));
+				break;
+			}
+		}
+		if (connect(li->fd, res->ai_addr, res->ai_addrlen) != 0) {
+			close(li->fd);
+			/* try next result */
+			continue;
+		}
+
+		/* if we reach this, we have a working connection */
+		ulogd_log(ULOGD_NOTICE, "connection established\n");
+		freeaddrinfo(resave);
+		return 0;
+	}
+
+	freeaddrinfo(resave);
+	return -1;
+}
+
 static int start_ipfix(struct ulogd_pluginstance *pi)
 {
 	struct ipfix_instance *li = (struct ipfix_instance *) &pi->private;
 
 	ulogd_log(ULOGD_DEBUG, "starting ipfix\n");
 
-#ifdef DEBUG_LOGEMU
-	li->of = stdout;
-#else
-	ulogd_log(ULOGD_DEBUG, "opening file: %s\n",
-		  pi->config_kset->ces[0].u.string);
-	li->of = fopen(pi->config_kset->ces[0].u.string, "a");
-	if (!li->of) {
-		ulogd_log(ULOGD_FATAL, "can't open sysipfix: %s\n", 
-			  strerror(errno));
-		return errno;
-	}		
-#endif
-	if (printpkt_init()) {
-		ulogd_log(ULOGD_ERROR, "can't resolve all keyhash id's\n");
-		return -EINVAL;
-	}
+	ret = open_connect_socket(pi);
+	if (ret < 0)
+		return ret;
+
+	ret = build_template(pi);
+	if (ret < 0)
+		return ret;
 
 	return 0;
 }
 
-static int fini_ipfix(struct ulogd_pluginstance *pi) {
+static int fini_ipfix(struct ulogd_pluginstance *pi) 
+{
 	struct ipfix_instance *li = (struct ipfix_instance *) &pi->private;
 
-	if (li->of != stdout)
-		fclose(li->of);
+	close(li->fd);
 
 	return 0;
 }
@@ -150,9 +253,37 @@ static int fini_ipfix(struct ulogd_pluginstance *pi) {
 static int configure_ipfix(struct ulogd_pluginstance *pi,
 			    struct ulogd_pluginstance_stack *stack)
 {
+	struct ipfix_instance *ii = (struct ipfix_instance *) &pi->private;
+
 	/* FIXME: error handling */
 	ulogd_log(ULOGD_DEBUG, "parsing config file section %s\n", pi->id);
 	config_parse_file(pi->id, pi->config_kset);
+
+	/* determine underlying protocol */
+	if (!strcmp(proto_ce(pi->config_kset), "udp")) {
+		ii->sock_type = SOCK_DGRAM;
+		ii->sock_proto = IPPROTO_UDP;
+	} else if (!strcmp(proto_ce(pi->config_kset), "tcp")) {
+		ii->sock_type = SOCK_STREAM;
+		ii->sock_proto = IPPROTO_TCP;
+#ifdef _HAVE_SCTP
+	} else if (!strcmp(proto_ce(pi->config_kset), "sctp")) {
+		ii->sock_type = SOCK_SEQPACKET;
+		ii->sock_proto = IPPROTO_SCTP;
+#endif
+#ifdef _HAVE_DCCP
+	} else if (!strcmp(proto_ce(pi->config_kset), "dccp")) {
+		ii->sock_type = SOCK_SEQPACKET;
+		ii->sock_proto = IPPROTO_DCCP;
+#endif
+	} else {
+		ulogd_log(ULOGD_ERROR, "unknown protocol `%s'\n",
+			  proto_ce(pi->config_kset));
+		return -EINVAL;
+	}
+
+	/* postpone address lookup to ->start() time, since we want to 
+	 * re-lookup an address on SIGHUP */
 
 	return 0;
 }
