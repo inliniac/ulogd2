@@ -236,6 +236,34 @@ void __ulogd_log(int level, char *file, int line, const char *format, ...)
 	}
 }
 
+/* clean results (set all values to 0 and free pointers) */
+static void ulogd_clean_results(struct ulogd_pluginstance *pi)
+{
+	struct ulogd_pluginstance *cur;
+
+	DEBUGP("cleaning up results\n");
+
+	/* iterate through plugin stack */
+	llist_for_each_entry(cur, &pi->stack->list, list) {
+		int i;
+		
+		/* iterate through input keys of pluginstance */
+		for (i = 0; i < cur->output.num_keys; i++) {
+			struct ulogd_key *key = &cur->output.keys[i];
+
+			if (!(key->flags & ULOGD_RETF_VALID))
+				continue;
+
+			if (key->flags & ULOGD_RETF_FREE) {
+				free(key->u.value.ptr);
+				key->u.value.ptr = NULL;
+			}
+			memset(&key->u.value, 0, sizeof(key->u.value));
+			key->flags &= ~ULOGD_RETF_VALID;
+		}
+	}
+}
+
 /* propagate results to all downstream plugins in the stack */
 void ulogd_propagate_results(struct ulogd_pluginstance *pi)
 {
@@ -252,7 +280,7 @@ void ulogd_propagate_results(struct ulogd_pluginstance *pi)
 			/* fallthrough */
 		case ULOGD_IRET_STOP:
 			/* we shall abort further iteration of the stack */
-			return;
+			break;
 		case ULOGD_IRET_OK:
 			/* we shall continue travelling down the stack */
 			continue;
@@ -263,24 +291,9 @@ void ulogd_propagate_results(struct ulogd_pluginstance *pi)
 			break;
 		}
 	}
-}
 
-#if 0
-/* clean results (set all values to 0 and free pointers) */
-static void clean_results(struct ulogd_iret *ret)
-{
-	struct ulogd_iret *r;
-
-	for (r = ret; r; r = r->next) {
-		if (r->flags & ULOGD_RETF_FREE) {
-			free(r->value.ptr);
-			r->value.ptr = NULL;
-		}
-		memset(&r->value, 0, sizeof(r->value));
-		r->flags &= ~ULOGD_RETF_VALID;
-	}
+	ulogd_clean_results(pi);
 }
-#endif
 
 static struct ulogd_pluginstance *
 pluginstance_alloc_init(struct ulogd_plugin *pl, char *pi_id,
