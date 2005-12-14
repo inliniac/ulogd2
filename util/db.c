@@ -205,8 +205,9 @@ static int start_db(struct ulogd_pluginstance *upi)
 
 static int stop_db(struct ulogd_pluginstance *upi)
 {
+	struct db_instance *di = (struct db_instance *) upi->private;
 	ulogd_log(ULOGD_NOTICE, "stopping\n");
-	close_db(upi);
+	di->driver->close_db(upi);
 
 	/* try to free our dynamically allocated input key array */
 	if (upi->input.keys) {
