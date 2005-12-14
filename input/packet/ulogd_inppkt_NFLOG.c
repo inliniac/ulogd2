@@ -88,7 +88,7 @@ static struct ulogd_key output_keys[] = {
 	},
 	{
 		.type = ULOGD_RET_RAW,
-		.flags = ULOGD_RETF_FREE,
+		.flags = ULOGD_RETF_NONE,
 		.name = "raw.pkt",
 		.ipfix = {
 			.vendor = IPFIX_VENDOR_NETFILTER,
@@ -177,7 +177,7 @@ static struct ulogd_key output_keys[] = {
 	},
 	{ 
 		.type = ULOGD_RET_STRING, 
-		.flags = ULOGD_RETF_FREE, 
+		.flags = ULOGD_RETF_NONE, 
 		.name = "raw.mac_len", 
 	},
 
