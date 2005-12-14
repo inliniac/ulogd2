@@ -49,7 +49,7 @@ struct config_entry {
 	union {
 		char string[CONFIG_VAL_STRING_LEN];
 		int value;
-		int (*parser)(char *argstr);
+		int (*parser)(const char *argstr);
 	} u;
 };
 
