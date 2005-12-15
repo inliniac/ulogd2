@@ -180,6 +180,51 @@ int ulogd_key_size(struct ulogd_key *key)
 	return ret;
 }
 
+int ulogd_wildcard_inputkeys(struct ulogd_pluginstance *upi)
+{
+	struct ulogd_pluginstance_stack *stack = upi->stack;
+	struct ulogd_pluginstance *pi_cur;
+	unsigned int num_keys = 0;
+	unsigned int index = 0;
+
+	/* ok, this is a bit tricky, and probably requires some documentation.
+	 * Since we are a output plugin (SINK), we can only be the last one
+	 * in the stack.  Therefore, all other (input/filter) plugins, area
+	 * already linked into the stack.  This means, we can iterate over them,
+	 * get a list of all the keys, and create one input key for every output
+	 * key that any of the upstream plugins provide.  By the time we resolve
+	 * the inter-key pointers, everything will work as expected. */
+
+	if (upi->input.keys)
+		free(upi->input.keys);
+
+	/* first pass: count keys */
+	llist_for_each_entry(pi_cur, &stack->list, list) {
+		ulogd_log(ULOGD_DEBUG, "iterating over pluginstance '%s'\n",
+			  pi_cur->id);
+		num_keys += pi_cur->plugin->output.num_keys;
+	}
+
+	ulogd_log(ULOGD_DEBUG, "allocating %u input keys\n", num_keys);
+	upi->input.keys = malloc(sizeof(struct ulogd_key) * num_keys);
+	if (!upi->input.keys)
+		return -ENOMEM;
+
+	/* second pass: copy key names */
+	llist_for_each_entry(pi_cur, &stack->list, list) {
+		struct ulogd_key *cur;
+		int i;
+
+		for (i = 0; i < pi_cur->plugin->output.num_keys; i++)
+			upi->input.keys[index++] = pi_cur->output.keys[i];
+	}
+
+	upi->input.num_keys = num_keys;
+
+	return 0;
+}
+
+
 /***********************************************************************
  * PLUGIN MANAGEMENT 
  ***********************************************************************/

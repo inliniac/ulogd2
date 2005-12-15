@@ -217,6 +217,7 @@ void __ulogd_log(int level, char *file, int line, const char *message, ...);
 #define SET_NEEDED(x)	(x.flags |= ULOGD_RETF_NEEDED)
 
 int ulogd_key_size(struct ulogd_key *key);
+int ulogd_wildcard_inputkeys(struct ulogd_pluginstance *upi);
 
 /***********************************************************************
  * file descriptor handling
