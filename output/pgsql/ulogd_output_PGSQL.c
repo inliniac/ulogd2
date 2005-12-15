@@ -255,13 +255,13 @@ static int open_db_pgsql(struct ulogd_pluginstance *upi)
 	
 	pi->dbh = PQconnectdb(connstr);
 	if (PQstatus(pi->dbh) != CONNECTION_OK) {
-		close_db(upi);
+		close_db_pgsql(upi);
 		return -1;
 	}
 
 	if (pgsql_namespace(upi)) {
 		ulogd_log(ULOGD_ERROR, "unable to test for pgsql schemas\n");
-		close_db(upi);
+		close_db_pgsql(upi);
 		return -1;
 	}
 

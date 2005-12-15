@@ -335,8 +335,8 @@ void ulogd_db_signal(struct ulogd_pluginstance *upi, int signal)
 	switch (signal) {
 	case SIGHUP:
 		/* reopen database connection */
-		stop_db(upi);
-		start_db(upi);
+		ulogd_db_stop(upi);
+		ulogd_db_start(upi);
 		break;
 	default:
 		break;
