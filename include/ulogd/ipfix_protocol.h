@@ -2,12 +2,12 @@
 #define _IPFIX_PROTOCOL_H
 
 /* This header file defines structures for the IPFIX protocol in accordance with
- * draft-ietf-ipfix-protocol-03.txt */
+ * draft-ietf-ipfix-protocol-19.txt */
 
 #define IPFIX_VENDOR_IETF	0x00000000
 #define IPFIX_VENDOR_NETFILTER	0x23424223
 
-/* Section 8.1 */
+/* Section 3.1 */
 struct ipfix_msg_hdr {
 	u_int16_t	version;
 	u_int16_t	length;
@@ -16,7 +16,13 @@ struct ipfix_msg_hdr {
 	u_int32_t	source_id;
 };
 
-/* Section 8.2 */
+/* Section 3.4.1 */
+struct ipfix_templ_rec_hdr {
+	u_int16_t	templ_id;
+	u_int16_t	field_count;
+};
+
+/* Section 3.2 */
 struct ipfix_ietf_field {
 	u_int16_t	type;
 	u_int16_t	length;

@@ -52,7 +52,7 @@ static struct config_keyset ipfix_kset = {
 			.key	 = "port",
 			.type	 = CONFIG_TYPE_STRING,
 			.options = CONFIG_OPT_NONE,
-			.u	 = { .value = IPFIX_DEFAULT_TCPUDP_PORT },
+			.u	 = { .string = "4739" },
 		},
 		{
 			.key	 = "protocol",
@@ -82,7 +82,6 @@ struct ipfix_instance {
 	char *tmpl_cur;
 };
 
-
 /* Build the IPFIX template from the input keys */
 static int build_template(struct ulogd_pluginstance *upi)
 {
@@ -90,8 +89,8 @@ static int build_template(struct ulogd_pluginstance *upi)
 	struct ipfix_templ_rec_hdr *rhdr;
 	int i, j;
 
-	if (ii->template.buf)
-		free(ii->template.buf);
+	if (ii->tmpl)
+		free(ii->tmpl);
 
 	ii->tmpl = malloc(sizeof(struct ipfix_template) +
 			 (upi->input.num_keys*sizeof(struct ipfix_vendor_field)));
@@ -101,21 +100,26 @@ static int build_template(struct ulogd_pluginstance *upi)
 #define ULOGD_IPFIX_TEMPL_BASE 1024
 
 	/* initialize template header */
-	ii->tmpl->hdr.tmpl_id = htons(ULOGD_IPFIX_TEMPL_BASE);
+	ii->tmpl->hdr.templ_id = htons(ULOGD_IPFIX_TEMPL_BASE);
 
 	ii->tmpl_cur = ii->tmpl->buf;
 
 	for (i = 0; i < upi->input.num_keys; i++) {
-		struct ulogd_key *key = ulogd->input.keys[i];
+		struct ulogd_key *key = &upi->input.keys[i];
+		int length = ulogd_key_size(key);
+
+		if (length < 0 || length > 0xffff)
+			continue;
 
 		if (key->ipfix.field_id == 0)
 			continue;
-		if (key->ipfix.vendor_id == IPFIX_VENDOR_IETF) {
+
+		if (key->ipfix.vendor == IPFIX_VENDOR_IETF) {
 			struct ipfix_ietf_field *field = 
 				(struct ipfix_ietf_field *) ii->tmpl_cur;
 
 			field->type = htons(key->ipfix.field_id);
-			/* FIXME: field->length */
+			field->length = htons(length);
 			ii->tmpl_cur += sizeof(*field);
 		} else {
 			struct ipfix_vendor_field *field =
@@ -123,8 +127,7 @@ static int build_template(struct ulogd_pluginstance *upi)
 
 			field->enterprise_num = htonl(key->ipfix.vendor);
 			field->type = htons(key->ipfix.field_id);
-			/* FIXME: field->length */
-
+			field->length = htons(length);
 			ii->tmpl_cur += sizeof(*field);
 		}
 		j++;
@@ -134,41 +137,17 @@ static int build_template(struct ulogd_pluginstance *upi)
 	return 0;
 }
 
-static int _output_ipfix(struct ulogd_pluginstance *upi)
+static int output_ipfix(struct ulogd_pluginstance *upi)
 {
 	struct ipfix_instance *ii = (struct ipfix_instance *) &upi->private;
-	struct ulogd_key *res = upi->input;
-	static char buf[4096];
+	int i;
 
-	printpkt_print(res, buf, 1);
-
-	fprintf(li->of, "%s", buf);
-
-	if (upi->config_kset->ces[1].u.value) 
-		fflush(li->of);
+	for (i = 0; i < upi->input.num_keys; i++) {
+		struct ulogd_key *key = upi->input.keys[i].u.source;
+	}
 
 	return 0;
 }
-
-static void signal_handler_ipfix(struct ulogd_pluginstance *pi, int signal)
-{
-	struct ipfix_instance *li = (struct ipfix_instance *) &pi->private;
-
-	switch (signal) {
-	case SIGHUP:
-		ulogd_log(ULOGD_NOTICE, "sysipfix: reopening logfile\n");
-		fclose(li->of);
-		li->of = fopen(pi->config_kset->ces[0].u.string, "a");
-		if (!li->of) {
-			ulogd_log(ULOGD_ERROR, "can't reopen sysipfix: %s\n",
-				  strerror(errno));
-		}
-		break;
-	default:
-		break;
-	}
-}
-		
 
 static int open_connect_socket(struct ulogd_pluginstance *pi)
 {
@@ -181,20 +160,20 @@ static int open_connect_socket(struct ulogd_pluginstance *pi)
 	hint.ai_protocol = ii->sock_proto;
 	hint.ai_flags = AI_ADDRCONFIG;
 
-	ret = getaddrinfo(host_ce(pi->config_kset).u.value.ptr,
-			  port_ce(pi->config_kset).u.value.ptr,
+	ret = getaddrinfo(host_ce(pi->config_kset).u.string,
+			  port_ce(pi->config_kset).u.string,
 			  &hint, &res);
 	if (ret != 0) {
 		ulogd_log(ULOGD_ERROR, "can't resolve host/service: %s\n",
-			  gaai_strerror(ret));
+			  gai_strerror(ret));
 		return -1;
 	}
 
 	resave = res;
 
 	for (; res; res = res->ai_next) {
-		li->fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-		if (li->fd < 0) {
+		ii->fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+		if (ii->fd < 0) {
 			switch (errno) {
 			case EACCES:
 			case EAFNOSUPPORT:
@@ -208,8 +187,8 @@ static int open_connect_socket(struct ulogd_pluginstance *pi)
 				break;
 			}
 		}
-		if (connect(li->fd, res->ai_addr, res->ai_addrlen) != 0) {
-			close(li->fd);
+		if (connect(ii->fd, res->ai_addr, res->ai_addrlen) != 0) {
+			close(ii->fd);
 			/* try next result */
 			continue;
 		}
@@ -227,6 +206,7 @@ static int open_connect_socket(struct ulogd_pluginstance *pi)
 static int start_ipfix(struct ulogd_pluginstance *pi)
 {
 	struct ipfix_instance *li = (struct ipfix_instance *) &pi->private;
+	int ret;
 
 	ulogd_log(ULOGD_DEBUG, "starting ipfix\n");
 
@@ -241,7 +221,7 @@ static int start_ipfix(struct ulogd_pluginstance *pi)
 	return 0;
 }
 
-static int fini_ipfix(struct ulogd_pluginstance *pi) 
+static int stop_ipfix(struct ulogd_pluginstance *pi) 
 {
 	struct ipfix_instance *li = (struct ipfix_instance *) &pi->private;
 
@@ -250,29 +230,48 @@ static int fini_ipfix(struct ulogd_pluginstance *pi)
 	return 0;
 }
 
+static void signal_handler_ipfix(struct ulogd_pluginstance *pi, int signal)
+{
+	struct ipfix_instance *li = (struct ipfix_instance *) &pi->private;
+
+	switch (signal) {
+	case SIGHUP:
+		ulogd_log(ULOGD_NOTICE, "ipfix: reopening connection\n");
+		stop_ipfix(pi);
+		start_ipfix(pi);
+		break;
+	default:
+		break;
+	}
+}
+	
 static int configure_ipfix(struct ulogd_pluginstance *pi,
 			    struct ulogd_pluginstance_stack *stack)
 {
 	struct ipfix_instance *ii = (struct ipfix_instance *) &pi->private;
+	char *proto_str = proto_ce(pi->config_kset).u.string;
+	int ret;
 
 	/* FIXME: error handling */
 	ulogd_log(ULOGD_DEBUG, "parsing config file section %s\n", pi->id);
-	config_parse_file(pi->id, pi->config_kset);
+	ret = config_parse_file(pi->id, pi->config_kset);
+	if (ret < 0)
+		return ret;
 
 	/* determine underlying protocol */
-	if (!strcmp(proto_ce(pi->config_kset), "udp")) {
+	if (!strcasecmp(proto_str, "udp")) {
 		ii->sock_type = SOCK_DGRAM;
 		ii->sock_proto = IPPROTO_UDP;
-	} else if (!strcmp(proto_ce(pi->config_kset), "tcp")) {
+	} else if (!strcasecmp(proto_str, "tcp")) {
 		ii->sock_type = SOCK_STREAM;
 		ii->sock_proto = IPPROTO_TCP;
-#ifdef _HAVE_SCTP
-	} else if (!strcmp(proto_ce(pi->config_kset), "sctp")) {
+#ifdef IPPROTO_SCTP
+	} else if (!strcasecmp(proto_str, "sctp")) {
 		ii->sock_type = SOCK_SEQPACKET;
 		ii->sock_proto = IPPROTO_SCTP;
 #endif
 #ifdef _HAVE_DCCP
-	} else if (!strcmp(proto_ce(pi->config_kset), "dccp")) {
+	} else if (!strcasecmp(proto_str, "dccp")) {
 		ii->sock_type = SOCK_SEQPACKET;
 		ii->sock_proto = IPPROTO_DCCP;
 #endif
@@ -285,14 +284,14 @@ static int configure_ipfix(struct ulogd_pluginstance *pi,
 	/* postpone address lookup to ->start() time, since we want to 
 	 * re-lookup an address on SIGHUP */
 
-	return 0;
+	return ulogd_wildcard_inputkeys(pi);
 }
 
 static struct ulogd_plugin ipfix_plugin = { 
 	.name = "IPFIX",
 	.input = {
-		.keys = printpkt_keys,
-		.num_keys = ARRAY_SIZE(printpkt_keys),
+		.keys = NULL,
+		.num_keys = 0,
 		.type = ULOGD_DTYPE_PACKET | ULOGD_DTYPE_FLOW, 
 	},
 	.output = {
@@ -303,9 +302,9 @@ static struct ulogd_plugin ipfix_plugin = {
 
 	.configure	= &configure_ipfix,
 	.start	 	= &start_ipfix,
-	.stop	 	= &fini_ipfix,
+	.stop	 	= &stop_ipfix,
 
-	.interp 	= &_output_ipfix, 
+	.interp 	= &output_ipfix, 
 	.signal 	= &signal_handler_ipfix,
 	.version	= ULOGD_VERSION,
 };
