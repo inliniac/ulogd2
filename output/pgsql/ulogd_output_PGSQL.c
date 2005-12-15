@@ -14,11 +14,12 @@
 #include <string.h>
 #include <errno.h>
 #include <arpa/inet.h>
-#include <libpq-fe.h>
+
 #include <ulogd/ulogd.h>
 #include <ulogd/conffile.h>
+#include <ulogd/db.h>
 
-#include "../../util/db.c"
+#include <libpq-fe.h>
 
 #ifdef DEBUG_PGSQL
 #define DEBUGP(x, args...)	fprintf(stderr, x, ## args)
@@ -78,112 +79,8 @@ static struct config_keyset pgsql_kset = {
 #define port_ce(x)	(x->ces[DB_CE_NUM+5])
 #define schema_ce(x)	(x->ces[DB_CE_NUM+6])
 
-#if 0
-/* our main output function, called by ulogd */
-static int pgsql_output(ulog_iret_t *result)
-{
-	struct _field *f;
-	ulog_iret_t *res;
-	PGresult   *pgres;
-#ifdef IP_AS_STRING
-	char *tmpstr;		/* need this for --log-ip-as-string */
-	struct in_addr addr;
-#endif
-
-	stmt_ins = stmt_val;
-
-	for (f = fields; f; f = f->next) {
-		res = keyh_getres(f->id);
-
-		if (!res) {
-			ulogd_log(ULOGD_NOTICE,
-				"no result for %s ?!?\n", f->name);
-		}
-
-		if (!res || !IS_VALID((*res))) {
-			/* no result, we have to fake something */
-			sprintf(stmt_ins, "NULL,");
-			stmt_ins = stmt + strlen(stmt);
-			continue;
-		}
-
-		switch (res->type) {
-			case ULOGD_RET_INT8:
-				sprintf(stmt_ins, "%d,", res->value.i8);
-				break;
-			case ULOGD_RET_INT16:
-				sprintf(stmt_ins, "%d,", res->value.i16);
-				break;
-			case ULOGD_RET_INT32:
-				sprintf(stmt_ins, "%d,", res->value.i32);
-				break;
-			case ULOGD_RET_INT64:
-				sprintf(stmt_ins, "%lld,", res->value.i64);
-				break;
-			case ULOGD_RET_UINT8:
-				sprintf(stmt_ins, "%u,", res->value.ui8);
-				break;
-			case ULOGD_RET_UINT16:
-				sprintf(stmt_ins, "%u,", res->value.ui16);
-				break;
-			case ULOGD_RET_IPADDR:
-#ifdef IP_AS_STRING
-				*stmt_ins++ = '\'';
-				memset(&addr, 0, sizeof(addr));
-				addr.s_addr = ntohl(res->value.ui32);
-				tmpstr = (char *)inet_ntoa(addr);
-				PQescapeString(stmt_ins,tmpstr,strlen(tmpstr)); 
-				stmt_ins = stmt + strlen(stmt);
-				sprintf(stmt_ins, "',");
-				break;
-#endif /* IP_AS_STRING */
-				/* EVIL: fallthrough when logging IP as
-				 * u_int32_t */
-
-			case ULOGD_RET_UINT32:
-				sprintf(stmt_ins, "%u,", res->value.ui32);
-				break;
-			case ULOGD_RET_UINT64:
-				sprintf(stmt_ins, "%llu,", res->value.ui64);
-				break;
-			case ULOGD_RET_BOOL:
-				sprintf(stmt_ins, "'%d',", res->value.b);
-				break;
-			case ULOGD_RET_STRING:
-				*stmt_ins++ = '\'';
-				PQescapeString(stmt_ins,res->value.ptr,strlen(res->value.ptr)); 
-				stmt_ins = stmt + strlen(stmt);
-				sprintf(stmt_ins, "',");
-				break;
-			case ULOGD_RET_RAW:
-				ulogd_log(ULOGD_NOTICE,"%s: pgsql doesn't support type RAW\n",res->key);
-				sprintf(stmt_ins, "NULL,");
-				break;
-			default:
-				ulogd_log(ULOGD_NOTICE,
-					"unknown type %d for %s\n",
-					res->type, res->key);
-				break;
-		}
-		stmt_ins = stmt + strlen(stmt);
-	}
-	*(stmt_ins - 1) = ')';
-	DEBUGP("stmt=#%s#\n", stmt);
-
-	/* now we have created our statement, insert it */
-	/* Added code by Jaki */
-	pgres = PQexec(dbh, stmt);
-	if(!pgres || PQresultStatus(pgres) != PGRES_COMMAND_OK) {
-		ulogd_log(ULOGD_ERROR, "sql error during insert: %s\n",
-				PQresultErrorMessage(pgres));
-		return 1;
-	}
-
-	return 0;
-}
-#endif
-
-#define PGSQL_HAVE_NAMESPACE_TEMPLATE "SELECT nspname FROM pg_namespace n WHERE n.nspname='%s'"
+#define PGSQL_HAVE_NAMESPACE_TEMPLATE 			\
+	"SELECT nspname FROM pg_namespace n WHERE n.nspname='%s'"
 
 /* Determine if server support schemas */
 static int pgsql_namespace(struct ulogd_pluginstance *upi)
@@ -218,9 +115,11 @@ static int pgsql_namespace(struct ulogd_pluginstance *upi)
 	return 0;
 }
 
-#define PGSQL_GETCOLUMN_TEMPLATE "SELECT  a.attname FROM pg_class c, pg_attribute a WHERE c.relname ='%s' AND a.attnum>0 AND a.attrelid=c.oid ORDER BY a.attnum"
+#define PGSQL_GETCOLUMN_TEMPLATE 			\
+	"SELECT  a.attname FROM pg_class c, pg_attribute a WHERE c.relname ='%s' AND a.attnum>0 AND a.attrelid=c.oid ORDER BY a.attnum"
 
-#define PGSQL_GETCOLUMN_TEMPLATE_SCHEMA "SELECT a.attname FROM pg_attribute a, pg_class c LEFT JOIN pg_namespace n ON c.relnamespace=n.oid WHERE c.relname ='%s' AND n.nspname='%s' AND a.attnum>0 AND a.attrelid=c.oid AND a.attisdropped=FALSE ORDER BY a.attnum"
+#define PGSQL_GETCOLUMN_TEMPLATE_SCHEMA 		\
+	"SELECT a.attname FROM pg_attribute a, pg_class c LEFT JOIN pg_namespace n ON c.relnamespace=n.oid WHERE c.relname ='%s' AND n.nspname='%s' AND a.attnum>0 AND a.attrelid=c.oid AND a.attisdropped=FALSE ORDER BY a.attnum"
 
 /* find out which columns the table has */
 static int get_columns_pgsql(struct ulogd_pluginstance *upi)
@@ -410,7 +309,7 @@ static int configure_pgsql(struct ulogd_pluginstance *upi,
 
 	pi->db_inst.driver = &db_driver_pgsql;
 
-	return configure_db(upi, stack);
+	return ulogd_db_configure(upi, stack);
 }
 
 static struct ulogd_plugin pgsql_plugin = { 
@@ -425,10 +324,11 @@ static struct ulogd_plugin pgsql_plugin = {
 	},
 	.config_kset 	= &pgsql_kset,
 	.priv_size	= sizeof(struct pgsql_instance),
-	.start		= &start_db,
-	.stop		= &stop_db,
-	.signal		= &signal_db,
-	.interp		= &interp_db,
+	.configure	= &configure_pgsql,
+	.start		= &ulogd_db_start,
+	.stop		= &ulogd_db_stop,
+	.signal		= &ulogd_db_signal,
+	.interp		= &ulogd_db_interp,
 	.version	= ULOGD_VERSION,
 };
 

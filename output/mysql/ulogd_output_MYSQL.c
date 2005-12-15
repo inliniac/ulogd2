@@ -47,8 +47,7 @@
 #include <mysql/mysql.h>
 #include <ulogd/ulogd.h>
 #include <ulogd/conffile.h>
-
-#include "../../util/db.c"
+#include <ulogd/db.h>
 
 #ifdef DEBUG_MYSQL
 #define DEBUGP(x, args...)	fprintf(stderr, x, ## args)
@@ -245,7 +244,7 @@ static int configure_mysql(struct ulogd_pluginstance *upi,
 	struct db_instance *di = (struct db_instance *) &upi->private;
 	di->driver = &db_driver_mysql;
 
-	return configure_db(upi, stack);
+	return ulogd_db_configure(upi, stack);
 }
 
 static struct ulogd_plugin plugin_mysql = {
@@ -261,10 +260,10 @@ static struct ulogd_plugin plugin_mysql = {
 	.config_kset = &kset_mysql,
 	.priv_size = sizeof(struct mysql_instance),
 	.configure = &configure_mysql,
-	.start	   = &start_db,
-	.stop	   = &stop_db,
-	.signal	   = &signal_db,
-	.interp	   = &interp_db,
+	.start	   = &ulogd_db_start,
+	.stop	   = &ulogd_db_stop,
+	.signal	   = &ulogd_db_signal,
+	.interp	   = &ulogd_db_interp,
 	.version   = ULOGD_VERSION,
 };
 
