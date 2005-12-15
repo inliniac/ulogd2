@@ -211,7 +211,7 @@ static int _init_db(struct ulogd_pluginstance *upi)
 	if (di->reconnect && di->reconnect > time(NULL))
 		return 0;
 	
-	if (open_db(upi)) {
+	if (di->driver->open_db(upi)) {
 		ulogd_log(ULOGD_ERROR, "can't establish database connection\n");
 		return _init_reconnect(upi);
 	}
