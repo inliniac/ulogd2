@@ -42,6 +42,7 @@
 #define ULOGD_RET_BOOL		0x0050
 
 #define ULOGD_RET_IPADDR	0x0100
+#define ULOGD_RET_IP6ADDR	0x0200
 
 /* types with length field */
 #define ULOGD_RET_STRING	0x8020
@@ -210,22 +211,12 @@ void __ulogd_log(int level, char *file, int line, const char *message, ...);
 /* backwards compatibility */
 #define ulogd_error(format, args...) ulogd_log(ULOGD_ERROR, format, ## args)
 
-/* get an interpreter hash id by name */
-unsigned int interh_getid(const char *name);
-
-/* get a key id if you have the name */
-unsigned int keyh_getid(const char *name);
-
-/* get a result for a given key id */
-struct ulogd_key *keyh_getres(unsigned int id);
-
-/* the key hash itself */
-extern struct ulogd_keyh_entry *ulogd_keyh;
-
 #define IS_VALID(x)	((x).flags & ULOGD_RETF_VALID)
 #define SET_VALID(x)	(x.flags |= ULOGD_RETF_VALID)
 #define IS_NEEDED(x)	(x.flags & ULOGD_RETF_NEEDED)
 #define SET_NEEDED(x)	(x.flags |= ULOGD_RETF_NEEDED)
+
+int ulogd_key_size(struct ulogd_key *key);
 
 /***********************************************************************
  * file descriptor handling
