@@ -8,4 +8,4 @@
 - cleanup keys after we've propagatet through the whole stack (RETF_VALID, FREE)
 - port SQLITE3 plugin
 - convert db layer and pgsql + mysql plugin to a 'parameter bind' scheme for efficiency
-
+- autoconf detection of SCTP / DCCP support
