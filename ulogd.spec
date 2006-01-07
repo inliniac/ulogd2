@@ -1,21 +1,33 @@
 Summary: ulogd - The userspace logging daemon for netfilter
 Name: ulogd
-Version: 1.01
+Version: 2.00beta
 Release: 1gm
 License: GPL
 Group: Network
 Source: http://ftp.netfilter.org/pub/ulogd/%{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
-Packager: Harald Welte <laforge@gnumonks.org>
-BuildRequires: MySQL-devel postgresql-devel libpcap-devel
+Packager: Harald Welte <laforge@netfilter.org>
+BuildRequires: MySQL-devel postgresql-devel libpcap-devel libnfnetlink libnetfilter_conntrack libnetfilter_log
 #BuildRequires: mysql-devel
 
 %package mysql
-Summary: MySQL output plugin for ulogd
+Summary: MySQL output plugin for ulogd-2.x
 Group: Network
 
 %package pgsql
-Summary: PostgreSQL output plugin for ulogd
+Summary: PostgreSQL output plugin for ulogd-2.x
+Group: Network
+
+%package pcap
+Summary: libpcap output plugin for ulogd-2.x
+Group: Network
+
+%package nflog
+Summary: netfilter_log input plugin for ulogd-2.x
+Group: Network
+
+%package ctnl
+Summary: netfilter_conntrack input plugin for ulogd-2.x
 Group: Network
 
 %description
