@@ -1,6 +1,6 @@
 
-INCLUDES = $(all_includes) -I$(top_srcdir)/include -I$(PGSQLINCLUDES)
-LIBS=$(PGSQL_LIB)
+INCLUDES = $(all_includes) -I$(top_srcdir)/include -I$(PQINCPATH)
+LIBS=$(PQLIBS)
 
 pkglib_LTLIBRARIES = ulogd_output_PGSQL.la
 

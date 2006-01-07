@@ -34,189 +34,23 @@ AC_CHECK_HEADER([libnetfilter_log/linux_nfnetlink_log.h], [AC_MSG_RESULT([found]
 AC_CHECK_HEADER([libnetfilter_conntrack/libnetfilter_conntrack.h], [AC_MSG_RESULT([found])],
 		[AC_MSG_ERROR([libnetfilter_conntrack Version 0.0.11 or later needed])])
 
-DATABASE_DIR=""
-DATABASE_LIB=""
-DATABASE_LIB_DIR=""
 
-DATABASE_DRIVERS=""
+CT_CHECK_POSTGRES_DB()
+CT_CHECK_MYSQL_DB()
+CT_CHECK_SQLITE3_DB()
+CT_CHECK_PCAP()
 
-dnl
-dnl test for MySQL
-dnl
-AC_ARG_WITH(mysql,
- --with-mysql=<directory>		mysql installed in <directoty>,[
-if test $withval != yes
-then
-        dir=$withval
-else
-        dir="/usr/local"
-fi
-mysqldir=""
-AC_MSG_CHECKING(for MySQL files)
-for d in $dir /usr /usr/local /usr/local/mysql /opt/mysql /opt/packages/mysql
-do
-        if test -f $d/lib/mysql/libmysqlclient.so
-        then
-                AC_MSG_RESULT(found mysql in $d)
-                mysqldir=$d
-                mysqldir_suffix=/mysql
-                break
-        elif test -f $d/lib/libmysqlclient.so
-        then
-                AC_MSG_RESULT(found mysql in $d)
-                mysqldir=$d
-                mysqldir_suffix=
-                break
-        fi
-done
+dnl AC_SUBST(DATABASE_DIR)
+dnl AC_SUBST(DATABASE_LIB)
+dnl AC_SUBST(DATABASE_LIB_DIR)
+dnl AC_SUBST(DB_DEF)
+dnl AC_SUBST(EXTRA_MYSQL_DEF)
+dnl AC_SUBST(EXTRA_PGSQL_DEF)
 
-if test x$mysqldir = x
-then
-        AC_MSG_WARN(MySQL backend not used)
-else
-        AC_DEFINE([HAVE_MYSQL], [], [Description])
-        MYSQLINCLUDES=${mysqldir}/include${mysqldir_suffix}
-        MYSQLLIBS=${mysqldir}/lib${mysqldir_suffix}
+dnl AC_SUBST(DATABASE_DRIVERS)
+dnl AC_SUBST(HAVE_PCAP_H)
 
-	DATABASE_DIR="${DATABASE_DIR} mysql"
-
-	MYSQL_LIB="${DATABASE_LIB} -lmysqlclient " 
-	DATABASE_LIB_DIR="${DATABASE_LIB_DIR} -L${MYSQLLIBS} "
-
-	DATABASE_DRIVERS="${DATABASE_DRIVERS} ../mysql/mysql_driver.o "
-
-	DB_DEF="${DB_DEF} -DHAVE_MYSQL "
-
-
-	AC_SUBST(MYSQLINCLUDES)
-	AC_SUBST(MYSQL_LIB)
-
-        if test -f $MYSQLLIBS/libmystrings.so
-        then
-                DATABASE_LIB="${DATABASE_LIB} -lmystrings "
-        else
-                MYSQLEXTRALIBS=
-        fi
-
-	dnl Here we check whether we have an old MySQL client library
-	dnl installed, which does not support the mysql_real_escape_string(),
-	dnl but the real_escape_string() function.
-	dnl Having a look in the libary itself should be more reliable than
-	dnl parsing the output of mysql --version.
-
-	AC_MSG_CHECKING(for mysql_real_escape_string support)
-
-	MYSQL_FUNCTION_TEST=`strings ${MYSQLLIBS}/libmysqlclient.so | grep mysql_real_escape_string`
-
-	if test "x$MYSQL_FUNCTION_TEST" = x
-	then
-                EXTRA_MYSQL_DEF="OLD_MYSQL=1 "
-                AC_MSG_RESULT(found old MySQL)
-	else
-		AC_MSG_RESULT(found new MySQL)
-	fi
-
-fi      
-])      
-
-
-dnl
-dnl Check whether the user wants log IP-addresses as strings rather
-dnl than as unsigned long-integers to his MySQL-database. Since this
-dnl feature is only used in ulogd_MYSQL.c, there are no checks in any
-dnl way.
-dnl
-
-AC_ARG_WITH(mysql-log-ip-as-string,
- --with-mysql-log-ip-as-string		log IPs as string rather than as
-					unsigned long-integer.
-,[
-   EXTRA_MYSQL_DEF="-D${EXTRA_MYSQL_DEF} -DIP_AS_STRING=1"
-   AC_MSG_WARN(the use of --with-mysql-log-ip-as-string is discouraged)
-])
-
-
-dnl
-dnl test for PostgreSQL
-dnl
-AC_ARG_WITH(pgsql,
- --with-pgsql=<directory>		pgsql installed in <directoty>,[
-if test $withval != yes
-then
-        dir=$withval
-else
-        dir="/usr/local"
-fi
-pgsqldir=""
-AC_MSG_CHECKING(for PGSQL files)
-for d in $dir /usr /usr/local /usr/local/pgsql /opt/pgsql /opt/packages/pgsql
-do
-        if test -f $d/lib/pgsql/libpq.so
-        then
-                AC_MSG_RESULT(found pgsql in $d)
-                pgsqldir=$d
-                break
-        elif test -f $d/lib/libpq.so
-        then
-                AC_MSG_RESULT(found pgsql in $d)
-                pgsqldir=$d
-                break
-        fi
-done
-
-if test x$pgsqldir = x
-then
-        AC_MSG_WARN(PGSQL backend not used)
-else
-        AC_DEFINE([HAVE_PGSQL], [], [Description])
-	for i in include include/postgresql include/pgsql
-	do
-		if test -f ${pgsqldir}/$i/libpq-fe.h
-		then
-			PGSQLINCLUDES=${pgsqldir}/$i
-			break
-		fi
-	done
-	PGSQLLIBS=${pgsqldir}/lib
-
-	DATABASE_DIR="${DATABASE_DIR} pgsql"
-
-	PGSQL_LIB="${DATABASE_LIB} -lpq " 
-	DATABASE_LIB_DIR="${DATABASE_LIB_DIR} -L${PGSQLLIBS} "
-
-	DB_DEF="${DB_DEF} -DHAVE_PGSQL "
-
-	AC_SUBST(PGSQLINCLUDES)
-	AC_SUBST(PGSQL_LIB)
-
-fi      
-])      
-
-dnl
-dnl Check whether the user wants to log IP-addresses as strings rather
-dnl than integers to his pgsql-database.
-dnl
-
-AC_ARG_WITH(pgsql-log-ip-as-string,
- --with-pgsql-log-ip-as-string		log IPs as string rather than as interger
-,[
-   EXTRA_PGSQL_DEF="-DIP_AS_STRING=1"
-])
-
-
-
-
-AC_SUBST(DATABASE_DIR)
-AC_SUBST(DATABASE_LIB)
-AC_SUBST(DATABASE_LIB_DIR)
-AC_SUBST(DB_DEF)
-AC_SUBST(EXTRA_MYSQL_DEF)
-AC_SUBST(EXTRA_PGSQL_DEF)
-
-AC_SUBST(DATABASE_DRIVERS)
-AC_SUBST(HAVE_PCAP_H)
-
-AM_CONDITIONAL(HAVE_MYSQL, test x$mysqldir != x)
-AM_CONDITIONAL(HAVE_PGSQL, test x$pgsqldir != x)
+dnl AM_CONDITIONAL(HAVE_MYSQL, test x$mysqldir != x)
+dnl AM_CONDITIONAL(HAVE_PGSQL, test x$pgsqldir != x)
 
 AC_OUTPUT(doc/Makefile libipulog/Makefile input/Makefile input/packet/Makefile input/flow/Makefile filter/Makefile filter/raw2packet/Makefile filter/packet2flow/Makefile output/Makefile output/pcap/Makefile output/mysql/Makefile output/pgsql/Makefile src/Makefile Makefile Rules.make)

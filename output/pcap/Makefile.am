@@ -1,6 +1,6 @@
 
-INCLUDES = $(all_includes) -I$(top_srcdir)/include
-LIBS=-lpcap
+INCLUDES = $(all_includes) $(PCAP_INC)
+LIBS=$(PCAP_LIB)
 
 pkglib_LTLIBRARIES = ulogd_output_PCAP.la
 

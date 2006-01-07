@@ -1,6 +1,6 @@
 
-INCLUDES = $(all_includes) -I$(top_srcdir)/include
-LIBS=-lmysqlclient_r
+INCLUDES = $(all_includes) $(MYSQL_INC)
+LIBS=$(MYSQL_LIB)
 
 pkglib_LTLIBRARIES = ulogd_output_MYSQL.la
 
