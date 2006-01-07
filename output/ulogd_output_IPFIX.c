@@ -22,6 +22,10 @@
  *
  * $Id: ulogd_output_LOGEMU.c 1628 2005-11-04 15:23:12Z laforge $
  *
+ * TODO:
+ * - where to get a useable <sctp.h> for linux ?
+ * - implement PR-SCTP (no api definition in draft sockets api)
+ *
  */
 
 #include <stdio.h>
@@ -33,6 +37,24 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+
+#ifdef IPPROTO_SCTP
+typedef u_int32_t sctp_assoc_t;
+
+/* glibc doesn't yet have this, as defined by
+ * draft-ietf-tsvwg-sctpsocket-11.txt */
+struct sctp_sndrcvinfo {
+	u_int16_t	sinfo_stream;
+	u_int16_t	sinfo_ssn;
+	u_int16_t	sinfo_flags;
+	u_int32_t	sinfo_ppid;
+	u_int32_t	sinfo_context;
+	u_int32_t	sinfo_timetolive;
+	u_int32_t	sinfo_tsn;
+	u_int32_t	sinfo_cumtsn;
+	sctp_assoc_t	sinfo_assoc_id;
+};
+#endif
 
 #include <ulogd/ulogd.h>
 #include <ulogd/conffile.h>
@@ -74,12 +96,14 @@ struct ipfix_template {
 
 struct ipfix_instance {
 	int fd;		/* socket that we use for sending IPFIX data */
-	int sock_type;
-	int sock_proto;
+	int sock_type;	/* type (SOCK_*) */
+	int sock_proto;	/* protocol (IPPROTO_*) */
 
 	struct ipfix_template *tmpl;
 	unsigned int tmpl_len;
-	char *tmpl_cur;
+	char *tmpl_cur;	/* cursor into current template position */
+
+	unsigned int total_length	/* total size of all data elements */
 };
 
 /* Build the IPFIX template from the input keys */
@@ -87,7 +111,7 @@ static int build_template(struct ulogd_pluginstance *upi)
 {
 	struct ipfix_instance *ii = (struct ipfix_instance *) &upi->private;
 	struct ipfix_templ_rec_hdr *rhdr;
-	int i, j;
+	unsigned int i, j;
 
 	if (ii->tmpl)
 		free(ii->tmpl);
@@ -104,11 +128,13 @@ static int build_template(struct ulogd_pluginstance *upi)
 
 	ii->tmpl_cur = ii->tmpl->buf;
 
+	ii->total_length = 0;
+
 	for (i = 0; i < upi->input.num_keys; i++) {
 		struct ulogd_key *key = &upi->input.keys[i];
 		int length = ulogd_key_size(key);
 
-		if (length < 0 || length > 0xffff)
+		if (length < 0 || length > 0xfffe)
 			continue;
 
 		if (key->ipfix.field_id == 0)
@@ -118,7 +144,7 @@ static int build_template(struct ulogd_pluginstance *upi)
 			struct ipfix_ietf_field *field = 
 				(struct ipfix_ietf_field *) ii->tmpl_cur;
 
-			field->type = htons(key->ipfix.field_id);
+			field->type = htons(key->ipfix.field_id | 0x8000000);
 			field->length = htons(length);
 			ii->tmpl_cur += sizeof(*field);
 		} else {
@@ -130,6 +156,7 @@ static int build_template(struct ulogd_pluginstance *upi)
 			field->length = htons(length);
 			ii->tmpl_cur += sizeof(*field);
 		}
+		ii->total_length += length;
 		j++;
 	}
 
@@ -187,6 +214,26 @@ static int open_connect_socket(struct ulogd_pluginstance *pi)
 				break;
 			}
 		}
+
+#ifdef IPPROTO_SCTP
+		/* Set the number of SCTP output streams */
+		if (res->ai_protocol == IPPROTO_SCTP) {
+			struct sctp_initmsg initmsg;
+			int ret; 
+			memset(&initmsg, 0, sizeof(initmsg));
+			initmsg.sinit_num_ostreams = 2;
+			ret = setsockopt(ii->fd, IPPROTO_SCTP, SCTP_INITMSG,
+					 &initmsg, sizeof(initmsg));
+			if (ret < 0) {
+				ulogd_log(ULOGD_ERROR, "cannot set number of"
+					  "sctp streams: %s\n",
+					  strerror(errno));
+				close(ii->fd);
+				freeaddrinfo(resave);
+				return ret;
+			}
+#endif
+
 		if (connect(ii->fd, res->ai_addr, res->ai_addrlen) != 0) {
 			close(ii->fd);
 			/* try next result */
