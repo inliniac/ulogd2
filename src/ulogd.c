@@ -824,6 +824,9 @@ static void signal_handler(int signal)
 				sigterm_handler(signal);
 		}
 		break;
+	case SIGALRM:
+		ulogd_timer_check_n_run();
+		break;
 	default:
 		break;
 	}
@@ -966,7 +969,9 @@ int main(int argc, char* argv[])
 
 	signal(SIGTERM, &sigterm_handler);
 	signal(SIGHUP, &signal_handler);
+	signal(SIGALRM, &signal_handler);
 	signal(SIGUSR1, &signal_handler);
+	signal(SIGUSR2, &signal_handler);
 
 	ulogd_log(ULOGD_INFO, 
 		  "initialization finished, entering main loop\n");

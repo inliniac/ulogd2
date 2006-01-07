@@ -238,4 +238,18 @@ struct ulogd_fd {
 int ulogd_register_fd(struct ulogd_fd *ufd);
 void ulogd_unregister_fd(struct ulogd_fd *ufd);
 
+/***********************************************************************
+ * timer handling
+ ***********************************************************************/
+
+struct ulogd_timer {
+	struct llist_head list;
+	struct timeval expires;
+	void (*cb)(void *data);
+	void *data;
+};
+
+int ulogd_register_timer(struct ulogd_timer *timer);
+void ulogd_unregister_timer(struct ulogd_timer *timer);
+
 #endif /* _ULOGD_H */
