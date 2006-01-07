@@ -321,11 +321,8 @@ static int __interp_db(struct ulogd_pluginstance *upi)
 
 	/* now we have created our statement, insert it */
 
-	if (di->driver->execute(upi, di->stmt, strlen(di->stmt)) < 0) {
-		ulogd_log(ULOGD_ERROR, "sql error during insert: %s\n",
-			  di->driver->strerror(upi));
+	if (di->driver->execute(upi, di->stmt, strlen(di->stmt)) < 0)
 		return _init_db(upi);
-	}
 
 	return 0;
 }
