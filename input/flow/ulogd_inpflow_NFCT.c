@@ -21,8 +21,21 @@
 struct nfct_pluginstance {
 	struct nfct_handle *cth;
 	struct ulogd_fd nfct_fd;
+	struct ulogd_timer timer;
 };
 
+static struct config_keyset nfct_kset = {
+	.num_ces = 1,
+	.ces = {
+		{
+			.key	 = "pollinterval",
+			.type	 = CONFIG_TYPE_INT,
+			.options = CONFIG_OPT_NONE,
+			.u.value = 0,
+		},
+	},
+};
+#define pollint_ce(x)	(x->ces[0])
 
 static struct ulogd_key nfct_okeys[] = {
 	{
@@ -201,6 +214,46 @@ static int read_cb_nfct(int fd, unsigned int what, void *param)
 	return 0;
 }
 
+static int get_ctr_zero(struct ulogd_pluginstance *upi)
+{
+	struct nfct_pluginstance *cpi = 
+			(struct nfct_pluginstance *)upi->private;
+
+	return nfct_dump_conntrack_table_reset_counters(cpi->cth, AF_INET);
+}
+
+static void getctr_timer_cb(void *data)
+{
+	struct ulogd_pluginstance *upi = data;
+
+	get_ctr_zero(upi);
+}
+
+static int configure_nfct(struct ulogd_pluginstance *upi,
+			  struct ulogd_pluginstance_stack *stack)
+{
+	struct nfct_pluginstance *cpi = 
+			(struct nfct_pluginstance *)upi->private;
+	int ret;
+	
+	ret = config_parse_file(upi->id, upi->config_kset);
+	if (ret < 0)
+		return ret;
+	
+	/* initialize getctrzero timer structure */
+	memset(&cpi->timer, 0, sizeof(cpi->timer));
+	cpi->timer.cb = &getctr_timer_cb;
+	cpi->timer.data = cpi;
+
+	if (pollint_ce(upi->config_kset).u.value != 0) {
+		cpi->timer.expires.tv_sec = 
+			pollint_ce(upi->config_kset).u.value;
+		ulogd_register_timer(&cpi->timer);
+	}
+
+	return 0;
+}
+
 static int constructor_nfct(struct ulogd_pluginstance *upi)
 {
 	struct nfct_pluginstance *cpi = 
@@ -228,7 +281,6 @@ static int constructor_nfct(struct ulogd_pluginstance *upi)
 	return 0;
 }
 
-
 static int destructor_nfct(struct ulogd_pluginstance *pi)
 {
 	struct nfct_pluginstance *cpi = (void *) pi;
@@ -241,6 +293,15 @@ static int destructor_nfct(struct ulogd_pluginstance *pi)
 	return 0;
 }
 
+static void signal_nfct(struct ulogd_pluginstance *pi, int signal)
+{
+	switch (signal) {
+	case SIGUSR2:
+		get_ctr_zero(pi);
+		break;
+	}
+}
+
 static struct ulogd_plugin nfct_plugin = {
 	.name = "NFCT",
 	.input = {
@@ -251,11 +312,12 @@ static struct ulogd_plugin nfct_plugin = {
 		.num_keys = ARRAY_SIZE(nfct_okeys),
 		.type = ULOGD_DTYPE_FLOW,
 	},
-	.config_kset 	= NULL,
+	.config_kset 	= &nfct_kset,
 	.interp 	= NULL,
 	.configure	= NULL,
 	.start		= &constructor_nfct,
 	.stop		= &destructor_nfct,
+	.signal		= &signal_nfct,
 	.priv_size	= sizeof(struct nfct_pluginstance),
 	.version	= ULOGD_VERSION,
 };
