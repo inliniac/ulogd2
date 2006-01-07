@@ -149,12 +149,15 @@ static int get_columns_pgsql(struct ulogd_pluginstance *upi)
 
 	pi->pgres = PQexec(pi->dbh, pgbuf);
 	if (!pi->pgres) {
-		ulogd_log(ULOGD_DEBUG, "result false");
+		ulogd_log(ULOGD_DEBUG, "result false (%s)",
+			  PQerrorMessage(pi->dbh));
 		return -1;
 	}
 
 	if (PQresultStatus(pi->pgres) != PGRES_TUPLES_OK) {
-		ulogd_log(ULOGD_DEBUG, "pres_command_not_ok");
+		ulogd_log(ULOGD_DEBUG, "pres_command_not_ok (%s)",
+			  PQerrorMessage(pi->dbh));
+		PQclear(pi->pgres);
 		return -1;
 	}
 
@@ -168,6 +171,7 @@ static int get_columns_pgsql(struct ulogd_pluginstance *upi)
 	if (!upi->input.keys) {
 		upi->input.num_keys = 0;
 		ulogd_log(ULOGD_ERROR, "ENOMEM\n");
+		PQclear(pi->pgres);
 		return -ENOMEM;
 	}
 
@@ -255,6 +259,8 @@ static int open_db_pgsql(struct ulogd_pluginstance *upi)
 	
 	pi->dbh = PQconnectdb(connstr);
 	if (PQstatus(pi->dbh) != CONNECTION_OK) {
+		ulogd_log(ULOGD_ERROR, "unable to connect to db (%s): %s\n",
+			  connstr, PQerrorMessage(pi->dbh));
 		close_db_pgsql(upi);
 		return -1;
 	}
@@ -281,16 +287,13 @@ static int execute_pgsql(struct ulogd_pluginstance *upi,
 	struct pgsql_instance *pi = (struct pgsql_instance *) upi->private;
 
 	pi->pgres = PQexec(pi->dbh, stmt);
-	if (!pi->pgres || PQresultStatus(pi->pgres) != PGRES_COMMAND_OK)
+	if (!pi->pgres || PQresultStatus(pi->pgres) != PGRES_COMMAND_OK) {
+		ulogd_log(ULOGD_ERROR, "execute failed (%s)\n",
+			  PQerrorMessage(pi->dbh));
 		return -1;
+	}
 
 	return 0;
-}
-
-static char *strerror_pgsql(struct ulogd_pluginstance *upi)
-{
-	struct pgsql_instance *pi = (struct pgsql_instance *) upi->private;
-	return PQresultErrorMessage(pi->pgres);
 }
 
 static struct db_driver db_driver_pgsql = {
@@ -299,7 +302,6 @@ static struct db_driver db_driver_pgsql = {
 	.close_db	= &close_db_pgsql,
 	.escape_string	= &escape_string_pgsql,
 	.execute	= &execute_pgsql,
-	.strerror	= &strerror_pgsql,
 };
 
 static int configure_pgsql(struct ulogd_pluginstance *upi,

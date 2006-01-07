@@ -11,7 +11,6 @@ struct db_driver {
 			     char *dst, const char *src, unsigned int len);
 	int (*execute)(struct ulogd_pluginstance *upi,
 			const char *stmt, unsigned int len);
-	char *(*strerror)(struct ulogd_pluginstance *upi);
 };
 
 struct db_instance {

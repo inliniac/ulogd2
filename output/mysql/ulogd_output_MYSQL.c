@@ -113,7 +113,8 @@ static int get_columns_mysql(struct ulogd_pluginstance *upi)
 	result = mysql_list_fields(mi->dbh, 
 				   table_ce(upi->config_kset).u.string, NULL);
 	if (!result) {
-		ulogd_log(ULOGD_ERROR, "error in list_fields()\n");
+		ulogd_log(ULOGD_ERROR, "error in list_fields(): %s\n",
+			  mysql_error(mi->dbh));
 		return -1;
 	}
 
@@ -191,7 +192,8 @@ static int open_db_mysql(struct ulogd_pluginstance *upi)
 			      (const char *) &connect_timeout);
 
 	if (!mysql_real_connect(mi->dbh, server, user, pass, db, port, NULL, 0)) {
-		ulogd_log(ULOGD_ERROR, "can't connect to db\n");
+		ulogd_log(ULOGD_ERROR, "can't connect to db: %s\n",
+			  mysql_error(mi->dbh));
 		return -1;
 	}
 		
@@ -217,16 +219,13 @@ static int execute_mysql(struct ulogd_pluginstance *upi,
 	int ret;
 
 	ret = mysql_real_query(mi->dbh, stmt, len);
-	if (ret)
+	if (ret) {
+		ulogd_log(ULOGD_ERROR, "execute failed (%s)\n",
+			  mgsql_error(mi->dbh));
 		return -1;
+	}
 
 	return 0;
-}
-
-static char *strerror_mysql(struct ulogd_pluginstance *upi)
-{
-	struct mysql_instance *mi = (struct mysql_instance *) upi->private;
-	return (char *) mysql_error(mi->dbh);
 }
 
 static struct db_driver db_driver_mysql = {
@@ -235,7 +234,6 @@ static struct db_driver db_driver_mysql = {
 	.close_db	= &close_db_mysql,
 	.escape_string	= &escape_string_mysql,
 	.execute	= &execute_mysql,
-	.strerror	= &strerror_mysql,
 };
 
 static int configure_mysql(struct ulogd_pluginstance *upi,
