@@ -39,6 +39,11 @@
 #include <netdb.h>
 
 #ifdef IPPROTO_SCTP
+/* temporarily disable sctp until we know which headers to use */
+#undef IPPROTO_SCTP
+#endif
+
+#ifdef IPPROTO_SCTP
 typedef u_int32_t sctp_assoc_t;
 
 /* glibc doesn't yet have this, as defined by
@@ -103,7 +108,7 @@ struct ipfix_instance {
 	unsigned int tmpl_len;
 	char *tmpl_cur;	/* cursor into current template position */
 
-	unsigned int total_length	/* total size of all data elements */
+	unsigned int total_length;	/* total size of all data elements */
 };
 
 /* Build the IPFIX template from the input keys */
