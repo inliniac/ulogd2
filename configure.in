@@ -36,9 +36,17 @@ AC_CHECK_HEADER([libnetfilter_conntrack/libnetfilter_conntrack.h], [AC_MSG_RESUL
 
 
 CT_CHECK_POSTGRES_DB()
+AM_CONDITIONAL(HAVE_PGSQL, test "x$PQLIBPATH" != "x")
+
 CT_CHECK_MYSQL_DB()
+AM_CONDITIONAL(HAVE_MYSQL, test "x$MYSQL_LIB" != "x")
+
 CT_CHECK_SQLITE3_DB()
+AM_CONDITIONAL(HAVE_SQLITE3, test "x$SQLITE3_LIB" != "x")
+
 CT_CHECK_PCAP()
+AM_CONDITIONAL(HAVE_PCAP, test "x$PCAP_LIB" != "x")
+
 
 dnl AC_SUBST(DATABASE_DIR)
 dnl AC_SUBST(DATABASE_LIB)
@@ -53,4 +61,4 @@ dnl AC_SUBST(HAVE_PCAP_H)
 dnl AM_CONDITIONAL(HAVE_MYSQL, test x$mysqldir != x)
 dnl AM_CONDITIONAL(HAVE_PGSQL, test x$pgsqldir != x)
 
-AC_OUTPUT(doc/Makefile libipulog/Makefile input/Makefile input/packet/Makefile input/flow/Makefile filter/Makefile filter/raw2packet/Makefile filter/packet2flow/Makefile output/Makefile output/pcap/Makefile output/mysql/Makefile output/pgsql/Makefile src/Makefile Makefile Rules.make)
+AC_OUTPUT(doc/Makefile libipulog/Makefile input/Makefile input/packet/Makefile input/flow/Makefile filter/Makefile filter/raw2packet/Makefile filter/packet2flow/Makefile output/Makefile output/pcap/Makefile output/mysql/Makefile output/pgsql/Makefile output/sqlite3/Makefile src/Makefile Makefile Rules.make)

@@ -1,3 +1,4 @@
+#if 0
 /*
  * ulogd output plugin for logging to a SQLITE database
  *
@@ -410,3 +411,4 @@ void _init(void)
 	register_output(&_sqlite3_plugin);
 }
 
+#endif

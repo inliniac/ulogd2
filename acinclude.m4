@@ -50,14 +50,14 @@ if test "$pg_prefix" != ""; then
       PQINCPATH="-I$pg_prefix/include"
       AC_MSG_RESULT([yes])
    else
-      AC_MSG_ERROR(libpq-fe.h not found)
+      AC_MSG_WARN(libpq-fe.h not found)
    fi
    AC_MSG_CHECKING([for PostgreSQL libraries in $pg_prefix/lib])
    if test -f "$pg_prefix/lib/libpq.so" ; then
       PQLIBPATH="-L$pg_prefix/lib"
       AC_MSG_RESULT([yes])
    else
-      AC_MSG_ERROR(libpq.so not found)
+      AC_MSG_WARN(libpq.so not found)
    fi
 else
   if test "$pg_inc" != ""; then
@@ -66,7 +66,7 @@ else
       PQINCPATH="-I$pg_inc"
       AC_MSG_RESULT([yes])
     else
-      AC_MSG_ERROR(libpq-fe.h not found)
+      AC_MSG_WARN(libpq-fe.h not found)
     fi
   fi
   if test "$pg_lib" != ""; then
@@ -75,7 +75,7 @@ else
       PQLIBPATH="-L$pg_lib"
       AC_MSG_RESULT([yes])
     else
-      AC_MSG_ERROR(libpq.so not found)
+      AC_MSG_WARN(libpq.so not found)
     fi
   fi
 fi
@@ -83,10 +83,10 @@ fi
 fi
 
 if test "$PQINCPATH" = "" ; then
-  AC_CHECK_HEADER([libpq-fe.h], [], AC_MSG_ERROR(libpq-fe.h not found))
+  AC_CHECK_HEADER([libpq-fe.h], [], AC_MSG_WARN(libpq-fe.h not found))
 fi
 if test "$PQLIBPATH" = "" ; then
-  AC_CHECK_LIB(pq, PQconnectdb, [], AC_MSG_ERROR(libpq.so not found))
+  AC_CHECK_LIB(pq, PQconnectdb, [], AC_MSG_WARN(libpq.so not found))
 fi
 
 ])
@@ -141,14 +141,14 @@ if test "$my_prefix" != ""; then
       MYSQL_INC="-I$my_prefix/include"
       AC_MSG_RESULT([yes])
    else
-      AC_MSG_ERROR(mysql.h not found)
+      AC_MSG_WARN(mysql.h not found)
    fi
    AC_MSG_CHECKING([for MySQL libraries in $my_prefix/lib])
    if test -f "$my_prefix/lib/libmysql.so" ; then
       MYSQL_LIB="-L$my_prefix/lib -lmysqlclient"
       AC_MSG_RESULT([yes])
    else
-      AC_MSG_ERROR(libmysqlclient.so not found)
+      AC_MSG_WARN(libmysqlclient.so not found)
    fi
 else
   if test "$my_inc" != ""; then
@@ -157,7 +157,7 @@ else
       MYSQL_INC="-I$my_inc"
       AC_MSG_RESULT([yes])
     else
-      AC_MSG_ERROR(mysql.h not found)
+      AC_MSG_WARN(mysql.h not found)
     fi
   fi
   if test "$my_lib" != ""; then
@@ -166,7 +166,7 @@ else
       MYSQL_LIB="-L$my_lib -lmysqlclient"
       AC_MSG_RESULT([yes])
     else
-      AC_MSG_ERROR(libmysqlclient.so not found)
+      AC_MSG_WARN(libmysqlclient.so not found)
     fi
   fi
 fi
@@ -174,10 +174,10 @@ fi
 fi
 
 if test "$MYSQL_INC" = "" ; then
-  AC_CHECK_HEADER([mysql.h], [], AC_MSG_ERROR(mysql.h not found))
+  AC_CHECK_HEADER([mysql.h], [], AC_MSG_WARN(mysql.h not found))
 fi
 if test "$MYSQL_LIB" = "" ; then
-  AC_CHECK_LIB(mysqlclient, mysql_close, [], AC_MSG_ERROR(libmysqlclient.so not found))
+  AC_CHECK_LIB(mysqlclient, mysql_close, [], AC_MSG_WARN(libmysqlclient.so not found))
 fi
 
 ])
@@ -217,14 +217,14 @@ if test "$pcap_prefix" != ""; then
       PCAP_INC="-I$pcap_prefix/include"
       AC_MSG_RESULT([yes])
    else
-      AC_MSG_ERROR(pcap.h not found)
+      AC_MSG_WARN(pcap.h not found)
    fi
    AC_MSG_CHECKING([for libpcap in $pcap_prefix/lib])
    if test -f "$pcap_prefix/lib/libpcap.so" ; then
       PCAP_LIB="-L$pcap_prefix/lib -lpcap";
       AC_MSG_RESULT([yes])
    else
-      AC_MSG_ERROR(libpcap.so not found)
+      AC_MSG_WARN(libpcap.so not found)
    fi
 else
   if test "$pcap_inc" != ""; then
@@ -233,7 +233,7 @@ else
       PCAP_INC="-I$pcap_inc"
       AC_MSG_RESULT([yes])
     else
-      AC_MSG_ERROR(pcap.h not found)
+      AC_MSG_WARN(pcap.h not found)
     fi
   fi
   if test "$pcap_lib" != ""; then
@@ -242,16 +242,16 @@ else
       PCAP_LIB="-L$pcap_lib -lpcap";
       AC_MSG_RESULT([yes])
     else
-      AC_MSG_ERROR(libpcap.so not found)
+      AC_MSG_WARN(libpcap.so not found)
     fi
   fi
 fi
 
 if test "$PCAP_INC" = "" ; then
-  AC_CHECK_HEADER([pcap.h], [], AC_MSG_ERROR(pcap.h not found))
+  AC_CHECK_HEADER([pcap.h], [], AC_MSG_WARN(pcap.h not found))
 fi
 if test "$PCAP_LIB" = "" ; then
-  AC_CHECK_LIB(pcap, pcap_close, [], AC_MSG_ERROR(libpcap.so not found))
+  AC_CHECK_LIB(pcap, pcap_close, [], AC_MSG_WARN(libpcap.so not found))
 fi
 
 ])
@@ -273,20 +273,20 @@ dnl @license AllPermissive
 AC_DEFUN([CT_CHECK_SQLITE3_DB], [
 
 AC_ARG_WITH(sqlite3,
-	[  --with-sqlitee=PREFIX		Prefix of your SQLITE3 installation],
+	[  --with-sqlite3=PREFIX		Prefix of your SQLITE3 installation],
 	[sqlite3_prefix=$withval], [sqlite3_prefix=])
 AC_ARG_WITH(sqlite3-inc,
 	[  --with-sqlite3-inc=PATH		Path to the include directory of MySQL],
-	[sqlite3_inc=$withval], [sqlite3_inc=])
+	[sqlite3_inc=$withval], [sqlite3_inc=/usr/include])
 AC_ARG_WITH(sqlite3-lib,
 	[  --with-sqlite3-lib=PATH		Path to the libraries of MySQL],
-	[sqlite3_lib=$withval], [sqlite3_lib=])
+	[sqlite3_lib=$withval], [sqlite3_lib=/usr/lib])
 
 
 AC_SUBST(SQLITE3_INC)
 AC_SUBST(SQLITE3_LIB)
 
-AC_MSG_CHECKING([for MySQL sqlite3_config program])
+AC_MSG_CHECKING([for sqlite3 pkg-config program])
 for d in $sqlite3_prefix/bin /usr/bin /usr/local/bin /usr/local/sqlite3/bin /opt/sqlite3/bin /opt/packages/sqlite3/bin
 do
 	if test -x $d/pkg-config
@@ -311,14 +311,14 @@ if test "$sqlite3_prefix" != ""; then
       SQLITE3_INC="-I$sqlite3_prefix/include"
       AC_MSG_RESULT([yes])
    else
-      AC_MSG_ERROR(sqlite3.h not found)
+      AC_MSG_WARN(sqlite3.h not found)
    fi
    AC_MSG_CHECKING([for SQLITE3 libraries in $sqlite3_prefix/lib])
    if test -f "$sqlite3_prefix/lib/libsqlite3.so" ; then
       SQLITE3_LIB="-L$sqlite3_prefix/lib -lsqlite3"
       AC_MSG_RESULT([yes])
    else
-      AC_MSG_ERROR(libsqlite3.so not found)
+      AC_MSG_WARN(libsqlite3.so not found)
    fi
 else
   if test "$sqlite3_inc" != ""; then
@@ -327,7 +327,7 @@ else
       SQLITE3_INC="-I$sqlite3_inc"
       AC_MSG_RESULT([yes])
     else
-      AC_MSG_ERROR(sqlite3.h not found)
+      AC_MSG_WARN(sqlite3.h not found)
     fi
   fi
   if test "$sqlite3_lib" != ""; then
@@ -336,7 +336,7 @@ else
       SQLITE3_LIB="-L$sqlite3_lib -lsqlite3"
       AC_MSG_RESULT([yes])
     else
-      AC_MSG_ERROR(libsqlite3.so not found)
+      AC_MSG_WARN(libsqlite3.so not found)
     fi
   fi
 fi
@@ -344,10 +344,10 @@ fi
 fi
 
 if test "$SQLITE3_INC" = "" ; then
-  AC_CHECK_HEADER([sqlite3.h], [], AC_MSG_ERROR(sqlite3.h not found))
+  AC_CHECK_HEADER([sqlite3.h], [], AC_MSG_WARN(sqlite3.h not found))
 fi
 if test "$SQLITE3_LIB" = "" ; then
-  AC_CHECK_LIB(sqlite3, sqlite3_close, [], AC_MSG_ERROR(libsqlite3.so not found))
+  AC_CHECK_LIB(sqlite3, sqlite3_close, [], AC_MSG_WARN(libsqlite3.so not found))
 fi
 
 ])
