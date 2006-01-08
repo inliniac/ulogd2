@@ -3,7 +3,7 @@ AUTOMAKE_OPTIONS = foreign dist-bzip2 1.6
 
 man_MANS = ulogd.8
 
-EXTRA_DIST = $(man_MANS) debian
+EXTRA_DIST = $(man_MANS) debian ulogd.logrotate ulogd.spec ulogd.conf
 
 INCLUDES = $(all_includes) -I$(top_srcdir)/include
 SUBDIRS = include doc libipulog src input filter output
