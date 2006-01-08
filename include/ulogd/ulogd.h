@@ -237,6 +237,7 @@ struct ulogd_fd {
 
 int ulogd_register_fd(struct ulogd_fd *ufd);
 void ulogd_unregister_fd(struct ulogd_fd *ufd);
+int ulogd_select_main();
 
 /***********************************************************************
  * timer handling

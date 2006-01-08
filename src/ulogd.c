@@ -63,7 +63,6 @@
 #include <syslog.h>
 #include <ulogd/conffile.h>
 #include <ulogd/ulogd.h>
-#include "select.h"
 #ifdef DEBUG
 #define DEBUGP(format, args...) fprintf(stderr, format, ## args)
 #else
