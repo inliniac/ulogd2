@@ -6,8 +6,8 @@ man_MANS = ulogd.8
 EXTRA_DIST = $(man_MANS)
 
 INCLUDES = $(all_includes) -I$(top_srcdir)/include
-SUBDIRS = libipulog src input filter output
-DIST_SUBDIRS = src input filter output
+SUBDIRS = doc libipulog src input filter output
+DIST_SUBDIRS = doc src input filter output
 
 $(OBJECTS): libtool
 libtool: $(LIBTOOL_DEPS)
