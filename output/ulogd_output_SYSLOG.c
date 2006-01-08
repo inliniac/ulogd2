@@ -28,9 +28,10 @@
 #include <unistd.h>
 #include <string.h>
 #include <syslog.h>
+#include <errno.h>
 #include <ulogd/ulogd.h>
 #include <ulogd/conffile.h>
-#include "../util/printpkt.c"
+#include <ulogd/printpkt.h>
 
 #ifndef SYSLOG_FACILITY_DEFAULT
 #define SYSLOG_FACILITY_DEFAULT	"LOG_KERN"

@@ -31,7 +31,7 @@
 #include <errno.h>
 #include <ulogd/ulogd.h>
 #include <ulogd/conffile.h>
-#include "../util/printpkt.c"
+#include <ulogd/printpkt.h>
 
 #ifndef ULOGD_LOGEMU_DEFAULT
 #define ULOGD_LOGEMU_DEFAULT	"/var/log/ulogd.syslogemu"

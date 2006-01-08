@@ -35,6 +35,7 @@
 #include <netinet/ip_icmp.h>
 #include <ulogd/ulogd.h>
 #include <ulogd/conffile.h>
+#include <ulogd/printpkt.h>
 
 #ifndef HOST_NAME_MAX
 #warning this libc does not define HOST_NAME_MAX
@@ -49,8 +50,7 @@
 
 static char hostname[HOST_NAME_MAX+1];
 
-#define INTR_IDS 	35
-static struct ulogd_key printpkt_keys[INTR_IDS] = {
+struct ulogd_key printpkt_keys[INTR_IDS] = {
 	{ .name = "oob.time.sec", },
 	{ .name = "oob.prefix", },
 	{ .name = "oob.in", },
