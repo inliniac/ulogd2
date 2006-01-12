@@ -221,7 +221,7 @@ static int execute_mysql(struct ulogd_pluginstance *upi,
 	ret = mysql_real_query(mi->dbh, stmt, len);
 	if (ret) {
 		ulogd_log(ULOGD_ERROR, "execute failed (%s)\n",
-			  mgsql_error(mi->dbh));
+			  mysql_error(mi->dbh));
 		return -1;
 	}
 
