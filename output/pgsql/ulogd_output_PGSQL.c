@@ -293,6 +293,8 @@ static int execute_pgsql(struct ulogd_pluginstance *upi,
 		return -1;
 	}
 
+	PQclear(pi->pgres);
+
 	return 0;
 }
 
