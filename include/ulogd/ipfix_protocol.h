@@ -221,6 +221,7 @@ enum {
 	IPFIX_NF_prefix			= 3,	/* string */
 	IPFIX_NF_mark			= 4,	/* u_int32_t */
 	IPFIX_NF_hook			= 5,	/* u_int8_t */
+	IPFIX_NF_conntrack_id		= 6,	/* u_int32_t */
 };
 
 #endif
