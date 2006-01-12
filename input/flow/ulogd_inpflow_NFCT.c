@@ -68,7 +68,7 @@ static struct ulogd_key nfct_okeys[] = {
 	{
 		.type	= ULOGD_RET_UINT16,
 		.flags 	= ULOGD_RETF_NONE,
-		.name	= "tcp.sport",
+		.name	= "l4.sport",
 		.ipfix	= {
 			.vendor 	= IPFIX_VENDOR_IETF,
 			.field_id 	= IPFIX_sourceTransportPort,
@@ -77,46 +77,46 @@ static struct ulogd_key nfct_okeys[] = {
 	{
 		.type	= ULOGD_RET_UINT16,
 		.flags 	= ULOGD_RETF_NONE,
-		.name	= "tcp.dport",
+		.name	= "l4.dport",
 		.ipfix	= {
 			.vendor 	= IPFIX_VENDOR_IETF,
 			.field_id 	= IPFIX_destinationTransportPort,
 		},
 	},
 	{
-		.type = ULOGD_RET_UINT32,
-		.flags = ULOGD_RETF_NONE,
-		.name = "raw.pktlen",
-		.ipfix = { 
+		.type	= ULOGD_RET_UINT32,
+		.flags	= ULOGD_RETF_NONE,
+		.name	= "raw.pktlen",
+		.ipfix	= { 
 			.vendor 	= IPFIX_VENDOR_IETF,
 			.field_id 	= IPFIX_octetTotalCount,
 			/* FIXME: this could also be octetDeltaCount */
 		},
 	},
 	{
-		.type = ULOGD_RET_UINT32,
-		.flags = ULOGD_RETF_NONE,
-		.name = "raw.pktcount",
-		.ipfix = { 
+		.type	= ULOGD_RET_UINT32,
+		.flags	= ULOGD_RETF_NONE,
+		.name	= "raw.pktcount",
+		.ipfix	= { 
 			.vendor 	= IPFIX_VENDOR_IETF,
 			.field_id 	= IPFIX_packetTotalCount,
 			/* FIXME: this could also be packetDeltaCount */
 		},
 	},
 	{
-		.type = ULOGD_RET_UINT8,
-		.flags = ULOGD_RETF_NONE,
-		.name = "icmp.code",
-		.ipfix = {
+		.type	= ULOGD_RET_UINT8,
+		.flags	= ULOGD_RETF_NONE,
+		.name	= "icmp.code",
+		.ipfix	= {
 			.vendor		= IPFIX_VENDOR_IETF,
 			.field_id	= IPFIX_icmpCodeIPv4,
 		},
 	},
 	{
-		.type = ULOGD_RET_UINT8,
-		.flags = ULOGD_RETF_NONE,
-		.name = "icmp.type",
-		.ipfix = {
+		.type	= ULOGD_RET_UINT8,
+		.flags	= ULOGD_RETF_NONE,
+		.name	= "icmp.type",
+		.ipfix	= {
 			.vendor		= IPFIX_VENDOR_IETF,
 			.field_id	= IPFIX_icmpTypeIPv4,
 		},
