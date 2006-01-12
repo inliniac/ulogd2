@@ -195,7 +195,7 @@ int rtnl_receive()
 /* rtnl_init - constructor of rtnetlink module */
 int rtnl_init(void)
 {
-	int addr_len;
+	socklen_t addr_len;
 
 	rtnl_local.nl_pid = getpid();
 	rtnl_fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
