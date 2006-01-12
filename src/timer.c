@@ -127,7 +127,7 @@ void ulogd_timer_check_n_run(void)
 	llist_for_each_entry_safe(cur, cur2, &ulogd_timers, list) {
 		if (tv_later(&cur->expires, &now)) {
 			/* fist delete it from the list of timers */
-			llist_del(cur);
+			llist_del(&cur->list);
 			/* then call.  called function can re-add it */
 			(cur->cb)(cur->data);
 		}
