@@ -29,9 +29,11 @@
 #include <string.h>
 #include <errno.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include <ulogd/ulogd.h>
 #include <ulogd/db.h>
+
 
 /* generic db layer */
 
