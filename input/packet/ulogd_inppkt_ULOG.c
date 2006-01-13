@@ -264,7 +264,7 @@ struct ulogd_plugin libulog_plugin = {
 	},
 	.output = {
 		.type = ULOGD_DTYPE_RAW,
-		.keys = &output_keys,
+		.keys = output_keys,
 		.num_keys = sizeof(output_keys)/sizeof(struct ulogd_key),
 	},
 	.configure = &configure,
