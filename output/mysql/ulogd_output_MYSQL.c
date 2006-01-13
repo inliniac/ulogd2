@@ -179,7 +179,7 @@ static int open_db_mysql(struct ulogd_pluginstance *upi)
 	u_int16_t port = port_ce(upi->config_kset).u.value;
 	char *user = user_ce(upi->config_kset).u.string;
 	char *pass = pass_ce(upi->config_kset).u.string;
-	char *db = pass_ce(upi->config_kset).u.string;
+	char *db = db_ce(upi->config_kset).u.string;
 
 	mi->dbh = mysql_init(NULL);
 	if (!mi->dbh) {
