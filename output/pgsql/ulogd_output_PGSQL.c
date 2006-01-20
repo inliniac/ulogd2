@@ -64,10 +64,12 @@ static struct config_keyset pgsql_kset = {
 		{
 			.key = "port",
 			.type = CONFIG_TYPE_INT,
+			.options = CONFIG_OPT_NONE,
 		},
 		{
 			.key = "schema", 
 			.type = CONFIG_TYPE_STRING,
+			.options = CONFIG_OPT_NONE,
 			.u.string = "public",
 		},
 	},
@@ -216,7 +218,7 @@ static int open_db_pgsql(struct ulogd_pluginstance *upi)
 	int len;
 	char *connstr;
 	char *server = host_ce(upi->config_kset).u.string;
-	char *port = port_ce(upi->config_kset).u.string;
+	char *port = port_ce(upi->config_kset).u.value;
 	char *user = user_ce(upi->config_kset).u.string;
 	char *pass = pass_ce(upi->config_kset).u.string;
 	char *db = db_ce(upi->config_kset).u.string;
