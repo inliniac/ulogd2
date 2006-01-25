@@ -244,7 +244,7 @@ int printpkt_print(struct ulogd_key *res, char *buf, int prefix)
 		break;
 	default:
 
-		buf_cur += sprintf(buf_cur, "PROTO=%u ", GET_VALUE(res, 11).ui8);
+		buf_cur += sprintf(buf_cur, "PROTO=%u ", GET_VALUE(res, 12).ui8);
 	}
 	strcat(buf_cur, "\n");
 
