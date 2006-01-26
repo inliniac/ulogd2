@@ -5,7 +5,9 @@
  * draft-ietf-ipfix-protocol-19.txt */
 
 #define IPFIX_VENDOR_IETF	0x00000000
-#define IPFIX_VENDOR_NETFILTER	0x23424223
+
+/* defined in http://www.iana.org/assignments/enterprise-numbers */
+#define IPFIX_VENDOR_NETFILTER	21373	/* FIXME: htonl? */
 
 /* Section 3.1 */
 struct ipfix_msg_hdr {
@@ -222,6 +224,8 @@ enum {
 	IPFIX_NF_mark			= 4,	/* u_int32_t */
 	IPFIX_NF_hook			= 5,	/* u_int8_t */
 	IPFIX_NF_conntrack_id		= 6,	/* u_int32_t */
+	IPFIX_NF_seq_local		= 7,	/* u_int32_t */
+	IPFIX_NF_seq_global		= 8,	/* u_int32_t */
 };
 
 #endif
