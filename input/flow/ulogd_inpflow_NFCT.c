@@ -238,7 +238,7 @@ static struct ulogd_key nfct_okeys[] = {
 	{
 		.type	= ULOGD_RET_UINT32,
 		.flags	= ULOGD_RETF_NONE,
-		.name	= "flow.end.sec",
+		.name	= "flow.end.usec",
 		.ipfix	= {
 			.vendor		= IPFIX_VENDOR_IETF,
 			.field_id	= IPFIX_flowEndSeconds,
@@ -260,6 +260,7 @@ static struct ct_htable *htable_alloc(int htable_size, int prealloc)
 	htable->buckets = (void *)htable + sizeof(*htable);
 	htable->num_buckets = htable_size;
 	htable->prealloc = prealloc;
+	INIT_LLIST_HEAD(&htable->idle);
 
 	for (i = 0; i < htable->num_buckets; i++)
                 INIT_LLIST_HEAD(&htable->buckets[i]);
@@ -447,7 +448,8 @@ static int event_handler(void *arg, unsigned int flags, int type,
 {
 	struct nfct_conntrack *ct = arg;
 	struct ulogd_pluginstance *upi = data;
-	struct nfct_pluginstance *cpi = (struct nfct_pluginstance *) data;
+	struct nfct_pluginstance *cpi = 
+				(struct nfct_pluginstance *) upi->private;
 
 	if (type == NFCT_MSG_NEW) {
 		if (usehash_ce(upi->config_kset).u.value != 0)
@@ -546,12 +548,14 @@ static int constructor_nfct(struct ulogd_pluginstance *upi)
 	else
 		prealloc = 0;
 
-	cpi->ct_active = htable_alloc(buckets_ce(upi->config_kset).u.value,
-				      prealloc);
-	if (!cpi->ct_active) {
-		ulogd_log(ULOGD_FATAL, "error allocating hash\n");
-		nfct_close(cpi->cth);
-		return -1;
+	if (usehash_ce(upi->config_kset).u.value != 0) {
+		cpi->ct_active = htable_alloc(buckets_ce(upi->config_kset).u.value,
+					      prealloc);
+		if (!cpi->ct_active) {
+			ulogd_log(ULOGD_FATAL, "error allocating hash\n");
+			nfct_close(cpi->cth);
+			return -1;
+		}
 	}
 	
 	return 0;
