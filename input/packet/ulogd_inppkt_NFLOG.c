@@ -34,7 +34,7 @@ struct nflog_input {
 /* configuration entries */
 
 static struct config_keyset libulog_kset = {
-	.num_ces = 5,
+	.num_ces = 7,
 	.ces = {
 		{
 			.key 	 = "bufsize",
@@ -66,6 +66,18 @@ static struct config_keyset libulog_kset = {
 			.options = CONFIG_OPT_NONE,
 			.u.value = 1,
 		},
+		{
+			.key	 = "seq_local",
+			.type	 = CONFIG_TYPE_INT,
+			.options = CONFIG_OPT_NONE,
+			.u.value = 0,
+		},
+		{
+			.key	 = "seq_global",
+			.type	 = CONFIG_TYPE_INT,
+			.options = CONFIG_OPT_NONE,
+			.u.value = 0,
+		},
 	}
 };
 
@@ -74,6 +86,8 @@ static struct config_keyset libulog_kset = {
 #define rmem_ce(x)	(x->ces[2])
 #define af_ce(x)	(x->ces[3])
 #define unbind_ce(x)	(x->ces[4])
+#define seq_ce(x)	(x->ces[4])
+#define seq_global_ce(x)	(x->ces[5])
 
 
 static struct ulogd_key output_keys[] = {
@@ -180,7 +194,16 @@ static struct ulogd_key output_keys[] = {
 		.flags = ULOGD_RETF_NONE, 
 		.name = "raw.mac_len", 
 	},
-
+	{
+		.type = ULOGD_RET_UINT32,
+		.flags = ULOGD_RETF_NONE,
+		.name = "oob.seq.local",
+	},
+	{
+		.type = ULOGD_RET_UINT32,
+		.flags = ULOGD_RETF_NONE,
+		.name = "oob.seq.global",
+	},
 };
 
 static inline int 
@@ -197,6 +220,7 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 	u_int32_t mark = nflog_get_nfmark(ldata);
 	u_int32_t indev = nflog_get_indev(ldata);
 	u_int32_t outdev = nflog_get_outdev(ldata);
+	u_int32_t seq;
 	
 
 	if (ph) {
@@ -252,6 +276,15 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 		ret[9].u.value.ui32 = outdev;
 		ret[9].flags |= ULOGD_RETF_VALID;
 	}
+
+	if (nflog_get_seq(ldata, &seq)) {
+		ret[10].u.value.ui32 = seq;
+		ret[10].flags |= ULOGD_RETF_VALID;
+	}
+	if (nflog_get_seq_global(ldata, &seq)) {
+		ret[11].u.value.ui32 = seq;
+		ret[11].flags |= ULOGD_RETF_VALID;
+	}
 	
 	ulogd_propagate_results(upi);
 	return 0;
@@ -301,6 +334,7 @@ static int configure(struct ulogd_pluginstance *upi,
 static int start(struct ulogd_pluginstance *upi)
 {
 	struct nflog_input *ui = (struct nflog_input *) upi->private;
+	unsigned int flags;
 
 	ui->nfulog_buf = malloc(bufsiz_ce(upi->config_kset).u.value);
 	if (!ui->nfulog_buf)
@@ -346,6 +380,18 @@ static int start(struct ulogd_pluginstance *upi)
 
 	//nflog_set_nlbufsiz(&ui->nful_gh, );
 	//nfnl_set_rcvbuf();
+	
+	/* set log flags based on configuration */
+	flags = 0;
+	if (seq_ce(upi->config_kset).u.value != 0)
+		flags = NFULNL_CFG_F_SEQ;
+	if (seq_ce(upi->config_kset).u.value != 0)
+		flags |= NFULNL_CFG_F_SEQ_GLOBAL;
+	if (flags) {
+		if (nflog_set_flags(ui->nful_gh, flags) < 0)
+			ulogd_log(ULOGD_ERROR, "unable to set flags 0x%x\n",
+				  flags);
+	}
 	
 	nflog_callback_register(ui->nful_gh, &msg_cb, upi);
 
