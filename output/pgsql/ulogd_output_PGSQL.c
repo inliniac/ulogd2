@@ -218,7 +218,7 @@ static int open_db_pgsql(struct ulogd_pluginstance *upi)
 	int len;
 	char *connstr;
 	char *server = host_ce(upi->config_kset).u.string;
-	char *port = port_ce(upi->config_kset).u.value;
+	unsigned int port = port_ce(upi->config_kset).u.value;
 	char *user = user_ce(upi->config_kset).u.string;
 	char *pass = pass_ce(upi->config_kset).u.string;
 	char *db = db_ce(upi->config_kset).u.string;
