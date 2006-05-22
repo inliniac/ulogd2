@@ -63,9 +63,92 @@ struct sctp_sndrcvinfo {
 
 #include <ulogd/ulogd.h>
 #include <ulogd/conffile.h>
+#include <ulogd/linuxlist.h>
 #include <ulogd/ipfix_protocol.h>
 
 #define IPFIX_DEFAULT_TCPUDP_PORT	4739
+
+/* bitmask stuff */
+struct bitmask {
+	int size_bits;
+	char *buf;
+};
+
+#define SIZE_OCTETS(x)	((x/8)+1)
+
+void bitmask_clear(struct bitmask *bm)
+{
+	memset(bm->buf, 0, SIZE_OCTETS(bm->size_bits));
+}
+
+struct bitmask *bitmask_alloc(unsigned int num_bits)
+{
+	struct bitmask *bm;
+	unsigned int size_octets = SIZE_OCTETS(num_bits);
+
+	bm = malloc(sizeof(*bm) + size_octets);
+	if (!bm)
+		return NULL;
+
+	bm->size_bits = num_bits;
+
+	bitmask_clear(bm);
+
+	return bm;
+}
+
+void bitmask_free(struct bitmask *bm)
+{
+	free(bm);
+}
+
+int bitmask_set_bit_to(struct bitmask *bm, unsigned int bits, int to)
+{
+	unsigned int byte = bits / 8;
+	unsigned int bit = bits % 8;
+	unsigned char *ptr;
+
+	if (byte > SIZE_OCTETS(bm->size_bits))
+		return -EINVAL;
+
+	if (to == 0)
+		bm->buf[byte] &= ~(1 << bit);
+	else
+		bm->buf[byte] |= (1 << bit);
+
+	return 0;
+}
+
+#define bitmask_clear_bit(bm, bit) \
+	bitmask_set_bit_to(bm, bit, 0)
+
+#define bitmask_set_bit(bm, bit) \
+	bitmask_set_bit_to(bm, bit, 1)
+
+int bitmasks_equal(const struct bitmask *bm1, const struct bitmask *bm2)
+{
+	if (bm1->size_bits != bm2->size_bits)
+		return -1;
+
+	if (!memcmp(bm1->buf, bm2->buf, SIZE_OCTETS(bm1->size_bits)))
+		return 1;
+	else
+		return 0;
+}
+
+struct bitmask *bitmask_dup(const struct bitmask *bm_orig)
+{
+	struct bitmask *bm_new;
+	int size = sizoef(*bm_new) + SIZE_OCTETS(bm_orig->size_bits);
+
+	bm_new = malloc(size);
+	if (!bm_new)
+		return NULL;
+
+	memcpy(bm_new, bm_orig, size);
+
+	return bm_new;
+}
 
 static struct config_keyset ipfix_kset = {
 	.num_ces = 3,
@@ -99,83 +182,166 @@ struct ipfix_template {
 	char buf[0];
 };
 
+struct ulogd_ipfix_template {
+	struct llist_head list;
+	struct bitmask *bitmask;
+	unsigned int total_length;	/* length of the DATA */
+	char *tmpl_cur;		/* cursor into current template position */
+	struct ipfix_template tmpl;
+};
+
 struct ipfix_instance {
 	int fd;		/* socket that we use for sending IPFIX data */
 	int sock_type;	/* type (SOCK_*) */
 	int sock_proto;	/* protocol (IPPROTO_*) */
 
+	struct llist_head template_list;
+
 	struct ipfix_template *tmpl;
 	unsigned int tmpl_len;
-	char *tmpl_cur;	/* cursor into current template position */
+
+	struct bitmask *valid_bitmask;	/* bitmask of valid keys */
 
 	unsigned int total_length;	/* total size of all data elements */
 };
 
+#define ULOGD_IPFIX_TEMPL_BASE 1024
+static u_int16_t next_template_id = ULOGD_IPFIX_TEMPL_BASE;
+
 /* Build the IPFIX template from the input keys */
-static int build_template(struct ulogd_pluginstance *upi)
+struct ulogd_ipfix_template *
+build_template_for_bitmask(struct ulogd_pluginstance *upi,
+			   struct bitmask *bm)
 {
 	struct ipfix_instance *ii = (struct ipfix_instance *) &upi->private;
 	struct ipfix_templ_rec_hdr *rhdr;
+	struct ulogd_ipfix_template *tmpl;
 	unsigned int i, j;
+	int size = sizeof(struct ulogd_ipfix_template)
+		   + (upi->input.num_keys * sizeof(struct ipfix_vendor_field));
 
-	if (ii->tmpl)
-		free(ii->tmpl);
-
-	ii->tmpl = malloc(sizeof(struct ipfix_template) +
-			 (upi->input.num_keys*sizeof(struct ipfix_vendor_field)));
-	if (!ii->tmpl)
+	tmpl = malloc(size);
+	if (!tmpl)
 		return -ENOMEM;
+	memset(tmpl, 0, size);
 
-#define ULOGD_IPFIX_TEMPL_BASE 1024
+	tmpl->bitmask = dup_bitmask(bm);
+	if (!tmpl->bitmask) {
+		free(tmpl);
+		return -ENOMEM;
+	}
 
 	/* initialize template header */
-	ii->tmpl->hdr.templ_id = htons(ULOGD_IPFIX_TEMPL_BASE);
+	tmpl->tmpl.hdr.templ_id = htons(next_template_id++);
 
-	ii->tmpl_cur = ii->tmpl->buf;
+	tmpl->tmpl_cur = tmpl->tmpl.buf;
 
-	ii->total_length = 0;
+	tmpl->total_length = 0;
 
 	for (i = 0; i < upi->input.num_keys; i++) {
 		struct ulogd_key *key = &upi->input.keys[i];
 		int length = ulogd_key_size(key);
 
-		if (length < 0 || length > 0xfffe)
+		if (!(key->u.source->flags & ULOGD_RETF_VALID))
 			continue;
 
-		if (key->ipfix.field_id == 0)
+		if (length < 0 || length > 0xfffe) {
+			ulogd_log(ULOGD_INFO, "ignoring key `%s' because "
+				  "it has an ipfix incompatible length\n",
+				  key->name);
 			continue;
+		}
+
+		if (key->ipfix.field_id == 0) {
+			ulogd_log(ULOGD_INFO, "ignoring key `%s' because "
+				  "it has no field_id\n", key->name);
+			continue;
+		}
 
 		if (key->ipfix.vendor == IPFIX_VENDOR_IETF) {
 			struct ipfix_ietf_field *field = 
-				(struct ipfix_ietf_field *) ii->tmpl_cur;
+				(struct ipfix_ietf_field *) tmpl->tmpl_cur;
 
 			field->type = htons(key->ipfix.field_id | 0x8000000);
 			field->length = htons(length);
-			ii->tmpl_cur += sizeof(*field);
+			tmpl->tmpl_cur += sizeof(*field);
 		} else {
 			struct ipfix_vendor_field *field =
-				(struct ipfix_vendor_field *) ii->tmpl_cur;
+				(struct ipfix_vendor_field *) tmpl->tmpl_cur;
 
 			field->enterprise_num = htonl(key->ipfix.vendor);
 			field->type = htons(key->ipfix.field_id);
 			field->length = htons(length);
-			ii->tmpl_cur += sizeof(*field);
+			tmpl->tmpl_cur += sizeof(*field);
 		}
-		ii->total_length += length;
+		tmpl->total_length += length;
 		j++;
 	}
 
-	ii->tmpl->hdr.field_count = htons(j);
+	tmpl->tmpl.hdr.field_count = htons(j);
+
 	return 0;
+}
+
+
+
+static struct ulogd_ipfix_template *
+find_template_for_bitmask(struct ulogd_pluginstance *upi,
+			  struct bitmask *bm)
+{
+	struct ipfix_instance *ii = (struct ipfix_instance *) &upi->private;
+	struct ulogd_ipfix_template *tmpl;
+	
+	/* FIXME: this can be done more efficient! */
+	llist_for_each_entry(tmpl, &ii->template_list, list) {
+		if (bitmasks_equal(bm, tmpl->bitmask))
+			return tmpl;
+	}
+	return NULL;
 }
 
 static int output_ipfix(struct ulogd_pluginstance *upi)
 {
 	struct ipfix_instance *ii = (struct ipfix_instance *) &upi->private;
+	struct ulogd_ipfix_template *template;
+	unsigned int total_size;
 	int i;
+
+	/* FIXME: it would be more cache efficient if the IS_VALID
+	 * flags would be a separate bitmask outside of the array.
+	 * ulogd core could very easily flush it after every packet,
+	 * too. */
+
+	bitmask_clear(ii->valid_bitmask);
 
 	for (i = 0; i < upi->input.num_keys; i++) {
 		struct ulogd_key *key = upi->input.keys[i].u.source;
+
+		if (key->flags & ULOGD_RETF_VALID)
+			bitmask_set_bit(ii->valid_bitmask, i);
+	}
+	
+	/* lookup template ID for this bitmask */
+	template = find_template_for_bitmask(upi, ii->valid_bitmask);
+	if (!template) {
+		ulogd_log(ULOGD_INFO, "building new template\n");
+		template = build_template_for_bitmask(upi, ii->valid_bitmask);
+		if (!template) {
+			ulogd_log(ULOGD_ERROR, "can't build new template!\n");
+			return -1;
+		}
+		/* FIXME: prepend? */
+		list_add(&ii->template_list, &template->list);
+	}
+	
+	total_size = template->total_length;
+
+	/* decide if it's time to retransmit our template and (optionally)
+	 * prepend it into the to-be-sent IPFIX message */
+	if (0 /* FIXME */) {
+		/* add size of template */
+		//total_size += (template->tmpl_cur - (void *)&template->tmpl);
+		total_size += sizeof(template->tmpl);
 	}
 
 	return 0;
@@ -204,7 +370,8 @@ static int open_connect_socket(struct ulogd_pluginstance *pi)
 	resave = res;
 
 	for (; res; res = res->ai_next) {
-		ii->fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+		ii->fd = socket(res->ai_family, res->ai_socktype,
+				res->ai_protocol);
 		if (ii->fd < 0) {
 			switch (errno) {
 			case EACCES:
@@ -257,27 +424,42 @@ static int open_connect_socket(struct ulogd_pluginstance *pi)
 
 static int start_ipfix(struct ulogd_pluginstance *pi)
 {
-	struct ipfix_instance *li = (struct ipfix_instance *) &pi->private;
+	struct ipfix_instance *ii = (struct ipfix_instance *) &pi->private;
 	int ret;
 
 	ulogd_log(ULOGD_DEBUG, "starting ipfix\n");
 
+	ii->valid_bitmask = bitmask_alloc(pi->input.num_keys);
+	if (!ii->valid_bitmask)
+		return -ENOMEM;
+
 	ret = open_connect_socket(pi);
 	if (ret < 0)
-		return ret;
+		goto out_bm_free;
 
 	ret = build_template(pi);
 	if (ret < 0)
-		return ret;
+		goto out_sock_close;
 
 	return 0;
+
+out_sock_close:
+	close(ii->fd);
+out_bm_free:
+	bitmask_free(ii->valid_bitmask);
+	ii->valid_bitmask = NULL;
+
+	return ret;
 }
 
 static int stop_ipfix(struct ulogd_pluginstance *pi) 
 {
-	struct ipfix_instance *li = (struct ipfix_instance *) &pi->private;
+	struct ipfix_instance *ii = (struct ipfix_instance *) &pi->private;
 
-	close(li->fd);
+	close(ii->fd);
+
+	bitmask_free(ii->valid_bitmask);
+	ii->valid_bitmask = NULL;
 
 	return 0;
 }
@@ -342,8 +524,6 @@ static int configure_ipfix(struct ulogd_pluginstance *pi,
 static struct ulogd_plugin ipfix_plugin = { 
 	.name = "IPFIX",
 	.input = {
-		.keys = NULL,
-		.num_keys = 0,
 		.type = ULOGD_DTYPE_PACKET | ULOGD_DTYPE_FLOW, 
 	},
 	.output = {
