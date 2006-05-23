@@ -69,16 +69,6 @@
 #define DEBUGP(format, args...) 
 #endif
 
-/* default config parameters, if not changed in configfile */
-#ifndef ULOGD_LOGFILE_DEFAULT
-#define ULOGD_LOGFILE_DEFAULT	"/var/log/ulogd.log"
-#endif
-
-/* where to look for the config file */
-#ifndef ULOGD_CONFIGFILE
-#define ULOGD_CONFIGFILE	"/usr/local/etc/ulogd.conf"
-#endif
-
 #define COPYRIGHT \
 	"Copyright (C) 2000-2005 Harald Welte <laforge@netfilter.org>\n"
 
