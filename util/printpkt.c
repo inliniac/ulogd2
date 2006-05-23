@@ -25,9 +25,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <time.h>
 #include <errno.h>
-#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -37,18 +35,11 @@
 #include <ulogd/conffile.h>
 #include <ulogd/printpkt.h>
 
-#ifndef HOST_NAME_MAX
-#warning this libc does not define HOST_NAME_MAX
-#define HOST_NAME_MAX	(255+1)
-#endif
-
 #define NIPQUAD(addr) \
 	((unsigned char *)&addr)[0], \
 	((unsigned char *)&addr)[1], \
         ((unsigned char *)&addr)[2], \
         ((unsigned char *)&addr)[3]
-
-static char hostname[HOST_NAME_MAX+1];
 
 struct ulogd_key printpkt_keys[INTR_IDS] = {
 	{ .name = "oob.time.sec", },
@@ -92,39 +83,15 @@ struct ulogd_key printpkt_keys[INTR_IDS] = {
 #define GET_FLAGS(res, x)	(res[x].u.source->flags)
 #define pp_is_valid(res, x)	(GET_FLAGS(res, x) & ULOGD_RETF_VALID)
 
-int printpkt_print(struct ulogd_key *res, char *buf, int prefix)
+int printpkt_print(struct ulogd_key *res, char *buf)
 {
-	char *timestr;
-	char *tmp;
-	time_t now;
-
 	char *buf_cur = buf;
 
-	if (prefix) {
-		if (pp_is_valid(res, 0))
-			now = (time_t) GET_VALUE(res, 0).ui32;
-		else
-			now = (time_t) 0;
-
-		timestr = ctime(&now) + 4;
-
-		/* truncate time */
-		if ((tmp = strchr(timestr, '\n')))
-			*tmp = '\0';
-
-		/* truncate hostname */
-		if ((tmp = strchr(hostname, '.')))
-			*tmp = '\0';
-
-		/* print time and hostname */
-		buf_cur += sprintf(buf_cur, "%.15s %s", timestr, hostname);
-	}
-
 	if (pp_is_valid(res, 1))
-		buf_cur += sprintf(buf_cur, " %s", (char *) GET_VALUE(res, 1).ptr);
+		buf_cur += sprintf(buf_cur, "%s ", (char *) GET_VALUE(res, 1).ptr);
 
 	if (pp_is_valid(res, 2) && pp_is_valid(res, 3)) {
-		buf_cur += sprintf(buf_cur," IN=%s OUT=%s ", 
+		buf_cur += sprintf(buf_cur, "IN=%s OUT=%s ", 
 				   (char *) GET_VALUE(res, 2).ptr, 
 				   (char *) GET_VALUE(res, 3).ptr);
 	}
@@ -247,17 +214,6 @@ int printpkt_print(struct ulogd_key *res, char *buf, int prefix)
 		buf_cur += sprintf(buf_cur, "PROTO=%u ", GET_VALUE(res, 12).ui8);
 	}
 	strcat(buf_cur, "\n");
-
-	return 0;
-}
-
-int printpkt_init(void)
-{
-	if (gethostname(hostname, sizeof(hostname)) < 0) {
-		ulogd_log(ULOGD_FATAL, "can't gethostname(): %s\n",
-			  strerror(errno));
-		return -EINVAL;
-	}
 
 	return 0;
 }

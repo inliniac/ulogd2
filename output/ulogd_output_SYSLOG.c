@@ -31,7 +31,6 @@
 #include <errno.h>
 #include <ulogd/ulogd.h>
 #include <ulogd/conffile.h>
-#include <ulogd/printpkt.h>
 
 #ifndef SYSLOG_FACILITY_DEFAULT
 #define SYSLOG_FACILITY_DEFAULT	"LOG_KERN"
@@ -40,6 +39,13 @@
 #ifndef SYSLOG_LEVEL_DEFAULT 
 #define SYSLOG_LEVEL_DEFAULT "LOG_NOTICE"
 #endif
+
+static struct ulogd_key syslog_inp[] = {
+	{
+		.type = ULOGD_RET_STRING,
+		.name = "print",
+	},
+};
 
 static struct config_keyset syslog_kset = { 
 	.num_ces = 2,
@@ -68,11 +74,10 @@ static int _output_syslog(struct ulogd_pluginstance *upi)
 {
 	struct syslog_instance *li = (struct syslog_instance *) &upi->private;
 	struct ulogd_key *res = upi->input.keys;
-	static char buf[4096];
-	
-	printpkt_print(res, buf, 0);
 
-	syslog(li->syslog_level | li->syslog_facility, buf);
+	if (res[0].u.source->flags & ULOGD_RETF_VALID)
+		syslog(li->syslog_level | li->syslog_facility, "%s",
+				res[0].u.source->u.value.ptr);
 
 	return 0;
 }
@@ -156,8 +161,8 @@ static int syslog_start(struct ulogd_pluginstance *pi)
 static struct ulogd_plugin syslog_plugin = {
 	.name = "SYSLOG",
 	.input = {
-		.keys = printpkt_keys,
-		.num_keys = ARRAY_SIZE(printpkt_keys),
+		.keys = syslog_inp,
+		.num_keys = ARRAY_SIZE(syslog_inp),
 		.type = ULOGD_DTYPE_PACKET,
 	},
 	.output = {

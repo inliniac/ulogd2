@@ -29,9 +29,14 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 #include <ulogd/ulogd.h>
 #include <ulogd/conffile.h>
-#include <ulogd/printpkt.h>
+
+#ifndef HOST_NAME_MAX
+#warning this libc does not define HOST_NAME_MAX
+#define HOST_NAME_MAX	(255+1)
+#endif
 
 #ifndef ULOGD_LOGEMU_DEFAULT
 #define ULOGD_LOGEMU_DEFAULT	"/var/log/ulogd.syslogemu"
@@ -40,6 +45,19 @@
 #ifndef ULOGD_LOGEMU_SYNC_DEFAULT
 #define ULOGD_LOGEMU_SYNC_DEFAULT	0
 #endif
+
+static char hostname[HOST_NAME_MAX+1];
+
+static struct ulogd_key logemu_inp[] = {
+	{
+		.type = ULOGD_RET_STRING,
+		.name = "print",
+	},
+	{
+		.type = ULOGD_RET_UINT32,
+		.name = "oob.time.sec",
+	},
+};
 
 static struct config_keyset logemu_kset = {
 	.num_ces = 2,
@@ -67,14 +85,27 @@ static int _output_logemu(struct ulogd_pluginstance *upi)
 {
 	struct logemu_instance *li = (struct logemu_instance *) &upi->private;
 	struct ulogd_key *res = upi->input.keys;
-	static char buf[4096];
 
-	printpkt_print(res, buf, 1);
+	if (res[0].u.source->flags & ULOGD_RETF_VALID) {
+		char *timestr;
+		char *tmp;
+		time_t now;
 
-	fprintf(li->of, "%s", buf);
+		if (res[1].u.source->flags & ULOGD_RETF_VALID)
+			now = (time_t) res[1].u.source->u.value.ui32;
+		else
+			now = time(NULL);
 
-	if (upi->config_kset->ces[1].u.value) 
-		fflush(li->of);
+		timestr = ctime(&now) + 4;
+		if ((tmp = strchr(timestr, '\n')))
+			*tmp = '\0';
+
+		fprintf(li->of, "%.15s %s %s", timestr, hostname,
+				res[0].u.source->u.value.ptr);
+
+		if (upi->config_kset->ces[1].u.value)
+			fflush(li->of);
+	}
 
 	return 0;
 }
@@ -102,6 +133,7 @@ static void signal_handler_logemu(struct ulogd_pluginstance *pi, int signal)
 static int start_logemu(struct ulogd_pluginstance *pi)
 {
 	struct logemu_instance *li = (struct logemu_instance *) &pi->private;
+	char *tmp;
 
 	ulogd_log(ULOGD_DEBUG, "starting logemu\n");
 
@@ -117,10 +149,16 @@ static int start_logemu(struct ulogd_pluginstance *pi)
 		return errno;
 	}		
 #endif
-	if (printpkt_init()) {
-		ulogd_log(ULOGD_ERROR, "can't resolve all keyhash id's\n");
+
+	if (gethostname(hostname, sizeof(hostname)) < 0) {
+		ulogd_log(ULOGD_FATAL, "can't gethostname(): %s\n",
+			  strerror(errno));
 		return -EINVAL;
 	}
+
+	/* truncate hostname */
+	if ((tmp = strchr(hostname, '.')))
+		*tmp = '\0';
 
 	return 0;
 }
@@ -147,8 +185,8 @@ static int configure_logemu(struct ulogd_pluginstance *pi,
 static struct ulogd_plugin logemu_plugin = { 
 	.name = "LOGEMU",
 	.input = {
-		.keys = printpkt_keys,
-		.num_keys = ARRAY_SIZE(printpkt_keys),
+		.keys = logemu_inp,
+		.num_keys = ARRAY_SIZE(logemu_inp),
 		.type = ULOGD_DTYPE_PACKET,
 	},
 	.output = {
