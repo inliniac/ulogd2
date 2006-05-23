@@ -30,6 +30,8 @@ AC_SUBST(PQLIBPATH)
 AC_SUBST(PQLIBS)
 PQLIBS=-lpq
 
+if test "$pg_prefix" != "no"; then
+
 AC_MSG_CHECKING([for PostgreSQL pg_config program])
 for d in $pg_prefix/bin /usr/bin /usr/local/bin /usr/local/pgsql/bin /opt/pgsql/bin /opt/packages/pgsql/bin
 do
@@ -89,6 +91,8 @@ if test "$PQLIBPATH" = "" ; then
   AC_CHECK_LIB(pq, PQconnectdb, [], AC_MSG_WARN(libpq.so not found))
 fi
 
+fi
+
 ])
 
 dnl @synopsis CT_CHECK_MYSQL_DB
@@ -120,6 +124,8 @@ AC_ARG_WITH(mysql-lib,
 
 AC_SUBST(MYSQL_INC)
 AC_SUBST(MYSQL_LIB)
+
+if test "$my_prefix" != "no"; then
 
 AC_MSG_CHECKING([for MySQL mysql_config program])
 for d in $my_prefix/bin /usr/bin /usr/local/bin /usr/local/mysql/bin /opt/mysql/bin /opt/packages/mysql/bin
@@ -180,6 +186,8 @@ if test "$MYSQL_LIB" = "" ; then
   AC_CHECK_LIB(mysqlclient, mysql_close, [], AC_MSG_WARN(libmysqlclient.so not found))
 fi
 
+fi
+
 ])
 
 dnl @synopsis CT_CHECK_PCAP
@@ -210,6 +218,8 @@ AC_ARG_WITH(pcap-lib,
 
 AC_SUBST(PCAP_INC)
 AC_SUBST(PCAP_LIB)
+
+if test "$pcap_prefix" != "no"; then
 
 if test "$pcap_prefix" != ""; then
    AC_MSG_CHECKING([for libpcap includes in $pcap_prefix/include])
@@ -254,6 +264,8 @@ if test "$PCAP_LIB" = "" ; then
   AC_CHECK_LIB(pcap, pcap_close, [], AC_MSG_WARN(libpcap.so not found))
 fi
 
+fi
+
 ])
 
 dnl @synopsis CT_CHECK_SQLITE3_DB
@@ -285,6 +297,8 @@ AC_ARG_WITH(sqlite3-lib,
 
 AC_SUBST(SQLITE3_INC)
 AC_SUBST(SQLITE3_LIB)
+
+if test "$sqlite3_prefix" != "no"; then
 
 AC_MSG_CHECKING([for sqlite3 pkg-config program])
 for d in $sqlite3_prefix/bin /usr/bin /usr/local/bin /usr/local/sqlite3/bin /opt/sqlite3/bin /opt/packages/sqlite3/bin
@@ -348,6 +362,8 @@ if test "$SQLITE3_INC" = "" ; then
 fi
 if test "$SQLITE3_LIB" = "" ; then
   AC_CHECK_LIB(sqlite3, sqlite3_close, [], AC_MSG_WARN(libsqlite3.so not found))
+fi
+
 fi
 
 ])
