@@ -560,8 +560,9 @@ create_stack_resolve_keys(struct ulogd_pluginstance_stack *stack)
 
 				okey = find_okey_in_stack(ikey->name, 
 							  stack, pi_cur);
-				if (!okey && 
-				    !(ikey->flags & ULOGD_KEYF_OPTIONAL)) {
+				if (!okey) {
+					if (ikey->flags & ULOGD_KEYF_OPTIONAL)
+						continue;
 					ulogd_log(ULOGD_ERROR, "cannot find "
 						  "key `%s' in stack\n",
 						  ikey->name);
