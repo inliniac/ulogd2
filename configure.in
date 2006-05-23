@@ -67,4 +67,4 @@ AC_OUTPUT(doc/Makefile \
 	  input/Makefile input/packet/Makefile input/flow/Makefile \
 	  filter/Makefile filter/raw2packet/Makefile filter/packet2flow/Makefile \
 	  output/Makefile output/pcap/Makefile output/mysql/Makefile output/pgsql/Makefile output/sqlite3/Makefile \
-	  src/Makefile Makefile Rules.make ulogd.conf)
+	  src/Makefile Makefile Rules.make)
