@@ -3,6 +3,6 @@ INCLUDES = $(all_includes) -I$(top_srcdir)/include
 
 AM_CFLAGS=-fPIC
 
-noinst_LIBRARIES = libipulog.a
+noinst_LTLIBRARIES = libipulog.la
 
-libipulog_a_SOURCES = libipulog.c
+libipulog_la_SOURCES = libipulog.c

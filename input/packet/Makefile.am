@@ -10,4 +10,4 @@ ulogd_inppkt_NFLOG_la_LDFLAGS = -module -lnetfilter_log
 
 ulogd_inppkt_ULOG_la_SOURCES = ulogd_inppkt_ULOG.c
 ulogd_inppkt_ULOG_la_LDFLAGS = -module
-ulogd_inppkt_ULOG_la_LIBADD = ../../libipulog/libipulog.a
+ulogd_inppkt_ULOG_la_LIBADD = ../../libipulog/libipulog.la
