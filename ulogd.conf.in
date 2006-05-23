@@ -36,12 +36,16 @@ plugin="@libdir@/ulogd/ulogd_inppkt_NFLOG.so"
 plugin="@libdir@/ulogd/ulogd_inpflow_NFCT.so"
 plugin="@libdir@/ulogd/ulogd_filter_IFINDEX.so"
 plugin="@libdir@/ulogd/ulogd_filter_PRINTPKT.so"
+plugin="@libdir@/ulogd/ulogd_filter_PRINTFLOW.so"
 plugin="@libdir@/ulogd/ulogd_output_LOGEMU.so"
 plugin="@libdir@/ulogd/ulogd_output_OPRINT.so"
 plugin="@libdir@/ulogd/ulogd_raw2packet_BASE.so"
 
 # this is a stack for packet-based logging via LOGEMU
 #stack=log1:NFLOG,base1:BASE,ifi1:IFINDEX,print1:PRINTPKT,emu1:LOGEMU
+
+# this is a stack for flow-based logging via LOGEMU
+#stack=ct1:NFCT,print1:PRINTFLOW,emu1:LOGEMU
 
 # this is a stack for flow-based logging via OPRINT
 #stack=ct1:NFCT,op1:OPRINT

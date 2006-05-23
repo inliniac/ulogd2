@@ -55,6 +55,7 @@ static struct ulogd_key logemu_inp[] = {
 	},
 	{
 		.type = ULOGD_RET_UINT32,
+		.flags = ULOGD_KEYF_OPTIONAL,
 		.name = "oob.time.sec",
 	},
 };
@@ -91,7 +92,7 @@ static int _output_logemu(struct ulogd_pluginstance *upi)
 		char *tmp;
 		time_t now;
 
-		if (res[1].u.source->flags & ULOGD_RETF_VALID)
+		if (res[1].u.source && (res[1].u.source->flags & ULOGD_RETF_VALID))
 			now = (time_t) res[1].u.source->u.value.ui32;
 		else
 			now = time(NULL);
@@ -187,7 +188,7 @@ static struct ulogd_plugin logemu_plugin = {
 	.input = {
 		.keys = logemu_inp,
 		.num_keys = ARRAY_SIZE(logemu_inp),
-		.type = ULOGD_DTYPE_PACKET,
+		.type = ULOGD_DTYPE_PACKET | ULOGD_DTYPE_FLOW,
 	},
 	.output = {
 		.type = ULOGD_DTYPE_SINK,

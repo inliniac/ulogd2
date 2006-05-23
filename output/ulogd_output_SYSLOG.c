@@ -163,7 +163,7 @@ static struct ulogd_plugin syslog_plugin = {
 	.input = {
 		.keys = syslog_inp,
 		.num_keys = ARRAY_SIZE(syslog_inp),
-		.type = ULOGD_DTYPE_PACKET,
+		.type = ULOGD_DTYPE_PACKET | ULOGD_DTYPE_FLOW,
 	},
 	.output = {
 		.type = ULOGD_DTYPE_SINK,

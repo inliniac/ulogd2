@@ -244,6 +244,11 @@ static struct ulogd_key nfct_okeys[] = {
 			.field_id	= IPFIX_flowEndSeconds,
 		},
 	},
+	{
+		.type = ULOGD_RET_BOOL,
+		.flags = ULOGD_RETF_NONE,
+		.name = "dir",
+	},
 };
 
 static struct ct_htable *htable_alloc(int htable_size, int prealloc)
@@ -423,6 +428,9 @@ static int propagate_ct_flow(struct ulogd_pluginstance *upi,
 		ret[14].u.value.ui32 = ts->time[STOP].tv_usec;
 		ret[14].flags |= ULOGD_RETF_VALID;
 	}
+
+	ret[15].u.value.b = (dir == NFCT_DIR_ORIGINAL) ? 0 : 1;
+	ret[15].flags |= ULOGD_RETF_VALID;
 
 	ulogd_propagate_results(upi);
 
