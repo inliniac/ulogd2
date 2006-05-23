@@ -609,12 +609,15 @@ static int create_stack(const char *option)
 
 	if (!buf) {
 		ulogd_log(ULOGD_ERROR, "");
-		return 1;
+		ret = -ENOMEM;
+		goto out_buf;
 	}
 
 	stack = malloc(sizeof(*stack));
-	if (!stack)
-		return -ENOMEM;
+	if (!stack) {
+		ret = -ENOMEM;
+		goto out_stack;
+	}
 	INIT_LLIST_HEAD(&stack->list);
 
 	ulogd_log(ULOGD_DEBUG, "building new pluginstance stack (%s):\n",
@@ -634,8 +637,8 @@ static int create_stack(const char *option)
 		if (!equals || (equals - tok >= ULOGD_MAX_KEYLEN)) {
 			ulogd_log(ULOGD_ERROR, "syntax error while parsing `%s'"
 				  "of line `%s'\n", tok, buf);
-			free(stack);
-			return -EINVAL;
+			ret = -EINVAL;
+			goto out;
 		}
 		strncpy(pi_id, tok, ULOGD_MAX_KEYLEN-1);
 		pi_id[equals-tok] = '\0';
@@ -646,8 +649,8 @@ static int create_stack(const char *option)
 		if (!pl) {
 			ulogd_log(ULOGD_ERROR, "can't find requested plugin "
 				  "%s\n", plname);
-			free(stack);
-			return -ENODEV;
+			ret = -ENODEV;
+			goto out;
 		}
 
 		/* allocate */
@@ -656,8 +659,8 @@ static int create_stack(const char *option)
 			ulogd_log(ULOGD_ERROR, 
 				  "unable to allocate pluginstance for %s\n",
 				  pi_id);
-			free(stack);
-			return -ENOMEM;
+			ret = -ENOMEM;
+			goto out;
 		}
 	
 		/* FIXME: call constructor routine from end to beginning,
@@ -671,21 +674,27 @@ static int create_stack(const char *option)
 	ret = create_stack_resolve_keys(stack);
 	if (ret < 0) {
 		ulogd_log(ULOGD_DEBUG, "destroying stack\n");
-		free(stack);
-		return ret;
+		goto out;
 	}
 
 	/* PASS 3: start each plugin in stack */
 	ret = create_stack_start_instances(stack);
 	if (ret < 0) {
 		ulogd_log(ULOGD_DEBUG, "destroying stack\n");
-		free(stack);
-		return ret;
+		goto out;
 	}
 
 	/* add head of pluginstance stack to list of stacks */
 	llist_add(&stack->stack_list, &ulogd_pi_stacks);
+	free(buf);
 	return 0;
+
+out:
+	free(stack);
+out_stack:
+	free(buf);
+out_buf:
+	return ret;
 }
 	
 
