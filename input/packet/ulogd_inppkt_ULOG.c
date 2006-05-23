@@ -32,7 +32,7 @@ struct ulog_input {
 /* configuration entries */
 
 static struct config_keyset libulog_kset = {
-	.num_ces = 10,
+	.num_ces = 3,
 	.ces = {
 	{
 		.key 	 = "bufsize",
