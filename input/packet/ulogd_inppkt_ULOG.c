@@ -13,7 +13,7 @@
 #define ULOGD_NLGROUP_DEFAULT	32
 #endif
 
-/* Size of the socket recevive memory.  Should be at least the same size as the
+/* Size of the socket receive memory.  Should be at least the same size as the
  * 'nlbufsiz' module loadtime parameter of ipt_ULOG.o
  * If you have _big_ in-kernel queues, you may have to increase this number.  (
  * --qthreshold 100 * 1500 bytes/packet = 150kB  */
