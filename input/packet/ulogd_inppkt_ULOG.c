@@ -234,6 +234,7 @@ static int init(struct ulogd_pluginstance *upi)
 	ui->ulog_fd.fd = ipulog_get_fd(ui->libulog_h);
 	ui->ulog_fd.cb = &ulog_read_cb;
 	ui->ulog_fd.data = upi;
+	ui->ulog_fd.when = ULOGD_FD_READ;
 
 	ulogd_register_fd(&ui->ulog_fd);
 
