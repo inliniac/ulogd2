@@ -64,7 +64,7 @@ enum {
 	IPFIX_postPacketDeltaCount	= 24,
 	IPFIX_minimumPacketLength	= 25,
 	IPFIX_maximumPacketLength	= 26,
-	IPFIX_sooureIPv6Address		= 27,
+	IPFIX_sourceIPv6Address		= 27,
 	IPFIX_destinationIPv6Address	= 28,
 	IPFIX_sourceIPv6Mask		= 29,
 	IPFIX_destinationIPv6Mask	= 30,

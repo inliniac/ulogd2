@@ -212,6 +212,16 @@ static struct ulogd_key output_keys[] = {
 			.field_id = IPFIX_NF_seq_global,
 		},
 	},
+	{
+		.type = ULOGD_RET_UINT8,
+		.flags = ULOGD_RETF_NONE,
+		.name = "oob.family",
+	},
+	{
+		.type = ULOGD_RET_UINT16,
+		.flags = ULOGD_RETF_NONE,
+		.name = "oob.protocol",
+	},
 };
 
 static inline int 
@@ -229,16 +239,19 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 	u_int32_t indev = nflog_get_indev(ldata);
 	u_int32_t outdev = nflog_get_outdev(ldata);
 	u_int32_t seq;
-	
+
+	ret[14].u.value.ui8 = af_ce(upi->config_kset).u.value;
 
 	if (ph) {
 		/* FIXME */
 		ret[10].u.value.ui8 = ph->hook;
 		ret[10].flags |= ULOGD_RETF_VALID;
+		ret[15].u.value.ui16 = ntohs(ph->hw_protocol);
+		ret[15].flags |= ULOGD_RETF_VALID;
 	}
 
 	if (hw) {
-		ret[0].u.value.ptr = &hw->hw_addr;
+		ret[0].u.value.ptr = hw->hw_addr;
 		ret[0].flags |= ULOGD_RETF_VALID;
 		ret[11].u.value.ui16 = ntohs(hw->hw_addrlen);
 		ret[11].flags |= ULOGD_RETF_VALID;
@@ -286,14 +299,13 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 	}
 
 	if (nflog_get_seq(ldata, &seq)) {
-		ret[10].u.value.ui32 = seq;
-		ret[10].flags |= ULOGD_RETF_VALID;
+		ret[12].u.value.ui32 = seq;
+		ret[12].flags |= ULOGD_RETF_VALID;
 	}
 	if (nflog_get_seq_global(ldata, &seq)) {
-		ret[11].u.value.ui32 = seq;
-		ret[11].flags |= ULOGD_RETF_VALID;
+		ret[13].u.value.ui32 = seq;
+		ret[13].flags |= ULOGD_RETF_VALID;
 	}
-	
 	ulogd_propagate_results(upi);
 	return 0;
 }
