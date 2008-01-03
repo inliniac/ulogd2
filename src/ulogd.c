@@ -315,6 +315,13 @@ void __ulogd_log(int level, char *file, int line, const char *format, ...)
 	}
 }
 
+static void warn_and_exit(int daemonize)
+{
+	if (!daemonize)
+		fprintf(stderr, "Fatal error, check logfile.\n");
+	exit(1);
+}
+
 /* clean results (set all values to 0 and free pointers) */
 static void ulogd_clean_results(struct ulogd_pluginstance *pi)
 {
@@ -914,44 +921,44 @@ int main(int argc, char* argv[])
 	if (config_register_file(ulogd_configfile)) {
 		ulogd_log(ULOGD_FATAL, "error registering configfile \"%s\"\n",
 			  ulogd_configfile);
-		exit(1);
+		warn_and_exit(daemonize);
 	}
 	
 	/* parse config file */
 	if (parse_conffile("global", &ulogd_kset)) {
 		ulogd_log(ULOGD_FATAL, "parse_conffile\n");
-		exit(1);
+		warn_and_exit(daemonize);
 	}
 
 	if (llist_empty(&ulogd_pi_stacks)) {
 		ulogd_log(ULOGD_FATAL, 
 			  "not even a single working plugin stack\n");
-		exit(1);
+		warn_and_exit(daemonize);
 	}
 
 	if (change_uid) {
 		ulogd_log(ULOGD_NOTICE, "Changing UID / GID\n");
 		if (setgid(gid)) {
 			ulogd_log(ULOGD_FATAL, "can't set GID %u\n", gid);
-			exit(1);
+			warn_and_exit(daemonize);
 		}
 		if (setegid(gid)) {
 			ulogd_log(ULOGD_FATAL, "can't sett effective GID %u\n",
 				  gid);
-			exit(1);
+			warn_and_exit(daemonize);
 		}
 		if (initgroups(user, gid)) {
 			ulogd_log(ULOGD_FATAL, "can't set user secondary GID\n");
-			exit(1);
+			warn_and_exit(daemonize);
 		}
 		if (setuid(uid)) {
 			ulogd_log(ULOGD_FATAL, "can't set UID %u\n", uid);
-			exit(1);
+			warn_and_exit(daemonize);
 		}
 		if (seteuid(uid)) {
 			ulogd_log(ULOGD_FATAL, "can't set effective UID %u\n",
 				  uid);
-			exit(1);
+			warn_and_exit(daemonize);
 		}
 	}
 
