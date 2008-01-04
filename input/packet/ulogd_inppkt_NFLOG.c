@@ -14,7 +14,7 @@
 #define NFLOG_GROUP_DEFAULT	0
 #endif
 
-/* Size of the socket recevive memory.  Should be at least the same size as the
+/* Size of the socket receive memory.  Should be at least the same size as the
  * 'nlbufsiz' parameter of nfnetlink_log.ko
  * If you have _big_ in-kernel queues, you may have to increase this number.  (
  * --qthreshold 100 * 1500 bytes/packet = 150kB  */
@@ -89,6 +89,24 @@ static struct config_keyset libulog_kset = {
 #define seq_ce(x)	(x->ces[4])
 #define seq_global_ce(x)	(x->ces[5])
 
+enum nflog_keys {
+	NFLOG_KEY_RAW_MAC = 0,
+	NFLOG_KEY_RAW_PCKT,
+	NFLOG_KEY_RAW_PCKTLEN,
+	NFLOG_KEY_RAW_PCKTCOUNT,
+	NFLOG_KEY_OOB_PREFIX,
+	NFLOG_KEY_OOB_TIME_SEC,
+	NFLOG_KEY_OOB_TIME_USEC,
+	NFLOG_KEY_OOB_MARK,
+	NFLOG_KEY_OOB_IFINDEX_IN,
+	NFLOG_KEY_OOB_IFINDEX_OUT,
+	NFLOG_KEY_OOB_HOOK,
+	NFLOG_KEY_RAW_MAC_LEN,
+	NFLOG_KEY_OOB_SEQ_LOCAL,
+	NFLOG_KEY_OOB_SEQ_GLOBAL,
+	NFLOG_KEY_OOB_FAMILY,
+	NFLOG_KEY_OOB_PROTOCOL,
+};
 
 static struct ulogd_key output_keys[] = {
 	{ 
@@ -240,71 +258,71 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 	u_int32_t outdev = nflog_get_outdev(ldata);
 	u_int32_t seq;
 
-	ret[14].u.value.ui8 = af_ce(upi->config_kset).u.value;
+	ret[NFLOG_KEY_OOB_FAMILY].u.value.ui8 = af_ce(upi->config_kset).u.value;
 
 	if (ph) {
 		/* FIXME */
-		ret[10].u.value.ui8 = ph->hook;
-		ret[10].flags |= ULOGD_RETF_VALID;
-		ret[15].u.value.ui16 = ntohs(ph->hw_protocol);
-		ret[15].flags |= ULOGD_RETF_VALID;
+		ret[NFLOG_KEY_OOB_HOOK].u.value.ui8 = ph->hook;
+		ret[NFLOG_KEY_OOB_HOOK].flags |= ULOGD_RETF_VALID;
+		ret[NFLOG_KEY_OOB_PROTOCOL].u.value.ui16 = ntohs(ph->hw_protocol);
+		ret[NFLOG_KEY_OOB_PROTOCOL].flags |= ULOGD_RETF_VALID;
 	}
 
 	if (hw) {
-		ret[0].u.value.ptr = hw->hw_addr;
-		ret[0].flags |= ULOGD_RETF_VALID;
-		ret[11].u.value.ui16 = ntohs(hw->hw_addrlen);
-		ret[11].flags |= ULOGD_RETF_VALID;
+		ret[NFLOG_KEY_RAW_MAC].u.value.ptr = hw->hw_addr;
+		ret[NFLOG_KEY_RAW_MAC].flags |= ULOGD_RETF_VALID;
+		ret[NFLOG_KEY_RAW_MAC_LEN].u.value.ui16 = ntohs(hw->hw_addrlen);
+		ret[NFLOG_KEY_RAW_MAC_LEN].flags |= ULOGD_RETF_VALID;
 	}
 
 	if (payload_len >= 0) {
 		/* include pointer to raw packet */
-		ret[1].u.value.ptr = payload;
-		ret[1].flags |= ULOGD_RETF_VALID;
+		ret[NFLOG_KEY_RAW_PCKT].u.value.ptr = payload;
+		ret[NFLOG_KEY_RAW_PCKT].flags |= ULOGD_RETF_VALID;
 
-		ret[2].u.value.ui32 = payload_len;
-		ret[2].flags |= ULOGD_RETF_VALID;
+		ret[NFLOG_KEY_RAW_PCKTLEN].u.value.ui32 = payload_len;
+		ret[NFLOG_KEY_RAW_PCKTLEN].flags |= ULOGD_RETF_VALID;
 	}
 
 	/* number of packets */
-	ret[3].u.value.ui32 = 1;
-	ret[3].flags |= ULOGD_RETF_VALID;
+	ret[NFLOG_KEY_RAW_PCKTCOUNT].u.value.ui32 = 1;
+	ret[NFLOG_KEY_RAW_PCKTCOUNT].flags |= ULOGD_RETF_VALID;
 
 	if (prefix) {
-		ret[4].u.value.ptr = prefix;
-		ret[4].flags |= ULOGD_RETF_VALID;
+		ret[NFLOG_KEY_OOB_PREFIX].u.value.ptr = prefix;
+		ret[NFLOG_KEY_OOB_PREFIX].flags |= ULOGD_RETF_VALID;
 	}
 
 	/* god knows why timestamp_usec contains crap if timestamp_sec
 	 * == 0 if (pkt->timestamp_sec || pkt->timestamp_usec) { */
 	if (nflog_get_timestamp(ldata, &ts) == 0 && ts.tv_sec) {
 		/* FIXME: convert endianness */
-		ret[5].u.value.ui32 = ts.tv_sec & 0xffffffff;
-		ret[5].flags |= ULOGD_RETF_VALID;
-		ret[6].u.value.ui32 = ts.tv_usec & 0xffffffff;
-		ret[6].flags |= ULOGD_RETF_VALID;
+		ret[NFLOG_KEY_OOB_TIME_SEC].u.value.ui32 = ts.tv_sec & 0xffffffff;
+		ret[NFLOG_KEY_OOB_TIME_SEC].flags |= ULOGD_RETF_VALID;
+		ret[NFLOG_KEY_OOB_TIME_USEC].u.value.ui32 = ts.tv_usec & 0xffffffff;
+		ret[NFLOG_KEY_OOB_TIME_USEC].flags |= ULOGD_RETF_VALID;
 	}
 
-	ret[7].u.value.ui32 = mark;
-	ret[7].flags |= ULOGD_RETF_VALID;
+	ret[NFLOG_KEY_OOB_MARK].u.value.ui32 = mark;
+	ret[NFLOG_KEY_OOB_MARK].flags |= ULOGD_RETF_VALID;
 
 	if (indev > 0) {
-		ret[8].u.value.ui32 = indev;
-		ret[8].flags |= ULOGD_RETF_VALID;
+		ret[NFLOG_KEY_OOB_IFINDEX_IN].u.value.ui32 = indev;
+		ret[NFLOG_KEY_OOB_IFINDEX_IN].flags |= ULOGD_RETF_VALID;
 	}
 
 	if (outdev > 0) {
-		ret[9].u.value.ui32 = outdev;
-		ret[9].flags |= ULOGD_RETF_VALID;
+		ret[NFLOG_KEY_OOB_IFINDEX_OUT].u.value.ui32 = outdev;
+		ret[NFLOG_KEY_OOB_IFINDEX_OUT].flags |= ULOGD_RETF_VALID;
 	}
 
 	if (nflog_get_seq(ldata, &seq)) {
-		ret[12].u.value.ui32 = seq;
-		ret[12].flags |= ULOGD_RETF_VALID;
+		ret[NFLOG_KEY_OOB_SEQ_LOCAL].u.value.ui32 = seq;
+		ret[NFLOG_KEY_OOB_SEQ_LOCAL].flags |= ULOGD_RETF_VALID;
 	}
 	if (nflog_get_seq_global(ldata, &seq)) {
-		ret[13].u.value.ui32 = seq;
-		ret[13].flags |= ULOGD_RETF_VALID;
+		ret[NFLOG_KEY_OOB_SEQ_GLOBAL].u.value.ui32 = seq;
+		ret[NFLOG_KEY_OOB_SEQ_GLOBAL].flags |= ULOGD_RETF_VALID;
 	}
 	ulogd_propagate_results(upi);
 	return 0;
