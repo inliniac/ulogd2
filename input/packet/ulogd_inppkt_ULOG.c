@@ -167,7 +167,7 @@ static int interp_packet(struct ulogd_pluginstance *ip, ulog_packet_msg_t *pkt)
 	if (pkt->mac_len) {
 		ret[ULOG_KEY_RAW_MAC].u.value.ptr = pkt->mac;
 		ret[ULOG_KEY_RAW_MAC].flags |= ULOGD_RETF_VALID;
-		ret[ULOG_KEY_RAW_MAC_LEN].u.value.ui16 = ntohs(pkt->mac_len);
+		ret[ULOG_KEY_RAW_MAC_LEN].u.value.ui16 = pkt->mac_len;
 		ret[ULOG_KEY_RAW_MAC_LEN].flags |= ULOGD_RETF_VALID;
 	}
 
