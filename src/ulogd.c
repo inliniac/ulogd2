@@ -738,6 +738,7 @@ static int logfile_open(const char *name)
 	if (!strcmp(name, "stdout")) {
 		logfile = stdout;
 	} else if (!strcmp(name, "syslog")) {
+		openlog("ulogd", LOG_PID, LOG_DAEMON);
 		logfile = &syslog_dummy;
 	} else {
 		logfile = fopen(ulogd_logfile, "a");
