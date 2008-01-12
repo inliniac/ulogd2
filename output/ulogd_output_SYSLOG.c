@@ -87,6 +87,7 @@ static int syslog_configure(struct ulogd_pluginstance *pi,
 {
 	int syslog_facility, syslog_level;
 	char *facility, *level;
+	struct syslog_instance *li = (struct syslog_instance *) &pi->private;
 
 	/* FIXME: error handling */
 	config_parse_file(pi->id, pi->config_kset);
@@ -143,6 +144,9 @@ static int syslog_configure(struct ulogd_pluginstance *pi,
 			  level);
 		return -EINVAL;
 	}
+
+	li->syslog_level = syslog_level;
+	li->syslog_facility = syslog_facility;
 
 	return 0;
 }
