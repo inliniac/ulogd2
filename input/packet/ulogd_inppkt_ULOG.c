@@ -225,6 +225,8 @@ static int ulog_read_cb(int fd, unsigned int what, void *param)
 	while ((len = ipulog_read(u->libulog_h, u->libulog_buf,
 				 upi->config_kset->ces[0].u.value, 1))) {
 		if (len <= 0) {
+			if (errno == EAGAIN)
+				break;
 			/* this is not supposed to happen */
 			ulogd_log(ULOGD_ERROR, "ipulog_read = %d! "
 				  "ipulog_errno = %d (%s), "
