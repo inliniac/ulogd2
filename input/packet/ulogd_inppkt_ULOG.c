@@ -227,8 +227,11 @@ static int ulog_read_cb(int fd, unsigned int what, void *param)
 		if (len <= 0) {
 			/* this is not supposed to happen */
 			ulogd_log(ULOGD_ERROR, "ipulog_read = %d! "
-				  "ipulog_errno = %d, errno = %d\n",
-				  len, ipulog_errno, errno);
+				  "ipulog_errno = %d (%s), "
+				  "errno = %d (%s)\n",
+				  len, ipulog_errno,
+				  ipulog_strerror(ipulog_errno),
+				  errno, strerror(errno));
 			break;
 		}
 		while ((upkt = ipulog_get_packet(u->libulog_h,
