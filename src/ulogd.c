@@ -422,8 +422,8 @@ pluginstance_alloc_init(struct ulogd_plugin *pl, char *pi_id,
 			ptr += pi->config_kset->num_ces 
 						* sizeof(struct config_entry);
 			memcpy(pi->config_kset->ces, pl->config_kset->ces, 
-			       pi->config_kset->num_ces 
-			       			*sizeof(struct config_entry));
+			       pi->config_kset->num_ces
+						* sizeof(struct config_entry));
 		}
 	} else
 		pi->config_kset = NULL;
@@ -653,7 +653,7 @@ static int create_stack(const char *option)
 		plname = equals+1;
 	
 		/* find matching plugin */
- 		pl = find_plugin(plname);
+		pl = find_plugin(plname);
 		if (!pl) {
 			ulogd_log(ULOGD_ERROR, "can't find requested plugin "
 				  "%s\n", plname);
@@ -944,7 +944,7 @@ int main(int argc, char* argv[])
 			warn_and_exit(daemonize);
 		}
 		if (setegid(gid)) {
-			ulogd_log(ULOGD_FATAL, "can't sett effective GID %u\n",
+			ulogd_log(ULOGD_FATAL, "can't set effective GID %u\n",
 				  gid);
 			warn_and_exit(daemonize);
 		}

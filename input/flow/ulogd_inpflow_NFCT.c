@@ -190,24 +190,24 @@ static struct ulogd_key nfct_okeys[] = {
 			.field_id	= IPFIX_icmpTypeIPv4,
 		},
 	},
-        {
-                .type	= ULOGD_RET_UINT32,
-                .flags	= ULOGD_RETF_NONE,
-                .name	= "ct.mark",
-                .ipfix	= {
-                        .vendor		= IPFIX_VENDOR_NETFILTER,
-                        .field_id	= IPFIX_NF_mark,
-                },
-        },
-        {
-                .type	= ULOGD_RET_UINT32,
-                .flags	= ULOGD_RETF_NONE,
-                .name	= "ct.id",
-                .ipfix	= {
-                        .vendor		= IPFIX_VENDOR_NETFILTER,
-                        .field_id	= IPFIX_NF_conntrack_id,
-                },
-        },
+	{
+		.type	= ULOGD_RET_UINT32,
+		.flags	= ULOGD_RETF_NONE,
+		.name	= "ct.mark",
+		.ipfix	= {
+			.vendor		= IPFIX_VENDOR_NETFILTER,
+			.field_id	= IPFIX_NF_mark,
+		},
+	},
+	{
+		.type	= ULOGD_RET_UINT32,
+		.flags	= ULOGD_RETF_NONE,
+		.name	= "ct.id",
+		.ipfix	= {
+			.vendor		= IPFIX_VENDOR_NETFILTER,
+			.field_id	= IPFIX_NF_conntrack_id,
+		},
+	},
 	{
 		.type 	= ULOGD_RET_UINT32,
 		.flags 	= ULOGD_RETF_NONE,
@@ -268,7 +268,7 @@ static struct ct_htable *htable_alloc(int htable_size, int prealloc)
 	INIT_LLIST_HEAD(&htable->idle);
 
 	for (i = 0; i < htable->num_buckets; i++)
-                INIT_LLIST_HEAD(&htable->buckets[i]);
+		INIT_LLIST_HEAD(&htable->buckets[i]);
 	
 	if (!htable->prealloc)
 		return htable;
