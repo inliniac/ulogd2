@@ -963,6 +963,8 @@ int main(int argc, char* argv[])
 		}
 	}
 
+	nice(-1);
+
 	if (daemonize){
 		if (fork()) {
 			exit(0);
