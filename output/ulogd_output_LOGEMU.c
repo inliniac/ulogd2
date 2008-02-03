@@ -114,15 +114,18 @@ static int _output_logemu(struct ulogd_pluginstance *upi)
 static void signal_handler_logemu(struct ulogd_pluginstance *pi, int signal)
 {
 	struct logemu_instance *li = (struct logemu_instance *) &pi->private;
+	FILE *old = li->of;
 
 	switch (signal) {
 	case SIGHUP:
 		ulogd_log(ULOGD_NOTICE, "syslogemu: reopening logfile\n");
-		fclose(li->of);
 		li->of = fopen(pi->config_kset->ces[0].u.string, "a");
 		if (!li->of) {
 			ulogd_log(ULOGD_ERROR, "can't reopen syslogemu: %s\n",
 				  strerror(errno));
+			li->of = old;
+		} else {
+			fclose(old);
 		}
 		break;
 	default:
