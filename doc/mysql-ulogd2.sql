@@ -376,7 +376,7 @@ READS SQL DATA
 BEGIN
 	INSERT INTO ulog2 (oob_time_sec, oob_time_usec, oob_prefix, oob_mark, oob_in, oob_out, oob_family,
 			   ip_saddr, ip_daddr, ip_protocol) VALUES 
-		(_oob_time_sec, _oob_time_usec, _oob_prefix, _oob_mark, _oob_in, _oob_out, oob_family,
+		(_oob_time_sec, _oob_time_usec, _oob_prefix, _oob_mark, _oob_in, _oob_out, _oob_family,
 		 _ip_saddr, _ip_daddr, _ip_protocol);
 	RETURN LAST_INSERT_ID();
 END
@@ -410,7 +410,7 @@ BEGIN
 	INSERT INTO ulog2 (oob_time_sec, oob_time_usec, oob_prefix, oob_mark, oob_in, oob_out, oob_family,
 			   ip_saddr, ip_daddr, ip_protocol, ip_tos, ip_ttl, ip_totlen, ip_ihl,
 		 	   ip_csum, ip_id, ip_fragoff ) VALUES 
-		(_oob_time_sec, _oob_time_usec, _oob_prefix, _oob_mark, _oob_in, _oob_out, oob_family,
+		(_oob_time_sec, _oob_time_usec, _oob_prefix, _oob_mark, _oob_in, _oob_out, _oob_family,
 		 _ip_saddr, _ip_daddr, _ip_protocol, _ip_tos, _ip_ttl, _ip_totlen, _ip_ihl,
 		 _ip_csum, _ip_id, _ip_fragoff);
 	RETURN LAST_INSERT_ID();
