@@ -795,6 +795,10 @@ static int _interp_ipv6hdr(struct ulogd_pluginstance *pi, u_int32_t len)
 	if (fragment)
 		goto out;
 
+
+	ret[KEY_IP_PROTOCOL].u.value.ui8 = curhdr;
+	ret[KEY_IP_PROTOCOL].flags |= ULOGD_RETF_VALID;
+
 	switch (curhdr) {
 	case IPPROTO_TCP:
 		_interp_tcp(pi, (void *)ipv6h + ptr, len);
