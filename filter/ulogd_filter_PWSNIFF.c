@@ -123,7 +123,7 @@ static int interp_pwsniff(struct ulogd_pluginstance *pi)
 			return 0;
 		}
 		strncpy((char *) ret[0].u.value.ptr, (char *)begp, len);
-		*((char *)ret[0].u.value.ptr + len + 1) = '\0';
+		*((char *)ret[0].u.value.ptr + len) = '\0';
 	}
 	if (pw_len) {
 		ret[1].u.value.ptr = (char *) malloc(pw_len+1);
@@ -133,7 +133,7 @@ static int interp_pwsniff(struct ulogd_pluginstance *pi)
 			return 0;
 		}
 		strncpy((char *)ret[1].u.value.ptr, (char *)pw_begp, pw_len);
-		*((char *)ret[1].u.value.ptr + pw_len + 1) = '\0';
+		*((char *)ret[1].u.value.ptr + pw_len) = '\0';
 
 	}
 	return 0;
