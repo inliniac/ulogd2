@@ -54,8 +54,6 @@ enum output_keys {
 	KEY_IP_CSUM,
 	KEY_IP_ID,
 	KEY_IP_FRAGOFF,
-	KEY_IP6_SADDR,
-	KEY_IP6_DADDR,
 	KEY_IP6_PAYLOAD_LEN,
 	KEY_IP6_PRIORITY,
 	KEY_IP6_FLOWLABEL,
@@ -184,24 +182,6 @@ static struct ulogd_key iphdr_rets[] = {
 		.ipfix = {
 			.vendor = IPFIX_VENDOR_IETF,
 			.field_id = IPFIX_fragmentOffsetIPv4,
-		},
-	},
-	[KEY_IP6_SADDR] = {
-		.type = ULOGD_RET_RAW,
-		.flags = ULOGD_RETF_NONE,
-		.name = "ip6.saddr",
-		.ipfix = {
-			.vendor = IPFIX_VENDOR_IETF,
-			.field_id = IPFIX_sourceIPv6Address,
-		},
-	},
-	[KEY_IP6_DADDR] = {
-		.type = ULOGD_RET_RAW,
-		.flags = ULOGD_RETF_NONE,
-		.name = "ip6.daddr",
-		.ipfix = {
-			.vendor = IPFIX_VENDOR_IETF,
-			.field_id = IPFIX_destinationIPv6Address,
 		},
 	},
 	[KEY_IP6_PAYLOAD_LEN] = {
@@ -730,10 +710,10 @@ static int _interp_ipv6hdr(struct ulogd_pluginstance *pi, u_int32_t len)
 	if (len < sizeof(struct ip6_hdr))
 		return 0;
 
-	ret[KEY_IP6_SADDR].u.value.ptr = &ipv6h->ip6_src;
-	ret[KEY_IP6_SADDR].flags |= ULOGD_RETF_VALID;
-	ret[KEY_IP6_DADDR].u.value.ptr = &ipv6h->ip6_dst;
-	ret[KEY_IP6_DADDR].flags |= ULOGD_RETF_VALID;
+	ret[KEY_IP_SADDR].u.value.ptr = &ipv6h->ip6_src;
+	ret[KEY_IP_SADDR].flags |= ULOGD_RETF_VALID;
+	ret[KEY_IP_DADDR].u.value.ptr = &ipv6h->ip6_dst;
+	ret[KEY_IP_DADDR].flags |= ULOGD_RETF_VALID;
 	ret[KEY_IP6_PAYLOAD_LEN].u.value.ui16 = ntohs(ipv6h->ip6_plen);
 	ret[KEY_IP6_PAYLOAD_LEN].flags |= ULOGD_RETF_VALID;
 	ret[KEY_IP6_PRIORITY].u.value.ui8 = ntohl(ipv6h->ip6_flow & 0x0ff00000) >> 20;

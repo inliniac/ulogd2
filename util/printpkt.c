@@ -45,16 +45,14 @@ struct ulogd_key printpkt_keys[] = {
 	[KEY_OOB_OUT]		= { .name = "oob.out", },
 	[KEY_RAW_MAC]		= { .name = "raw.mac", },
 	[KEY_RAW_MACLEN]	= { .name = "raw.mac_len", },
-	[KEY_IP_SADDR]		= { .name = "ip.saddr", },
-	[KEY_IP_DADDR]		= { .name = "ip.daddr", },
+	[KEY_IP_SADDR]		= { .name = "ip.saddr.str", },
+	[KEY_IP_DADDR]		= { .name = "ip.daddr.str", },
 	[KEY_IP_TOTLEN]		= { .name = "ip.totlen", },
 	[KEY_IP_TOS]		= { .name = "ip.tos", },
 	[KEY_IP_TTL]		= { .name = "ip.ttl", },
 	[KEY_IP_ID]		= { .name = "ip.id", },
 	[KEY_IP_FRAGOFF]	= { .name = "ip.fragoff", },
 	[KEY_IP_PROTOCOL]	= { .name = "ip.protocol", },
-	[KEY_IP6_SADDR]		= { .name = "ip6.saddr", },
-	[KEY_IP6_DADDR]		= { .name = "ip6.daddr", },
 	[KEY_IP6_PAYLOAD_LEN]	= { .name = "ip6.payload_len" },
 	[KEY_IP6_PRIORITY]	= { .name = "ip6.priority" },
 	[KEY_IP6_HOPLIMIT]	= { .name = "ip6.hoplimit" },
@@ -182,15 +180,11 @@ static int printpkt_ipv4(struct ulogd_key *res, char *buf)
 
 	if (pp_is_valid(res, KEY_IP_SADDR))
 		buf_cur += sprintf(buf_cur, "SRC=%s ",
-				   inet_ntop(AF_INET,
-				   	     &GET_VALUE(res, KEY_IP_SADDR).ui32,
-					     tmp, sizeof(tmp)));
+				   GET_VALUE(res, KEY_IP_SADDR).ptr);
 
 	if (pp_is_valid(res, KEY_IP_DADDR))
 		buf_cur += sprintf(buf_cur, "DST=%s ",
-				   inet_ntop(AF_INET,
-				   	     &GET_VALUE(res, KEY_IP_DADDR).ui32,
-					     tmp, sizeof(tmp)));
+				   GET_VALUE(res, KEY_IP_DADDR).ptr);
 
 	/* FIXME: add pp_is_valid calls to remainder of file */
 	buf_cur += sprintf(buf_cur,"LEN=%u TOS=%02X PREC=0x%02X TTL=%u ID=%u ", 
@@ -271,17 +265,13 @@ static int printpkt_ipv6(struct ulogd_key *res, char *buf)
 	char *buf_cur = buf;
 	char tmp[INET6_ADDRSTRLEN];
 
-	if (pp_is_valid(res, KEY_IP6_SADDR))
+	if (pp_is_valid(res, KEY_IP_SADDR))
 		buf_cur += sprintf(buf_cur, "SRC=%s ",
-				   inet_ntop(AF_INET6,
-				   	     GET_VALUE(res, KEY_IP6_SADDR).ptr,
-					     tmp, sizeof(tmp)));
+				   GET_VALUE(res, KEY_IP_SADDR).ptr);
 
-	if (pp_is_valid(res, KEY_IP6_DADDR))
+	if (pp_is_valid(res, KEY_IP_DADDR))
 		buf_cur += sprintf(buf_cur, "DST=%s ",
-				   inet_ntop(AF_INET6,
-				   	     GET_VALUE(res, KEY_IP6_DADDR).ptr,
-					     tmp, sizeof(tmp)));
+				   GET_VALUE(res, KEY_IP_DADDR).ptr);
 
 	if (pp_is_valid(res, KEY_IP6_PAYLOAD_LEN))
 		buf_cur += sprintf(buf_cur, "LEN=%Zu ",
