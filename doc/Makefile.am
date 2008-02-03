@@ -1,6 +1,6 @@
 
 EXTRA_DIST = ulogd.txt ulogd.html ulogd.ps \
-	mysql.table pgsql.table sqlite3.table mysql.table.ipaddr-as-string
+	     sqlite3.table pgsql-ulogd2.sql mysql-ulogd2.sql
 
 dist-hook:
 	sgml2txt ulogd.sgml
