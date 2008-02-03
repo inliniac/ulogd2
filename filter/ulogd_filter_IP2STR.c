@@ -1,6 +1,6 @@
 /* ulogd_filter_IP2STR.c, Version $Revision: 1500 $
  *
- * ulogd interpreter plugin for ifindex to ifname conversion
+ * ulogd interpreter plugin for internal IP storage format to string conversion
  *
  * (C) 2008 by Eric Leblond <eric@inl.fr>
  *
@@ -20,7 +20,6 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Id: ulogd_filter_IFINDEX.c 1500 2005-10-03 16:54:02Z laforge $
- *
  */
 
 #include <stdio.h>
@@ -112,7 +111,6 @@ static struct ulogd_key ip2str_keys[] = {
 		.flags = ULOGD_RETF_FREE,
 		.name = "reply.ip.daddr.str",
 	},
-
 };
 
 #define GET_VALUE(res, x)	(res[x].u.source->u.value)
@@ -152,8 +150,7 @@ static int interp_ip2str(struct ulogd_pluginstance *pi)
 	/* Iter on all addr fields */
 	for(i = START_KEY; i < MAX_KEY; i++) {
 		if (pp_is_valid(inp, i)) {
-			ret[i-1].u.value.ptr = ip2str(inp, i,
-						      oob_family);
+			ret[i-1].u.value.ptr = ip2str(inp, i, oob_family);
 			ret[i-1].flags |= ULOGD_RETF_VALID;
 		}
 	}
