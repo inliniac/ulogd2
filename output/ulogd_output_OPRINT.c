@@ -118,15 +118,18 @@ static struct config_keyset oprint_kset = {
 static void sighup_handler_print(struct ulogd_pluginstance *upi, int signal)
 {
 	struct oprint_priv *oi = (struct oprint_priv *) &upi->private;
+	FILE *old = oi->of;
 
 	switch (signal) {
 	case SIGHUP:
 		ulogd_log(ULOGD_NOTICE, "OPRINT: reopening logfile\n");
-		fclose(oi->of);
 		oi->of = fopen(upi->config_kset->ces[0].u.string, "a");
 		if (!oi->of) {
 			ulogd_log(ULOGD_ERROR, "can't open PKTLOG: %s\n",
 				strerror(errno));
+			oi->of = old;
+		} else {
+			fclose(old);
 		}
 		break;
 	default:
