@@ -217,7 +217,8 @@ static int append_create_outfile(struct ulogd_pluginstance *upi)
 	} else {
 		pi->of = fopen(filename, "a");
 		if (!pi->of) {
-			ulogd_log(ULOGD_ERROR, "can't open pcap file: %s\n", 
+			ulogd_log(ULOGD_ERROR, "can't open pcap file %s: %s\n", 
+				filename,
 				strerror(errno));
 			return -EPERM;
 		}		
