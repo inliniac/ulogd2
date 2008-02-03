@@ -295,9 +295,7 @@ static int __interp_db(struct ulogd_pluginstance *upi)
 			sprintf(di->stmt_ins, "',");
 			break;
 		case ULOGD_RET_RAW:
-			ulogd_log(ULOGD_NOTICE,
-				"%s: type RAW not supported by MySQL\n",
-				upi->input.keys[i].name);
+			sprintf(di->stmt_ins, "%s,", res->u.value.ptr);
 			break;
 		default:
 			ulogd_log(ULOGD_NOTICE,
