@@ -280,8 +280,7 @@ static int open_db_pgsql(struct ulogd_pluginstance *upi)
 static int escape_string_pgsql(struct ulogd_pluginstance *upi,
 			       char *dst, const char *src, unsigned int len)
 {
-	PQescapeString(dst, src, strlen(src)); 
-	return 0;
+	return PQescapeString(dst, src, strlen(src)); 
 }
 
 static int execute_pgsql(struct ulogd_pluginstance *upi,
@@ -290,7 +289,8 @@ static int execute_pgsql(struct ulogd_pluginstance *upi,
 	struct pgsql_instance *pi = (struct pgsql_instance *) upi->private;
 
 	pi->pgres = PQexec(pi->dbh, stmt);
-	if (!pi->pgres || PQresultStatus(pi->pgres) != PGRES_COMMAND_OK) {
+	if (!(pi->pgres && (PQresultStatus(pi->pgres) == PGRES_COMMAND_OK)
+		|| (PQresultStatus(pi->pgres) == PGRES_TUPLES_OK))) {
 		ulogd_log(ULOGD_ERROR, "execute failed (%s)\n",
 			  PQerrorMessage(pi->dbh));
 		return -1;
