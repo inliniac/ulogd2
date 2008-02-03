@@ -658,24 +658,6 @@ $$
 delimiter ;
 
 -- suppressing tuples
-DROP PROCEDURE IF EXISTS DELETE_CT_TUPLE;
-delimiter $$
-CREATE PROCEDURE DELETE_CT_TUPLE(
-		IN _packet_id bigint unsigned
-                )
-SQL SECURITY INVOKER
-COMMENT 'Delete a tuple from conntrack'
-BEGIN
-        -- remember : table with most constraints first
-        DELETE FROM ct_icmp  WHERE ct_icmp._icmp_id = _packet_id;
-        DELETE FROM ct_l4   WHERE ct_l4._l4_id = _packet_id;
-        DELETE FROM ct_tuple WHERE ct_tuple._tuple_id = _packet_id;
-END
-$$
-
-delimiter ;
-
-
 DROP PROCEDURE IF EXISTS DELETE_CT_FLOW;
 delimiter $$
 CREATE PROCEDURE DELETE_CT_FLOW(
