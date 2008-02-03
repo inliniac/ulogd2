@@ -191,6 +191,7 @@ CREATE SQL SECURITY INVOKER VIEW `ulog` AS
         FROM ulog2 LEFT JOIN tcp ON ulog2._id = tcp._tcp_id LEFT JOIN udp ON ulog2._id = udp._udp_id
                 LEFT JOIN icmp ON ulog2._id = icmp._icmp_id LEFT JOIN mac ON ulog2._id = mac._mac_id;
 
+
 -- shortcuts
 DROP VIEW IF EXISTS `view_tcp_quad`;
 CREATE SQL SECURITY INVOKER VIEW `view_tcp_quad` AS
@@ -301,6 +302,21 @@ INSERT INTO ip_proto (_proto_id,proto_name,proto_desc) VALUES
         (41,'ipv6','Internet Protocol, version 6'),
         (58,'ipv6-icmp','ICMP for IPv6');
 
+-- State
+DROP TABLE IF EXISTS `state_t`;
+CREATE TABLE `state_t` (
+  `_state_id` bigint unsigned NOT NULL,
+  state tinyint(3) unsigned
+) ENGINE=INNODB;
+
+ALTER TABLE state_t ADD UNIQUE KEY `_state_id` (`_state_id`);
+ALTER TABLE state_t ADD KEY `index_state_id` (`_state_id`);
+ALTER TABLE state_t ADD KEY `state` (`state`);
+ALTER TABLE state_t ADD FOREIGN KEY (_state_id) REFERENCES ulog2 (_id);
+
+INSERT INTO _extensions (ext_name,table_name,join_name) VALUES
+        ('state','state_t','_state_id');
+
 -- NuFW specific
 
 DROP TABLE IF EXISTS `nufw`;
@@ -323,6 +339,18 @@ CREATE SQL SECURITY INVOKER VIEW `view_nufw` AS
 
 INSERT INTO _extensions (ext_name,table_name,join_name) VALUES
         ('nufw','nufw','_nufw_id');
+
+-- nufw view (nulog)
+DROP VIEW IF EXISTS `nulog`;
+-- CREATE SQL SECURITY INVOKER VIEW `ulog` AS
+--         SELECT * FROM ulog2 INNER JOIN tcp ON ulog2._id = tcp._tcp_id INNER JOIN udp ON ulog2._id = udp._udp_id
+-- 		 INNER JOIN icmp ON ulog2._id = icmp._icmp_id INNER JOIN mac ON ulog2._id = mac._mac_id;
+CREATE SQL SECURITY INVOKER VIEW `nulog` AS
+       SELECT * FROM ulog2 LEFT JOIN tcp ON ulog2._id = tcp._tcp_id LEFT JOIN udp ON ulog2._id = udp._udp_id
+                LEFT JOIN icmp ON ulog2._id = icmp._icmp_id LEFT JOIN mac ON ulog2._id = mac._mac_id
+		LEFT JOIN nufw ON ulog2._id = nufw._nufw_id LEFT JOIN state_t ON ulog2._id = state_t._state_id;
+
+
 
 -- Procedures
 
