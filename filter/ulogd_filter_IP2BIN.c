@@ -136,6 +136,7 @@ static char *ip2bin(struct ulogd_key* inp, int index, char family)
 	char tmp[IPADDR_LENGTH];
 	unsigned char *addr8;
 	struct in6_addr *addr;
+	struct in6_addr ip4_addr;
 	char *buffer;
 	int i, written;
 
@@ -145,6 +146,7 @@ static char *ip2bin(struct ulogd_key* inp, int index, char family)
 			break;
 		case AF_INET:
 			/* Convert IPv4 to IPv4 in IPv6 */
+			addr = &ip4_addr;
 			uint32_to_ipv6(GET_VALUE(inp, index).ui32, addr);
 			break;
 		default:
