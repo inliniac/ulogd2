@@ -231,12 +231,17 @@ static int execute_mysql(struct ulogd_pluginstance *upi,
 {
 	struct mysql_instance *mi = (struct mysql_instance *) upi->private;
 	int ret;
+	MYSQL_RES * result;
 
 	ret = mysql_real_query(mi->dbh, stmt, len);
 	if (ret) {
 		ulogd_log(ULOGD_ERROR, "execute failed (%s)\n",
 			  mysql_error(mi->dbh));
 		return -1;
+	}
+	result = mysql_use_result(mi->dbh);
+	if (result) {
+		mysql_free_result(result);
 	}
 
 	return 0;
