@@ -180,6 +180,9 @@ static int open_db_mysql(struct ulogd_pluginstance *upi)
 	char *user = user_ce(upi->config_kset).u.string;
 	char *pass = pass_ce(upi->config_kset).u.string;
 	char *db = db_ce(upi->config_kset).u.string;
+#ifdef MYSQL_OPT_RECONNECT
+	my_bool trueval = 1;
+#endif 
 
 	mi->dbh = mysql_init(NULL);
 	if (!mi->dbh) {
@@ -190,6 +193,11 @@ static int open_db_mysql(struct ulogd_pluginstance *upi)
 	if (connect_timeout)
 		mysql_options(mi->dbh, MYSQL_OPT_CONNECT_TIMEOUT, 
 			      (const char *) &connect_timeout);
+#ifdef MYSQL_OPT_RECONNECT
+#  if defined(MYSQL_VERSION_ID) && (MYSQL_VERSION_ID >= 50019)
+	mysql_options(mi->dbh, MYSQL_OPT_RECONNECT, &trueval);
+#  endif
+#endif 
 
 	if (!mysql_real_connect(mi->dbh, server, user, pass, db, port, NULL, 0)) {
 		ulogd_log(ULOGD_ERROR, "can't connect to db: %s\n",
@@ -197,6 +205,12 @@ static int open_db_mysql(struct ulogd_pluginstance *upi)
 		return -1;
 	}
 		
+#ifdef MYSQL_OPT_RECONNECT
+#  if defined(MYSQL_VERSION_ID) && (MYSQL_VERSION_ID < 50019)
+	mysql_options(mi->dbh, MYSQL_OPT_RECONNECT, &trueval);
+#  endif
+#endif
+
 	return 0;
 }
 
