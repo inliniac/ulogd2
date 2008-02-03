@@ -41,13 +41,19 @@ struct db_instance {
 		{						\
 			.key = "connect_timeout",		\
 			.type = CONFIG_TYPE_INT,		\
+		},						\
+		{						\
+			.key = "procedure",			\
+			.type = CONFIG_TYPE_STRING,		\
+			.options = CONFIG_OPT_MANDATORY,	\
 		}
 
-#define DB_CE_NUM	4
+#define DB_CE_NUM	5
 #define table_ce(x)	(x->ces[0])
 #define reconnect_ce(x)	(x->ces[1])
 #define asstring_ce(x)	(x->ces[2])
 #define timeout_ce(x)	(x->ces[3])
+#define procedure_ce(x)	(x->ces[4])
 
 void ulogd_db_signal(struct ulogd_pluginstance *upi, int signal);
 int ulogd_db_start(struct ulogd_pluginstance *upi);

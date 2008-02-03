@@ -7,6 +7,7 @@
  *  Portions (C) 2001 Alex Janssen <alex@ynfonatic.de>,
  *           (C) 2005 Sven Schuster <schuster.sven@gmx.de>,
  *           (C) 2005 Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+ *           (C) 2008 Eric Leblond <eric@inl.fr>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 
@@ -65,6 +66,7 @@ static int sql_createstmt(struct ulogd_pluginstance *upi)
 	char *underscore;
 	int i;
 	char *table = table_ce(upi->config_kset).u.string;
+	char *procedure = procedure_ce(upi->config_kset).u.string;
 
 	if (mi->stmt)
 		free(mi->stmt);
@@ -88,25 +90,8 @@ static int sql_createstmt(struct ulogd_pluginstance *upi)
 		return -ENOMEM;
 	}
 
-	if (mi->schema)
-		sprintf(mi->stmt, "insert into %s.%s (", mi->schema, table);
-	else
-		sprintf(mi->stmt, "insert into %s (", table);
-	mi->stmt_val = mi->stmt + strlen(mi->stmt);
+	sprintf(mi->stmt, "CALL %s(", procedure);
 
-	for (i = 0; i < upi->input.num_keys; i++) {
-		if (upi->input.keys[i].flags & ULOGD_KEYF_INACTIVE)
-			continue;
-
-		strncpy(buf, upi->input.keys[i].name, ULOGD_MAX_KEYLEN);	
-		while ((underscore = strchr(buf, '.')))
-			*underscore = '_';
-		sprintf(mi->stmt_val, "%s,", buf);
-		mi->stmt_val = mi->stmt + strlen(mi->stmt);
-	}
-	*(mi->stmt_val - 1) = ')';
-
-	sprintf(mi->stmt_val, " values (");
 	mi->stmt_val = mi->stmt + strlen(mi->stmt);
 
 	ulogd_log(ULOGD_DEBUG, "stmt='%s'\n", mi->stmt);
@@ -285,7 +270,7 @@ static int __interp_db(struct ulogd_pluginstance *upi)
 				tmpstr = inet_ntoa(addr);
 				di->driver->escape_string(upi, di->stmt_ins,
 							  tmpstr, strlen(tmpstr));
-                                di->stmt_ins = di->stmt + strlen(di->stmt);
+				di->stmt_ins = di->stmt + strlen(di->stmt);
 				sprintf(di->stmt_ins, "',");
 				break;
 			}

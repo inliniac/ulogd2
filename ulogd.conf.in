@@ -70,3 +70,10 @@ sync=1
 file="/var/log/ulogd_oprint.log"
 sync=1
 
+[mysql1]
+db="nulog"
+host="localhost"
+user="nupik"
+table="ulog"
+pass="changeme"
+procedure="INSERT_PACKET_FULL"
