@@ -44,6 +44,7 @@ CREATE TABLE ulog2 (
   oob_mark integer default NULL,
   oob_in varchar(32) default NULL,
   oob_out varchar(32) default NULL,
+  oob_family smallint default NULL,
   ip_saddr_str inet default NULL,
   ip_daddr_str inet default NULL,
   ip_protocol smallint default NULL,
@@ -57,9 +58,10 @@ CREATE TABLE ulog2 (
   timestamp timestamp NOT NULL default 'now'
 ) WITH (OIDS=FALSE);
 
-CREATE INDEX ulog2_timestamp ON ulog2(timestamp);
+CREATE INDEX ulog2_oob_family ON ulog2(oob_family);
 CREATE INDEX ulog2_ip_saddr ON ulog2(ip_saddr_str);
 CREATE INDEX ulog2_ip_daddr ON ulog2(ip_daddr_str);
+CREATE INDEX ulog2_timestamp ON ulog2(timestamp);
 
 CREATE TABLE mac (
   _mac_id bigint PRIMARY KEY UNIQUE NOT NULL,
@@ -131,7 +133,46 @@ CREATE OR REPLACE VIEW view_icmp AS
 
 -- complete view
 CREATE OR REPLACE VIEW ulog AS
-        SELECT * FROM ulog2 INNER JOIN tcp ON ulog2._id = tcp._tcp_id INNER JOIN udp ON ulog2._id = udp._udp_id
+        SELECT _id,
+        oob_time_sec,
+        oob_time_usec,
+        oob_prefix,
+        oob_mark,
+        oob_in,
+        oob_out,
+        oob_family,
+        ip_saddr_str,
+        ip_daddr_str,
+        ip_protocol,
+        ip_tos,
+        ip_ttl,
+        ip_totlen,
+        ip_ihl,
+        ip_csum,
+        ip_id,
+        ip_fragoff,
+        tcp_sport,
+        tcp_dport,
+        tcp_seq,
+        tcp_ackseq,
+        tcp_window,
+        tcp_urg,
+        tcp_urgp,
+        tcp_ack,
+        tcp_psh,
+        tcp_rst,
+        tcp_syn,
+        tcp_fin,
+        udp_sport,
+        udp_dport,
+        udp_len,
+        icmp_type,
+        icmp_code,
+        icmp_echoid,
+        icmp_echoseq,
+        icmp_gateway,
+        icmp_fragmtu
+        FROM ulog2 INNER JOIN tcp ON ulog2._id = tcp._tcp_id INNER JOIN udp ON ulog2._id = udp._udp_id
                 INNER JOIN icmp ON ulog2._id = icmp._icmp_id INNER JOIN mac ON ulog2._id = mac._mac_id;
 
 -- shortcuts
@@ -148,6 +189,7 @@ DROP SEQUENCE IF EXISTS ulog2_ct__ct_id_seq;
 CREATE SEQUENCE ulog2_ct__ct_id_seq;
 CREATE TABLE ulog2_ct (
   _ct_id bigint PRIMARY KEY UNIQUE NOT NULL DEFAULT nextval('ulog2_ct__ct_id_seq'),
+  oob_family smallint default NULL,
   orig_ip_saddr_str inet default NULL,
   orig_ip_daddr_str inet default NULL,
   orig_ip_protocol smallint default NULL,
@@ -172,6 +214,7 @@ CREATE TABLE ulog2_ct (
   state smallint default 0
 ) WITH (OIDS=FALSE);
 
+CREATE INDEX ulog2_ct_oob_family ON ulog2_ct(oob_family);
 CREATE INDEX ulog2_ct_orig_ip_saddr ON ulog2_ct(orig_ip_saddr_str);
 CREATE INDEX ulog2_ct_orig_ip_daddr ON ulog2_ct(orig_ip_daddr_str);
 CREATE INDEX ulog2_ct_reply_ip_saddr ON ulog2_ct(reply_ip_saddr_str);
@@ -263,14 +306,15 @@ CREATE OR REPLACE FUNCTION INSERT_IP_PACKET(
                 IN oob_mark integer,
                 IN oob_in varchar(32),
                 IN oob_out varchar(32),
+                IN oob_family smallint,
                 IN ip_saddr_str inet,
                 IN ip_daddr_str inet,
                 IN ip_protocol smallint
         )
 RETURNS bigint AS $$
         INSERT INTO ulog2 (oob_time_sec,oob_time_usec,oob_prefix,oob_mark,
-                        oob_in,oob_out,ip_saddr_str,ip_daddr_str,ip_protocol)
-                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9);
+                        oob_in,oob_out,oob_family,ip_saddr_str,ip_daddr_str,ip_protocol)
+                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,10);
         SELECT currval('ulog2__id_seq');
 $$ LANGUAGE SQL SECURITY INVOKER;
 
@@ -282,6 +326,7 @@ CREATE OR REPLACE FUNCTION INSERT_IP_PACKET_FULL(
                 IN oob_mark integer,
                 IN oob_in varchar(32),
                 IN oob_out varchar(32),
+                IN oob_family smallint,
                 IN ip_saddr_str inet,
                 IN ip_daddr_str inet,
                 IN ip_protocol smallint,
@@ -295,9 +340,9 @@ CREATE OR REPLACE FUNCTION INSERT_IP_PACKET_FULL(
         )
 RETURNS bigint AS $$
         INSERT INTO ulog2 (oob_time_sec,oob_time_usec,oob_prefix,oob_mark,
-                        oob_in,oob_out,ip_saddr_str,ip_daddr_str,ip_protocol,
+                        oob_in,oob_out,oob_family,ip_saddr_str,ip_daddr_str,ip_protocol,
                         ip_tos,ip_ttl,ip_totlen,ip_ihl,ip_csum,ip_id,ip_fragoff)
-                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16);
+                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17);
         SELECT currval('ulog2__id_seq');
 $$ LANGUAGE SQL SECURITY INVOKER;
 
@@ -371,6 +416,7 @@ CREATE OR REPLACE FUNCTION INSERT_PACKET_FULL(
                 IN oob_mark integer,
                 IN oob_in varchar(32),
                 IN oob_out varchar(32),
+                IN oob_family smallint,
                 IN ip_saddr_str inet,
                 IN ip_daddr_str inet,
                 IN ip_protocol smallint,
@@ -407,13 +453,13 @@ RETURNS bigint AS $$
 DECLARE
         _id bigint;
 BEGIN
-        _id := INSERT_IP_PACKET_FULL($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) ;
+        _id := INSERT_IP_PACKET_FULL($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) ;
         IF (ip_protocol = 6) THEN
-                SELECT INSERT_TCP_FULL(_id,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28);
+                SELECT INSERT_TCP_FULL(_id,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29);
         ELSIF (ip_protocol = 17) THEN
-                SELECT INSERT_UDP(_id,$29,$30,$31,$32);
+                SELECT INSERT_UDP(_id,$30,$31,$32,$33);
         ELSIF (ip_protocol = 1) THEN
-                SELECT INSERT_ICMP(_id,$33,$34,$35,$36,$37,$38);
+                SELECT INSERT_ICMP(_id,$34,$35,$36,$37,$38,$39);
         END IF;
         RETURN _id;
 END
