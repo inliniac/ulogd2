@@ -157,8 +157,8 @@ CREATE SQL SECURITY INVOKER VIEW `ulog` AS
         oob_in,
 	oob_out,
 	oob_family,
-        ip_saddr as ip_saddr_bin,
-        ip_daddr as ip_daddr_bin,
+        ip_saddr AS ip_saddr_bin,
+        ip_daddr AS ip_daddr_bin,
         ip_protocol,
         ip_tos,
         ip_ttl,
@@ -188,8 +188,8 @@ CREATE SQL SECURITY INVOKER VIEW `ulog` AS
         icmp_echoseq,
         icmp_gateway,
         icmp_fragmtu
-        FROM ulog2 INNER JOIN tcp ON ulog2._id = tcp._tcp_id INNER JOIN udp ON ulog2._id = udp._udp_id
-                INNER JOIN icmp ON ulog2._id = icmp._icmp_id INNER JOIN mac ON ulog2._id = mac._mac_id;
+        FROM ulog2 LEFT JOIN tcp ON ulog2._id = tcp._tcp_id LEFT JOIN udp ON ulog2._id = udp._udp_id
+                LEFT JOIN icmp ON ulog2._id = icmp._icmp_id LEFT JOIN mac ON ulog2._id = mac._mac_id;
 
 -- shortcuts
 DROP VIEW IF EXISTS `view_tcp_quad`;
