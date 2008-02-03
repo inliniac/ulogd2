@@ -92,6 +92,7 @@ void _init(void)
                   strerror(errno));
         exit(2);
     }
+    hostname[sizeof(hostname)-1] = '\0';
     /* strip off everything after first '.' */
     if ((tmp = strchr(hostname, '.')))
         *tmp = '\0';
