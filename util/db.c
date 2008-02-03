@@ -90,7 +90,7 @@ static int sql_createstmt(struct ulogd_pluginstance *upi)
 		return -ENOMEM;
 	}
 
-	sprintf(mi->stmt, "CALL %s(", procedure);
+	sprintf(mi->stmt, "SELECT %s(", procedure);
 
 	mi->stmt_val = mi->stmt + strlen(mi->stmt);
 
