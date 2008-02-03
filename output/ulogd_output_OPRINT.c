@@ -86,9 +86,9 @@ static int oprint_interp(struct ulogd_pluginstance *upi)
 					HIPQUAD(ret->u.value.ui32));
 				break;
 			case ULOGD_RET_NONE:
-				fprintf(opi->of, "<none>");
+				fprintf(opi->of, "<none>\n");
 				break;
-			default: fprintf(opi->of, "default");
+			default: fprintf(opi->of, "default\n");
 		}
 	}
 	if (upi->config_kset->ces[1].u.value != 0)
