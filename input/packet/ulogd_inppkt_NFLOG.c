@@ -99,6 +99,7 @@ enum nflog_keys {
 	NFLOG_KEY_OOB_SEQ_LOCAL,
 	NFLOG_KEY_OOB_SEQ_GLOBAL,
 	NFLOG_KEY_OOB_PROTOCOL,
+	NFLOG_KEY_OOB_UID,
 };
 
 static struct ulogd_key output_keys[] = {
@@ -228,6 +229,12 @@ static struct ulogd_key output_keys[] = {
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.protocol",
 	},
+	{
+		.type = ULOGD_RET_UINT32,
+		.flags = ULOGD_RETF_NONE,
+		.name = "oob.uid",
+	},
+
 };
 
 static inline int 
@@ -245,6 +252,8 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 	u_int32_t indev = nflog_get_indev(ldata);
 	u_int32_t outdev = nflog_get_outdev(ldata);
 	u_int32_t seq;
+	u_int32_t uid;
+	
 
 	if (ph) {
 		/* FIXME */
@@ -300,6 +309,11 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 	if (outdev > 0) {
 		ret[NFLOG_KEY_OOB_IFINDEX_OUT].u.value.ui32 = outdev;
 		ret[NFLOG_KEY_OOB_IFINDEX_OUT].flags |= ULOGD_RETF_VALID;
+	}
+
+	if (nflog_get_uid(ldata, &uid) == 0) {
+		ret[NFLOG_KEY_OOB_UID].u.value.ui32 = uid;
+		ret[NFLOG_KEY_OOB_UID].flags |= ULOGD_RETF_VALID;
 	}
 
 	if (nflog_get_seq(ldata, &seq) == 0) {
