@@ -290,7 +290,7 @@ void get_plugin_infos(struct ulogd_plugin *me)
 				case CONFIG_TYPE_STRING:
 					printf("String");
 					printf(", Default: %s", 
-					       me->config_kset->ces[i].u.value);
+					       me->config_kset->ces[i].u.string);
 					break;
 				case CONFIG_TYPE_INT:
 					printf("Integer");
