@@ -43,6 +43,9 @@ struct ulogd_key printpkt_keys[] = {
 	[KEY_OOB_PREFIX]	= { .name = "oob.prefix", },
 	[KEY_OOB_IN]		= { .name = "oob.in", },
 	[KEY_OOB_OUT]		= { .name = "oob.out", },
+	[KEY_OOB_UID]		= { .name = "oob.uid",
+				    .flags = ULOGD_KEYF_OPTIONAL
+				  },
 	[KEY_RAW_MAC]		= { .name = "raw.mac", },
 	[KEY_RAW_MACLEN]	= { .name = "raw.mac_len", },
 	[KEY_IP_SADDR]		= { .name = "ip.saddr.str", },
@@ -364,6 +367,10 @@ int printpkt_print(struct ulogd_key *res, char *buf)
 		buf_cur += printpkt_ipv6(res, buf_cur);
 		break;
 	}
+
+	if (pp_is_valid(res, KEY_OOB_UID))
+		buf_cur += sprintf(buf_cur, "UID=%d",
+				   GET_VALUE(res, KEY_OOB_UID).ui32);
 
 	strcat(buf_cur, "\n");
 
