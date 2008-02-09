@@ -89,10 +89,6 @@ struct ulogd_key printpkt_keys[] = {
 	[KEY_AHESP_SPI]		= { .name = "ahesp.spi", },
 };
 
-#define GET_VALUE(res, x)	(res[x].u.source->u.value)
-#define GET_FLAGS(res, x)	(res[x].u.source->flags)
-#define pp_is_valid(res, x)	(GET_FLAGS(res, x) & ULOGD_RETF_VALID)
-
 static int printpkt_proto(struct ulogd_key *res, char *buf, int protocol)
 {
 	char *buf_cur = buf;

@@ -131,10 +131,6 @@ struct ulogd_key printflow_keys[FLOW_IDS] = {
 };
 int printflow_keys_num = sizeof(printflow_keys)/sizeof(*printflow_keys);
 
-#define GET_VALUE(res, x)	(res[x].u.source->u.value)
-#define GET_FLAGS(res, x)	(res[x].u.source->flags)
-#define pp_is_valid(res, x)	(GET_FLAGS(res, x) & ULOGD_RETF_VALID)
-
 #define pp_print(buf_cur, label, res, x, type) \
 	if (pp_is_valid(res, x)) \
 		buf_cur += sprintf(buf_cur, label"=%u ", GET_VALUE(res, x).type);

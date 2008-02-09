@@ -114,11 +114,6 @@ static struct ulogd_key ip2bin_keys[] = {
 
 };
 
-#define GET_VALUE(res, x)	(res[x].u.source->u.value)
-#define GET_FLAGS(res, x)	(res[x].u.source->flags)
-#define pp_is_valid(res, x)	\
-	(res[x].u.source && (GET_FLAGS(res, x) & ULOGD_RETF_VALID))
-
 /**
  * Convert IPv4 address (as 32-bit unsigned integer) to IPv6 address:
  * add 96 bits prefix "::ffff:" to get IPv6 address "::ffff:a.b.c.d".

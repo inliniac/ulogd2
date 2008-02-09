@@ -216,6 +216,11 @@ void __ulogd_log(int level, char *file, int line, const char *message, ...);
 #define IS_NEEDED(x)	(x.flags & ULOGD_RETF_NEEDED)
 #define SET_NEEDED(x)	(x.flags |= ULOGD_RETF_NEEDED)
 
+#define GET_VALUE(res, x)	(res[x].u.source->u.value)
+#define GET_FLAGS(res, x)	(res[x].u.source->flags)
+#define pp_is_valid(res, x)	\
+	(res[x].u.source && (GET_FLAGS(res, x) & ULOGD_RETF_VALID))
+
 int ulogd_key_size(struct ulogd_key *key);
 int ulogd_wildcard_inputkeys(struct ulogd_pluginstance *upi);
 

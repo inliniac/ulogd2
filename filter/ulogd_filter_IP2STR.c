@@ -113,11 +113,6 @@ static struct ulogd_key ip2str_keys[] = {
 	},
 };
 
-#define GET_VALUE(res, x)	(res[x].u.source->u.value)
-#define GET_FLAGS(res, x)	(res[x].u.source->flags)
-#define pp_is_valid(res, x)	\
-	(res[x].u.source && (GET_FLAGS(res, x) & ULOGD_RETF_VALID))
-
 static char *ip2str(struct ulogd_key* inp, int index, char family)
 {
 	char tmp[IPADDR_LENGTH];
