@@ -13,7 +13,7 @@ CREATE TABLE _format (
   version integer
 ) WITH (OIDS=FALSE);
 
-INSERT INTO _format (version) VALUES (4);
+INSERT INTO _format (version) VALUES (5);
 
 -- this table could be used to know which user-defined tables are linked
 -- to ulog
@@ -29,6 +29,7 @@ DROP TABLE IF EXISTS mac CASCADE;
 DROP TABLE IF EXISTS tcp CASCADE;
 DROP TABLE IF EXISTS udp CASCADE;
 DROP TABLE IF EXISTS icmp CASCADE;
+DROP TABLE IF EXISTS icmpv6 CASCADE;
 DROP TABLE IF EXISTS nufw CASCADE;
 DROP TABLE IF EXISTS ulog2_ct CASCADE;
 DROP TABLE IF EXISTS ulog2 CASCADE;
@@ -118,6 +119,15 @@ CREATE TABLE icmp (
   icmp_fragmtu smallint  default NULL
 ) WITH (OIDS=FALSE);
 
+CREATE TABLE icmpv6 (
+  _icmpv6_id bigint PRIMARY KEY UNIQUE NOT NULL,
+  icmpv6_type smallint default NULL,
+  icmpv6_code smallint default NULL,
+  icmpv6_echoid smallint default NULL,
+  icmpv6_echoseq smallint default NULL,
+  icmpv6_csum integer default NULL
+) WITH (OIDS=FALSE);
+
 -- 
 -- VIEWS
 -- 
@@ -130,6 +140,9 @@ CREATE OR REPLACE VIEW view_udp AS
 
 CREATE OR REPLACE VIEW view_icmp AS
         SELECT * FROM ulog2 INNER JOIN icmp ON ulog2._id = icmp._icmp_id;
+
+CREATE OR REPLACE VIEW view_icmpv6 AS
+        SELECT * FROM ulog2 INNER JOIN icmpv6 ON ulog2._id = icmpv6._icmpv6_id;
 
 -- complete view
 CREATE OR REPLACE VIEW ulog AS
@@ -171,9 +184,15 @@ CREATE OR REPLACE VIEW ulog AS
         icmp_echoid,
         icmp_echoseq,
         icmp_gateway,
-        icmp_fragmtu
+        icmp_fragmtu,
+        icmpv6_type,
+        icmpv6_code,
+        icmpv6_echoid,
+        icmpv6_echoseq,
+        icmpv6_csum
         FROM ulog2 LEFT JOIN tcp ON ulog2._id = tcp._tcp_id LEFT JOIN udp ON ulog2._id = udp._udp_id
-                LEFT JOIN icmp ON ulog2._id = icmp._icmp_id LEFT JOIN mac ON ulog2._id = mac._mac_id;
+                LEFT JOIN icmp ON ulog2._id = icmp._icmp_id LEFT JOIN mac ON ulog2._id = mac._mac_id
+                LEFT JOIN icmpv6 ON ulog2._id = icmpv6._icmpv6_id;
 
 -- shortcuts
 CREATE OR REPLACE VIEW view_tcp_quad AS
@@ -285,6 +304,7 @@ INSERT INTO _extensions (ext_name,table_name,join_name) VALUES
 
 CREATE OR REPLACE FUNCTION ULOG2_DROP_FOREIGN_KEYS()
 RETURNS void AS $$
+  ALTER TABLE icmpv6 DROP CONSTRAINT icmpv6_id_fk;
   ALTER TABLE icmp DROP CONSTRAINT icmp_id_fk;
   ALTER TABLE udp  DROP CONSTRAINT udp_id_fk;
   ALTER TABLE tcp  DROP CONSTRAINT tcp_id_fk;
@@ -296,6 +316,7 @@ RETURNS void AS $$
   ALTER TABLE tcp  ADD CONSTRAINT tcp_id_fk  FOREIGN KEY (_tcp_id)  REFERENCES ulog2(_id);
   ALTER TABLE udp  ADD CONSTRAINT udp_id_fk  FOREIGN KEY (_udp_id)  REFERENCES ulog2(_id);
   ALTER TABLE icmp ADD CONSTRAINT icmp_id_fk FOREIGN KEY (_icmp_id) REFERENCES ulog2(_id);
+  ALTER TABLE icmpv6 ADD CONSTRAINT icmpv6_id_fk FOREIGN KEY (_icmpv6_id) REFERENCES ulog2(_id);
 $$ LANGUAGE SQL SECURITY INVOKER;
 
 
@@ -395,6 +416,21 @@ RETURNS bigint AS $$
         SELECT currval('ulog2__id_seq');
 $$ LANGUAGE SQL SECURITY INVOKER;
 
+CREATE OR REPLACE FUNCTION INSERT_ICMPV6(
+                IN icmpv6_id bigint,
+                IN icmpv6_type integer,
+                IN icmpv6_code integer,
+                IN icmpv6_echoid integer,
+                IN icmpv6_echoseq integer,
+                IN icmpv6_csum integer
+        )
+RETURNS bigint AS $$
+        INSERT INTO icmpv6 (_icmpv6_id,icmpv6_type,icmpv6_code,icmpv6_echoid,icmpv6_echoseq,icmpv6_csum)
+                VALUES ($1,$2,$3,$4,$5,$6);
+        SELECT currval('ulog2__id_seq');
+$$ LANGUAGE SQL SECURITY INVOKER;
+
+
 -- this function requires plpgsql
 -- su -c "createlang plpgsql ulog2" postgres
 CREATE OR REPLACE FUNCTION INSERT_PACKET_FULL(
@@ -435,7 +471,12 @@ CREATE OR REPLACE FUNCTION INSERT_PACKET_FULL(
                 IN icmp_echoid integer,
                 IN icmp_echoseq integer,
                 IN icmp_gateway integer,
-                IN icmp_fragmtu integer 
+                IN icmp_fragmtu integer,
+                IN icmpv6_type integer,
+                IN icmpv6_code integer,
+                IN icmpv6_echoid integer,
+                IN icmpv6_echoseq integer,
+                IN icmpv6_csum integer
         )
 RETURNS bigint AS $$
 DECLARE
@@ -445,9 +486,11 @@ BEGIN
         IF (ip_protocol = 6) THEN
                 PERFORM INSERT_TCP_FULL(_id,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29);
         ELSIF (ip_protocol = 17) THEN
-                PERFORM INSERT_UDP(_id,$30,$31,$32,$33);
+                PERFORM INSERT_UDP(_id,$30,$31,$32);
         ELSIF (ip_protocol = 1) THEN
-                PERFORM INSERT_ICMP(_id,$34,$35,$36,$37,$38,$39);
+                PERFORM INSERT_ICMP(_id,$33,$34,$35,$36,$37,$38);
+        ELSIF (ip_protocol = 58) THEN
+                PERFORM INSERT_ICMPV6(_id,$39,$40,$41,$42,$43);
         END IF;
         RETURN _id;
 END

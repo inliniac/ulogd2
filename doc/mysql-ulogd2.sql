@@ -14,7 +14,7 @@ CREATE TABLE `_format` (
   `version` int(4) NOT NULL
 ) ENGINE=INNODB;
 
-INSERT INTO _format (version) VALUES (4);
+INSERT INTO _format (version) VALUES (5);
 
 -- this table could be used to know which user-defined tables are linked
 -- to ulog
@@ -31,8 +31,11 @@ DROP TABLE IF EXISTS `mac`;
 DROP TABLE IF EXISTS `tcp`;
 DROP TABLE IF EXISTS `udp`;
 DROP TABLE IF EXISTS `icmp`;
+DROP TABLE IF EXISTS `icmpv6`;
 DROP TABLE IF EXISTS `nufw`;
 DROP TABLE IF EXISTS `ulog2_ct`;
+DROP TABLE IF EXISTS `state_t`;
+DROP TABLE IF EXISTS `nufw`;
 DROP TABLE IF EXISTS `ulog2`;
 
 CREATE TABLE `ulog2` (
@@ -125,6 +128,18 @@ CREATE TABLE `icmp` (
 ALTER TABLE icmp ADD UNIQUE KEY `key_icmp_id` (`_icmp_id`);
 ALTER TABLE icmp ADD KEY `index_icmp_id` (`_icmp_id`);
 
+CREATE TABLE `icmpv6` (
+  `_icmpv6_id` bigint unsigned NOT NULL,
+  `icmpv6_type` tinyint(3) unsigned default NULL,
+  `icmpv6_code` tinyint(3) unsigned default NULL,
+  `icmpv6_echoid` smallint(5) unsigned default NULL,
+  `icmpv6_echoseq` smallint(5) unsigned default NULL,
+  `icmpv6_csum` int(10) unsigned default NULL
+) ENGINE=INNODB;
+
+ALTER TABLE icmpv6 ADD UNIQUE KEY `key_icmpv6_id` (`_icmpv6_id`);
+ALTER TABLE icmpv6 ADD KEY `index_icmpv6_id` (`_icmpv6_id`);
+
 
 -- views
 
@@ -142,6 +157,10 @@ CREATE SQL SECURITY INVOKER VIEW `view_udp` AS
 DROP VIEW IF EXISTS `view_icmp`;
 CREATE SQL SECURITY INVOKER VIEW `view_icmp` AS
         SELECT * FROM ulog2 INNER JOIN icmp ON ulog2._id = icmp._icmp_id;
+
+DROP VIEW IF EXISTS `view_icmpv6`;
+CREATE SQL SECURITY INVOKER VIEW `view_icmpv6` AS
+        SELECT * FROM ulog2 INNER JOIN icmpv6 ON ulog2._id = icmpv6._icmpv6_id;
 
 -- ulog view
 DROP VIEW IF EXISTS `ulog`;
@@ -187,9 +206,18 @@ CREATE SQL SECURITY INVOKER VIEW `ulog` AS
         icmp_echoid,
         icmp_echoseq,
         icmp_gateway,
-        icmp_fragmtu
+        icmp_fragmtu,
+	icmpv6_type,
+	icmpv6_code,
+	icmpv6_echoid,
+	icmpv6_echoseq,
+	icmpv6_csum
+--	mac_saddr,
+--	mac_daddr,
+--	mac_protocol,
         FROM ulog2 LEFT JOIN tcp ON ulog2._id = tcp._tcp_id LEFT JOIN udp ON ulog2._id = udp._udp_id
-                LEFT JOIN icmp ON ulog2._id = icmp._icmp_id LEFT JOIN mac ON ulog2._id = mac._mac_id;
+                LEFT JOIN icmp ON ulog2._id = icmp._icmp_id LEFT JOIN mac ON ulog2._id = mac._mac_id
+                LEFT JOIN icmpv6 ON ulog2._id = icmpv6._icmpv6_id;
 
 
 -- shortcuts
@@ -303,7 +331,6 @@ INSERT INTO ip_proto (_proto_id,proto_name,proto_desc) VALUES
         (58,'ipv6-icmp','ICMP for IPv6');
 
 -- State
-DROP TABLE IF EXISTS `state_t`;
 CREATE TABLE `state_t` (
   `_state_id` bigint unsigned NOT NULL,
   state tinyint(3) unsigned
@@ -319,7 +346,6 @@ INSERT INTO _extensions (ext_name,table_name,join_name) VALUES
 
 -- NuFW specific
 
-DROP TABLE IF EXISTS `nufw`;
 CREATE TABLE `nufw` (
   `_nufw_id` bigint unsigned NOT NULL,
   `username` varchar(30) default NULL,
@@ -362,6 +388,7 @@ SQL SECURITY INVOKER
 COMMENT 'Drop constraints for ulog2 tables'
 BEGIN
         -- remember : table with most constraints first
+        ALTER TABLE icmpv6 DROP FOREIGN KEY _icmpv6_id; 
         ALTER TABLE icmp DROP FOREIGN KEY _icmp_id; 
         ALTER TABLE udp DROP FOREIGN KEY _udp_id; 
         ALTER TABLE tcp DROP FOREIGN KEY _tcp_id; 
@@ -380,6 +407,7 @@ BEGIN
         ALTER TABLE tcp ADD CONSTRAINT _tcp_id FOREIGN KEY (_tcp_id) REFERENCES ulog2 (_id);
         ALTER TABLE udp ADD CONSTRAINT _udp_id FOREIGN KEY (_udp_id) REFERENCES ulog2 (_id);
         ALTER TABLE icmp ADD CONSTRAINT _icmp_id FOREIGN KEY (_icmp_id) REFERENCES ulog2 (_id);
+        ALTER TABLE icmpv6 ADD CONSTRAINT _icmpv6_id FOREIGN KEY (_icmpv6_id) REFERENCES ulog2 (_id);
 END
 $$
 delimiter ;
@@ -515,6 +543,25 @@ BEGIN
 END
 $$
 
+delimiter $$
+DROP PROCEDURE IF EXISTS PACKET_ADD_ICMPV6;
+CREATE PROCEDURE PACKET_ADD_ICMPV6(
+		IN `id` int(10) unsigned,
+		IN `_icmpv6_type` tinyint(3) unsigned,
+		IN `_icmpv6_code` tinyint(3) unsigned,
+		IN `_icmpv6_echoid` smallint(5) unsigned,
+		IN `_icmpv6_echoseq` smallint(5) unsigned,
+		IN `_icmpv6_csum` int(10) unsigned
+		)
+BEGIN
+	INSERT INTO icmpv6 (_icmpv6_id, icmpv6_type, icmpv6_code, icmpv6_echoid, 
+			    icmpv6_echoseq, icmpv6_csum) VALUES
+			   (id, _icmpv6_type, _icmpv6_code, _icmpv6_echoid,
+			    _icmpv6_echoseq, _icmpv6_csum);
+END
+$$
+
+
 
 delimiter $$
 DROP PROCEDURE IF EXISTS PACKET_ADD_MAC;
@@ -570,7 +617,12 @@ CREATE FUNCTION INSERT_PACKET_FULL(
 		icmp_echoid smallint(5) unsigned,
 		icmp_echoseq smallint(5) unsigned,
 		icmp_gateway int(10) unsigned,
-		icmp_fragmtu smallint(5) unsigned
+		icmp_fragmtu smallint(5) unsigned,
+		icmpv6_type tinyint(3) unsigned,
+		icmpv6_code tinyint(3) unsigned,
+		icmpv6_echoid smallint(5) unsigned,
+		icmpv6_echoseq smallint(5) unsigned,
+		icmpv6_csum int(10) unsigned
 --		mac_saddr binary(12),
 --		mac_daddr binary(12),
 --		mac_protocol smallint(5)
@@ -591,6 +643,9 @@ BEGIN
 	ELSEIF _ip_protocol = 1 THEN
 		CALL PACKET_ADD_ICMP(@lastid, icmp_type, icmp_code, icmp_echoid, icmp_echoseq, 
 				     icmp_gateway, icmp_fragmtu);
+	ELSEIF _ip_protocol = 58 THEN
+		CALL PACKET_ADD_ICMPV6(@lastid, icmpv6_type, icmpv6_code, icmpv6_echoid,
+				       icmpv6_echoseq, icmpv6_csum);
 	END IF;
 --	IF mac_protocol IS NOT NULL THEN
 --		CALL PACKET_ADD_MAC(@lastid, mac_saddr, mac_daddr, mac_protocol);
