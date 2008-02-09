@@ -68,7 +68,6 @@ enum ulog_keys {
 	ULOG_KEY_OOB_IN,
 	ULOG_KEY_OOB_OUT,
 	ULOG_KEY_RAW_MAC_LEN,
-	ULOG_KEY_OOB_FAMILY,
 	ULOG_KEY_OOB_PROTOCOL,
 };
 
@@ -148,11 +147,6 @@ static struct ulogd_key output_keys[] = {
 		.name = "raw.mac_len", 
 	},
 	{
-		.type = ULOGD_RET_UINT8,
-		.flags = ULOGD_RETF_NONE,
-		.name = "oob.family",
-	},
-	{
 		.type = ULOGD_RET_UINT16,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.protocol",
@@ -201,9 +195,6 @@ static int interp_packet(struct ulogd_pluginstance *ip, ulog_packet_msg_t *pkt)
 	ret[ULOG_KEY_OOB_OUT].u.value.ptr = pkt->outdev_name;
 	ret[ULOG_KEY_OOB_OUT].flags |= ULOGD_RETF_VALID;
 
-	/* ULOG is IPv4 only */
-	ret[ULOG_KEY_OOB_FAMILY].u.value.ui8 = AF_INET;
-	ret[ULOG_KEY_OOB_FAMILY].flags |= ULOGD_RETF_VALID;
 	/* Undef in ULOG but necessary */
 	ret[ULOG_KEY_OOB_PROTOCOL].u.value.ui16 = 0;
 	ret[ULOG_KEY_OOB_PROTOCOL].flags |= ULOGD_RETF_VALID;

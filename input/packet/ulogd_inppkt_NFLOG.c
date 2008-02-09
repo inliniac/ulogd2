@@ -55,12 +55,6 @@ static struct config_keyset libulog_kset = {
 			.u.value = NFLOG_RMEM_DEFAULT,
 		},
 		{
-			.key 	 = "addressfamily",
-			.type	 = CONFIG_TYPE_INT,
-			.options = CONFIG_OPT_NONE,
-			.u.value = AF_INET,
-		},
-		{
 			.key	 = "unbind",
 			.type	 = CONFIG_TYPE_INT,
 			.options = CONFIG_OPT_NONE,
@@ -104,7 +98,6 @@ enum nflog_keys {
 	NFLOG_KEY_RAW_MAC_LEN,
 	NFLOG_KEY_OOB_SEQ_LOCAL,
 	NFLOG_KEY_OOB_SEQ_GLOBAL,
-	NFLOG_KEY_OOB_FAMILY,
 	NFLOG_KEY_OOB_PROTOCOL,
 };
 
@@ -231,11 +224,6 @@ static struct ulogd_key output_keys[] = {
 		},
 	},
 	{
-		.type = ULOGD_RET_UINT8,
-		.flags = ULOGD_RETF_NONE,
-		.name = "oob.family",
-	},
-	{
 		.type = ULOGD_RET_UINT16,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.protocol",
@@ -257,9 +245,6 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 	u_int32_t indev = nflog_get_indev(ldata);
 	u_int32_t outdev = nflog_get_outdev(ldata);
 	u_int32_t seq;
-
-	ret[NFLOG_KEY_OOB_FAMILY].u.value.ui8 = af_ce(upi->config_kset).u.value;
-	ret[NFLOG_KEY_OOB_FAMILY].flags |= ULOGD_RETF_VALID;
 
 	if (ph) {
 		/* FIXME */
