@@ -36,6 +36,7 @@ plugin="@libdir@/ulogd/ulogd_inppkt_NFLOG.so"
 plugin="@libdir@/ulogd/ulogd_inpflow_NFCT.so"
 plugin="@libdir@/ulogd/ulogd_filter_IFINDEX.so"
 plugin="@libdir@/ulogd/ulogd_filter_IP2STR.so"
+plugin="@libdir@/ulogd/ulogd_filter_IP2BIN.so"
 plugin="@libdir@/ulogd/ulogd_filter_PRINTPKT.so"
 plugin="@libdir@/ulogd/ulogd_filter_PRINTFLOW.so"
 plugin="@libdir@/ulogd/ulogd_output_LOGEMU.so"
@@ -45,11 +46,8 @@ plugin="@libdir@/ulogd/ulogd_raw2packet_BASE.so"
 # this is a stack for packet-based logging via LOGEMU
 #stack=log1:NFLOG,base1:BASE,ifi1:IFINDEX,ip2str1:IP2STR,print1:PRINTPKT,emu1:LOGEMU
 
-# this is a stack for IPv6 packet-based logging via LOGEMU
-#stack=log2:NFLOG,base1:BASE,ifi1:IFINDEX,ip2str1:IP2STR,print1:PRINTPKT,emu1:LOGEMU
-
 # this is a stack for ULOG packet-based logging via LOGEMU
-#stack=ulog1:ULOG,base1:BASE,print1:PRINTPKT,emu1:LOGEMU
+#stack=ulog1:ULOG,base1:BASE,ip2str1:IP2STR,print1:PRINTPKT,emu1:LOGEMU
 
 # this is a stack for flow-based logging via LOGEMU
 #stack=ct1:NFCT,print1:PRINTFLOW,emu1:LOGEMU
@@ -57,17 +55,23 @@ plugin="@libdir@/ulogd/ulogd_raw2packet_BASE.so"
 # this is a stack for flow-based logging via OPRINT
 #stack=ct1:NFCT,op1:OPRINT
 
+# this is a stack for NFLOG packet logging to MySQL
+#stack=log1:NFLOG,base1:BASE,ifi1:IFINDEX,ip2bin1:IP2BIN,mysql1:MYSQL
+
+# this is a stack for NFLOG packet logging to PGsql
+#stack=log1:NFLOG,base1:BASE,ifi1:IFINDEX,ip2str1:IP2STR,pgsql1:PGSQL
+
+# this is a stack for flow-based logging to MySQL
+#stack=ct1:NFCT,ip2bin1:IP2BIN,mysql2:MYSQL
+
 [ct1]
 
 [log1]
-# netlink multicast group (the same as the iptables --ulog-nlgroup param)
+# netlink multicast group (the same as the iptables --nflog-group param)
 group=0
 
-[log2]
-group=1
-addressfamily=10
-
 [ulog1]
+# netlink multicast group (the same as the iptables --ulog-nlgroup param)
 nlgroup=1
 
 [emu1]
@@ -79,6 +83,14 @@ file="/var/log/ulogd_oprint.log"
 sync=1
 
 [mysql1]
+db="nulog"
+host="localhost"
+user="nupik"
+table="ulog"
+pass="changeme"
+procedure="INSERT_PACKET_FULL"
+
+[pgsql1]
 db="nulog"
 host="localhost"
 user="nupik"
