@@ -302,11 +302,11 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 		ret[NFLOG_KEY_OOB_IFINDEX_OUT].flags |= ULOGD_RETF_VALID;
 	}
 
-	if (nflog_get_seq(ldata, &seq)) {
+	if (nflog_get_seq(ldata, &seq) == 0) {
 		ret[NFLOG_KEY_OOB_SEQ_LOCAL].u.value.ui32 = seq;
 		ret[NFLOG_KEY_OOB_SEQ_LOCAL].flags |= ULOGD_RETF_VALID;
 	}
-	if (nflog_get_seq_global(ldata, &seq)) {
+	if (nflog_get_seq_global(ldata, &seq) == 0) {
 		ret[NFLOG_KEY_OOB_SEQ_GLOBAL].u.value.ui32 = seq;
 		ret[NFLOG_KEY_OOB_SEQ_GLOBAL].flags |= ULOGD_RETF_VALID;
 	}
