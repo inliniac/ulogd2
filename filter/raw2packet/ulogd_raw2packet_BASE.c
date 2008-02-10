@@ -44,7 +44,6 @@
 #include <ulogd/ipfix_protocol.h>
 
 enum output_keys {
-	KEY_OOB_FAMILY,
 	KEY_IP_SADDR,
 	KEY_IP_DADDR,
 	KEY_IP_PROTOCOL,
@@ -99,11 +98,6 @@ enum output_keys {
 };
 
 static struct ulogd_key iphdr_rets[] = {
-	[KEY_OOB_FAMILY] = {
-		.type = ULOGD_RET_UINT8,
-		.flags = ULOGD_RETF_NONE, 
-		.name = "oob.family",
-	},
 	[KEY_IP_SADDR] = { 
 		.type = ULOGD_RET_IPADDR,
 		.flags = ULOGD_RETF_NONE, 
@@ -825,27 +819,15 @@ out:
 
 static int _interp_pkt(struct ulogd_pluginstance *pi)
 {
-	struct ulogd_key *ret = pi->output.keys;
-	struct iphdr *iph = pi->input.keys[0].u.source->u.value.ptr;
 	u_int32_t len = pi->input.keys[1].u.source->u.value.ui32;
 	u_int8_t family = pi->input.keys[2].u.source->u.value.ui8;
 
-	switch (iph->version) {
-		case 4:
-			ret[KEY_OOB_FAMILY].u.value.ui8 = AF_INET;
-			ret[KEY_OOB_FAMILY].flags |= ULOGD_RETF_VALID;
-
-			return _interp_iphdr(pi, len);
-		case 6:
-			ret[KEY_OOB_FAMILY].u.value.ui8 = AF_INET6;
-			ret[KEY_OOB_FAMILY].flags |= ULOGD_RETF_VALID;
-
-			return _interp_ipv6hdr(pi, len);
-		default:
-			/* unknown protocol */
-			return 0;
+	switch (family) {
+	case AF_INET:
+		return _interp_iphdr(pi, len);
+	case AF_INET6:
+		return _interp_ipv6hdr(pi, len);
 	}
-
 	return 0;
 }
 
@@ -865,6 +847,10 @@ static struct ulogd_key base_inp[] = {
 			.vendor = IPFIX_VENDOR_NETFILTER, 
 			.field_id = IPFIX_NF_rawpacket_length,
 		},
+	},
+	{
+		.type = ULOGD_RET_UINT8,
+		.name = "oob.family",
 	}
 };
 
