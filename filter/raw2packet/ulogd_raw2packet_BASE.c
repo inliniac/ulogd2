@@ -43,6 +43,12 @@
 #include <ulogd/ulogd.h>
 #include <ulogd/ipfix_protocol.h>
 
+enum input_keys {
+	INKEY_RAW_PCKT,
+	INKEY_RAW_PCKTLEN,
+	INKEY_OOB_FAMILY,
+};
+
 enum output_keys {
 	KEY_IP_SADDR,
 	KEY_IP_DADDR,
@@ -633,7 +639,8 @@ static int _interp_ahesp(struct ulogd_pluginstance *pi, void *protoh,
 static int _interp_iphdr(struct ulogd_pluginstance *pi, u_int32_t len)
 {
 	struct ulogd_key *ret = pi->output.keys;
-	struct iphdr *iph = pi->input.keys[0].u.source->u.value.ptr;
+	struct iphdr *iph =
+		GET_VALUE(pi->input.keys, INKEY_RAW_PCKT).ptr;
 	void *nexthdr = (u_int32_t *)iph + iph->ihl;
 
 	if (len < sizeof(struct iphdr) || len <= iph->ihl * 4)
@@ -702,7 +709,8 @@ static int ip6_ext_hdr(u_int8_t nexthdr)
 static int _interp_ipv6hdr(struct ulogd_pluginstance *pi, u_int32_t len)
 {
 	struct ulogd_key *ret = pi->output.keys;
-	struct ip6_hdr *ipv6h = pi->input.keys[0].u.source->u.value.ptr;
+	struct ip6_hdr *ipv6h =
+		GET_VALUE(pi->input.keys, INKEY_RAW_PCKT).ptr;
 	unsigned int ptr, hdrlen = 0;
 	u_int8_t curhdr;
 	int fragment = 0;
@@ -819,8 +827,8 @@ out:
 
 static int _interp_pkt(struct ulogd_pluginstance *pi)
 {
-	u_int32_t len = pi->input.keys[1].u.source->u.value.ui32;
-	u_int8_t family = pi->input.keys[2].u.source->u.value.ui8;
+	u_int32_t len = GET_VALUE(pi->input.keys, INKEY_RAW_PCKTLEN).ui32;
+	u_int8_t family = GET_VALUE(pi->input.keys, INKEY_OOB_FAMILY).ui8;
 
 	switch (family) {
 	case AF_INET:
