@@ -3,6 +3,7 @@
  * ulogd input plugin for ctnetlink
  *
  * (C) 2005 by Harald Welte <laforge@netfilter.org>
+ * (C) 2008 by Pablo Neira Ayuso <pablo@netfilter.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2
@@ -35,6 +36,7 @@
 #include <ulogd/linuxlist.h>
 
 #include <ulogd/ulogd.h>
+#include <ulogd/timer.h>
 #include <ulogd/ipfix_protocol.h>
 
 #include <libnetfilter_conntrack/libnetfilter_conntrack.h>
@@ -551,6 +553,7 @@ static int propagate_ct(struct ulogd_pluginstance *upi,
 	return 0;
 }
 
+/* XXX: pollinterval needs a different handler */
 static int event_handler(void *arg, unsigned int flags, int type,
 			 void *data)
 {
@@ -593,11 +596,14 @@ static int get_ctr_zero(struct ulogd_pluginstance *upi)
 	return nfct_dump_conntrack_table_reset_counters(cpi->cth, AF_INET);
 }
 
-static void getctr_timer_cb(void *data)
+static void getctr_timer_cb(struct ulogd_timer *t, void *data)
 {
 	struct ulogd_pluginstance *upi = data;
+	struct nfct_pluginstance *cpi = 
+			(struct nfct_pluginstance *)upi->private;
 
 	get_ctr_zero(upi);
+	ulogd_add_timer(&cpi->timer, pollint_ce(upi->config_kset).u.value);
 }
 
 static int configure_nfct(struct ulogd_pluginstance *upi,
@@ -610,17 +616,11 @@ static int configure_nfct(struct ulogd_pluginstance *upi,
 	ret = config_parse_file(upi->id, upi->config_kset);
 	if (ret < 0)
 		return ret;
-	
-	/* initialize getctrzero timer structure */
-	memset(&cpi->timer, 0, sizeof(cpi->timer));
-	cpi->timer.cb = &getctr_timer_cb;
-	cpi->timer.data = cpi;
 
-	if (pollint_ce(upi->config_kset).u.value != 0) {
-		cpi->timer.expires.tv_sec = 
-			pollint_ce(upi->config_kset).u.value;
-		ulogd_register_timer(&cpi->timer);
-	}
+	ulogd_init_timer(&cpi->timer, upi, getctr_timer_cb);
+	if (pollint_ce(upi->config_kset).u.value != 0)
+		ulogd_add_timer(&cpi->timer,
+				pollint_ce(upi->config_kset).u.value);
 
 	return 0;
 }
@@ -630,8 +630,6 @@ static int constructor_nfct(struct ulogd_pluginstance *upi)
 	struct nfct_pluginstance *cpi = 
 			(struct nfct_pluginstance *)upi->private;
 	int prealloc;
-
-	memset(cpi, 0, sizeof(*cpi));
 
 	/* FIXME: make eventmask configurable */
 	cpi->cth = nfct_open(NFNL_SUBSYS_CTNETLINK, NF_NETLINK_CONNTRACK_NEW|

@@ -55,7 +55,7 @@ void ulogd_unregister_fd(struct ulogd_fd *fd)
 	llist_del(&fd->list);
 }
 
-int ulogd_select_main()
+int ulogd_select_main(struct timeval *tv)
 {
 	struct ulogd_fd *ufd;
 	fd_set readset, writeset, exceptset;
@@ -77,7 +77,7 @@ int ulogd_select_main()
 			FD_SET(ufd->fd, &exceptset);
 	}
 
-	i = select(maxfd+1, &readset, &writeset, &exceptset, NULL);
+	i = select(maxfd+1, &readset, &writeset, &exceptset, tv);
 	if (i > 0) {
 		/* call registered callback functions */
 		llist_for_each_entry(ufd, &ulogd_fds, list) {

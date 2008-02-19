@@ -61,6 +61,7 @@
 #include <pwd.h>
 #include <grp.h>
 #include <syslog.h>
+#include <sys/time.h>
 #include <ulogd/conffile.h>
 #include <ulogd/ulogd.h>
 #ifdef DEBUG
@@ -828,27 +829,24 @@ out_buf:
 }
 	
 
-static int ulogd_main_loop(void)
+static void ulogd_main_loop(void)
 {
-	int ret = 0;
+	int ret;
+	struct timeval next_alarm;
+	struct timeval *next = NULL;
 
 	while (1) {
-		ret = ulogd_select_main();
-		if (ret == 0) 
-			continue;
+		/* XXX: signal blocking? */
+		if (next != NULL && !timerisset(next))
+			next = ulogd_do_timer_run(&next_alarm);
+		else
+			next = ulogd_get_next_timer_run(&next_alarm);
 
-		if (ret < 0) {
-			if (errno == -EINTR)
-				continue;
-			else {
-				ulogd_log(ULOGD_ERROR, "select returned %s\n",
-					  strerror(errno));
-				break;
-			}
-		}
+		ret = ulogd_select_main(next);
+		if (ret < 0 && errno != -EINTR)
+	                ulogd_log(ULOGD_ERROR, "select says %s\n",
+				  strerror(errno));
 	}
-
-	return ret;
 }
 
 /* open the logfile */
@@ -952,9 +950,6 @@ static void signal_handler(int signal)
 			if (!logfile)
 				sigterm_handler(signal);
 		}
-		break;
-	case SIGALRM:
-		ulogd_timer_check_n_run();
 		break;
 	default:
 		break;

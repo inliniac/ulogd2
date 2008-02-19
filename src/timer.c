@@ -4,11 +4,15 @@
  *
  * userspace logging daemon for the netfilter subsystem
  *
+ * (C) 2006-2008 by Pablo Neira Ayuso <pablo@netfilter.org>
+ *
+ * based on previous works by:
+ *
  * (C) 2000-2005 by Harald Welte <laforge@gnumonks.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 
- *  as published by the Free Software Foundation
+ *  as published by the Free Software Foundation.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -17,151 +21,146 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * Description:
+ *  This is the timer framework for ulogd, it works together with select()
+ *  so that the daemon only wakes up when there are timers expired to run.
+ *  This approach is more simple than the previous signal-based implementation
+ *  that could wake up the daemon while running at any part of the code.
+ *
+ * TODO:
+ *  - This piece of code has been extracted from conntrackd. Probably
+ *    ulogd doesn't require such O(log n) scalable timer framework. Anyhow,
+ *    we can simplify this code using the same API later, that would be
+ *    quite straight forward.
  */
 
-#include <unistd.h>
+#include <ulogd/timer.h>
 #include <stdlib.h>
-#include <string.h>
-#include <sys/time.h>
-#include <time.h>
+#include <limits.h>
 
-#include <ulogd/ulogd.h>
-#include <ulogd/linuxlist.h>
+static struct rb_root alarm_root = RB_ROOT;
 
-static LLIST_HEAD(ulogd_timers);
-
-static void tv_normalize(struct timeval *out)
+void ulogd_init_timer(struct ulogd_timer *t,
+		      void *data,
+		      void (*cb)(struct ulogd_timer *a, void *data))
 {
-	out->tv_sec += (out->tv_usec / 1000000);
-	out->tv_usec = (out->tv_usec % 1000000);
+	/* initialize the head to check whether a node is inserted */
+	RB_CLEAR_NODE(&t->node);
+	timerclear(&t->tv);
+	t->data = data;
+	t->cb = cb;
 }
 
-/* subtract two struct timevals */
-static int tv_sub(struct timeval *res, const struct timeval *from,
-		  const struct timeval *sub)
+static void __add_timer(struct ulogd_timer *alarm)
 {
-	/* FIXME: this stinks.  Deal with wraps, carry, ... */
-	res->tv_sec = from->tv_sec - sub->tv_sec;
-	res->tv_usec = from->tv_usec - sub->tv_usec;
+	struct rb_node **new = &(alarm_root.rb_node);
+	struct rb_node *parent = NULL;
 
-	return 0;
-}
+	while (*new) {
+		struct ulogd_timer *this;
 
-static int tv_add(struct timeval *res, const struct timeval *a1,
-		  const struct timeval *a2)
-{
-	unsigned int carry;
+		this = container_of(*new, struct ulogd_timer, node);
 
-	res->tv_sec = a1->tv_sec + a2->tv_sec;
-	res->tv_usec = a1->tv_usec + a2->tv_usec;
-
-	tv_normalize(res);
-}
-
-static int tv_later(const struct timeval *expires, const struct timeval *now)
-{
-	if (expires->tv_sec < now->tv_sec)
-		return 0;
-	else if (expires->tv_sec > now->tv_sec)
-		return 1;
-	else /* if (expires->tv_sec == now->tv_sec */ {
-		if (expires->tv_usec >= now->tv_usec)
-			return 1;
+		parent = *new;
+		if (timercmp(&alarm->tv, &this->tv, <))
+			new = &((*new)->rb_left);
+		else
+			new = &((*new)->rb_right);
 	}
 
-	return 0;
+	rb_link_node(&alarm->node, parent, new);
+	rb_insert_color(&alarm->node, &alarm_root);
 }
 
-static int tv_smaller(const struct timeval *t1, const struct timeval *t2)
+void ulogd_add_timer(struct ulogd_timer *alarm, unsigned long sc)
 {
-	return tv_later(t2, t1);
-}
-
-static int calc_next_expiration(void)
-{
-	struct ulogd_timer *cur;
-	struct timeval min, now, diff;
-	struct itimerval iti;
-	int ret;
-
-retry:
-	if (llist_empty(&ulogd_timers))
-		return 0;
-
-	llist_for_each_entry(cur, &ulogd_timers, list) {
-		if (ulogd_timers.next == &cur->list)
-			min = cur->expires;
-
-		if (tv_smaller(&cur->expires, &min))
-			min = cur->expires;
-	}
-
-	if (tv_sub(&diff, &min, &now) < 0) {
-		/* FIXME: run expired timer callbacks */
-		/* we cannot run timers from here since we might be
-		 * called from register_timer() within check_n_run() */
-
-		/* FIXME: restart with next minimum timer */
-		goto retry;
-	}
-
-	/* re-set kernel timer */
-	memset(&iti, 0, sizeof(iti));
-	memcpy(&iti.it_value, &diff, sizeof(iti.it_value));
-	ret = setitimer(ITIMER_REAL, &iti, NULL);
-	if (ret < 0)
-		return ret;
-
-	return 0;
-}
-
-void ulogd_timer_check_n_run(void)
-{
-	struct ulogd_timer *cur, *cur2;
-	struct timeval now;
-
-	if (gettimeofday(&now, NULL) < 0)
-		return;
-
-	llist_for_each_entry_safe(cur, cur2, &ulogd_timers, list) {
-		if (tv_later(&cur->expires, &now)) {
-			/* fist delete it from the list of timers */
-			llist_del(&cur->list);
-			/* then call.  called function can re-add it */
-			(cur->cb)(cur->data);
-		}
-	}
-
-	calc_next_expiration();
-}
-
-
-int ulogd_register_timer(struct ulogd_timer *timer)
-{
-	int ret;
 	struct timeval tv;
 
-	ret = gettimeofday(&tv, NULL);
-	if (ret < 0)
-		return ret;
-
-	/* convert expiration time into absoulte time */
-	timer->expires.tv_sec += tv.tv_sec;
-	timer->expires.tv_usec += tv.tv_usec;
-
-	llist_add_tail(&timer->list, &ulogd_timers);
-
-	/* re-calculate next expiration */
-	calc_next_expiration();
-
-	return 0;
+	ulogd_del_timer(alarm);
+	alarm->tv.tv_sec = sc;
+	alarm->tv.tv_usec = 0;
+	gettimeofday(&tv, NULL);
+	timeradd(&alarm->tv, &tv, &alarm->tv);
+	__add_timer(alarm);
 }
 
-void ulogd_unregister_timer(struct ulogd_timer *timer)
+void ulogd_del_timer(struct ulogd_timer *alarm)
 {
-	llist_del(&timer->list);
+	/* don't remove a non-inserted node */
+	if (!RB_EMPTY_NODE(&alarm->node)) {
+		rb_erase(&alarm->node, &alarm_root);
+		RB_CLEAR_NODE(&alarm->node);
+	}
+}
 
-	/* re-calculate next expiration */
-	calc_next_expiration();
+int ulogd_timer_pending(struct ulogd_timer *alarm)
+{
+	if (RB_EMPTY_NODE(&alarm->node))
+		return 0;
+
+	return 1;
+}
+
+static struct timeval *
+calculate_next_run(struct timeval *cand,
+		   struct timeval *tv,
+		   struct timeval *next_run)
+{
+	if (cand->tv_sec != LONG_MAX) {
+		if (timercmp(cand, tv, >))
+			timersub(cand, tv, next_run);
+		else {
+			/* loop again inmediately */
+			next_run->tv_sec = 0;
+			next_run->tv_usec = 0;
+		}
+		return next_run;
+	}
+	return NULL;
+}
+
+struct timeval *ulogd_get_next_timer_run(struct timeval *next_run)
+{
+	struct rb_node *node;
+	struct timeval tv;
+
+	gettimeofday(&tv, NULL);
+
+	node = rb_first(&alarm_root);
+	if (node) {
+		struct ulogd_timer *this;
+		this = container_of(node, struct ulogd_timer, node);
+		return calculate_next_run(&this->tv, &tv, next_run);
+	}
+	return NULL;
+}
+
+struct timeval *ulogd_do_timer_run(struct timeval *next_run)
+{
+	struct llist_head alarm_run_queue;
+	struct rb_node *node;
+	struct ulogd_timer *this;
+	struct timeval tv;
+
+	gettimeofday(&tv, NULL);
+
+	INIT_LLIST_HEAD(&alarm_run_queue);
+	for (node = rb_first(&alarm_root); node; node = rb_next(node)) {
+		this = container_of(node, struct ulogd_timer, node);
+
+		if (timercmp(&this->tv, &tv, >))
+			break;
+
+		llist_add(&this->list, &alarm_run_queue);
+	}
+
+	llist_for_each_entry(this, &alarm_run_queue, list) {
+		rb_erase(&this->node, &alarm_root);
+		RB_CLEAR_NODE(&this->node);
+		this->cb(this, this->data);
+	}
+
+	return ulogd_get_next_timer_run(next_run);
 }
