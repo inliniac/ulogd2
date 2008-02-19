@@ -26,6 +26,7 @@
 #include <ulogd/linuxlist.h>
 
 static int maxfd = 0;
+static fd_set readset, writeset, exceptset;
 static LLIST_HEAD(ulogd_fds);
 
 int ulogd_register_fd(struct ulogd_fd *fd)
@@ -41,6 +42,15 @@ int ulogd_register_fd(struct ulogd_fd *fd)
 	if (flags < 0)
 		return -1;
 
+	if (fd->when & ULOGD_FD_READ)
+		FD_SET(fd->fd, &readset);
+
+	if (fd->when & ULOGD_FD_WRITE)
+		FD_SET(fd->fd, &writeset);
+
+	if (fd->when & ULOGD_FD_EXCEPT)
+		FD_SET(fd->fd, &exceptset);
+
 	/* Register FD */
 	if (fd->fd > maxfd)
 		maxfd = fd->fd;
@@ -52,44 +62,48 @@ int ulogd_register_fd(struct ulogd_fd *fd)
 
 void ulogd_unregister_fd(struct ulogd_fd *fd)
 {
+	if (fd->when & ULOGD_FD_READ)
+		FD_CLR(fd->fd, &readset);
+
+	if (fd->when & ULOGD_FD_WRITE)
+		FD_CLR(fd->fd, &writeset);
+
+	if (fd->when & ULOGD_FD_EXCEPT)
+		FD_CLR(fd->fd, &exceptset);
+
 	llist_del(&fd->list);
+
+	/* Improvement: recalculate maxfd iif fd->fd == maxfd */
+	maxfd = -1;
+	llist_for_each_entry(fd, &ulogd_fds, list) {
+		if (fd->fd > maxfd)
+			maxfd = fd->fd;
+	}
 }
 
 int ulogd_select_main(struct timeval *tv)
 {
 	struct ulogd_fd *ufd;
-	fd_set readset, writeset, exceptset;
+	fd_set rds_tmp, wrs_tmp, exs_tmp;
 	int i;
 
-	FD_ZERO(&readset);
-	FD_ZERO(&writeset);
-	FD_ZERO(&exceptset);
+	rds_tmp = readset;
+	wrs_tmp = writeset;
+	exs_tmp = exceptset;
 
-	/* prepare read and write fdsets */
-	llist_for_each_entry(ufd, &ulogd_fds, list) {
-		if (ufd->when & ULOGD_FD_READ)
-			FD_SET(ufd->fd, &readset);
-
-		if (ufd->when & ULOGD_FD_WRITE)
-			FD_SET(ufd->fd, &writeset);
-
-		if (ufd->when & ULOGD_FD_EXCEPT)
-			FD_SET(ufd->fd, &exceptset);
-	}
-
-	i = select(maxfd+1, &readset, &writeset, &exceptset, tv);
+	i = select(maxfd+1, &rds_tmp, &wrs_tmp, &exs_tmp, tv);
 	if (i > 0) {
 		/* call registered callback functions */
 		llist_for_each_entry(ufd, &ulogd_fds, list) {
 			int flags = 0;
 
-			if (FD_ISSET(ufd->fd, &readset))
+			if (FD_ISSET(ufd->fd, &rds_tmp))
 				flags |= ULOGD_FD_READ;
 
-			if (FD_ISSET(ufd->fd, &writeset))
+			if (FD_ISSET(ufd->fd, &wrs_tmp))
 				flags |= ULOGD_FD_WRITE;
 
-			if (FD_ISSET(ufd->fd, &exceptset))
+			if (FD_ISSET(ufd->fd, &exs_tmp))
 				flags |= ULOGD_FD_EXCEPT;
 
 			if (flags)
