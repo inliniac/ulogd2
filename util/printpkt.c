@@ -36,9 +36,11 @@
 #include <ulogd/ulogd.h>
 #include <ulogd/conffile.h>
 #include <ulogd/printpkt.h>
+#include <netinet/if_ether.h>
 
 struct ulogd_key printpkt_keys[] = {
 	[KEY_OOB_FAMILY]	= { .name = "oob.family", },
+	[KEY_OOB_PROTOCOL]	= { .name = "oob.protocol", },
 	[KEY_OOB_TIME_SEC]	= { .name = "oob.time.sec", },
 	[KEY_OOB_PREFIX]	= { .name = "oob.prefix", },
 	[KEY_OOB_IN]		= { .name = "oob.in", },
@@ -90,6 +92,14 @@ struct ulogd_key printpkt_keys[] = {
 	[KEY_ICMPV6_ECHOID]	= { .name = "icmpv6.echoid", },
 	[KEY_ICMPV6_ECHOSEQ]	= { .name = "icmpv6.echoseq", },
 	[KEY_AHESP_SPI]		= { .name = "ahesp.spi", },
+	[KEY_ARP_HTYPE]         = { .name = "arp.hwtype", },
+	[KEY_ARP_PTYPE]         = { .name = "arp.protocoltype", },
+	[KEY_ARP_OPCODE]        = { .name = "arp.operation", },
+	[KEY_ARP_SHA]           = { .name = "arp.shwaddr", },
+	[KEY_ARP_SPA]           = { .name = "arp.saddr.str", },
+	[KEY_ARP_THA]           = { .name = "arp.dhwaddr", },
+	[KEY_ARP_TPA]           = { .name = "arp.daddr.str", },
+
 };
 
 static int printpkt_proto(struct ulogd_key *res, char *buf, int protocol)
@@ -334,6 +344,74 @@ static int printpkt_ipv6(struct ulogd_key *res, char *buf)
 	return buf_cur - buf;
 }
 
+int printpkt_arp(struct ulogd_key *res, char *buf)
+{
+	char *buf_cur = buf;
+	u_int16_t code = 0;
+	u_int8_t *mac;
+	char tmp[INET_ADDRSTRLEN];
+
+	if (pp_is_valid(res, KEY_ARP_SPA))
+		buf_cur += sprintf(buf_cur, "SRC=%s ",
+				   GET_VALUE(res, KEY_ARP_SPA).ptr);
+
+	if (pp_is_valid(res, KEY_ARP_TPA))
+		buf_cur += sprintf(buf_cur, "DST=%s ",
+				   GET_VALUE(res, KEY_ARP_TPA).ptr);
+
+	buf_cur += sprintf(buf_cur, "PROTO=ARP ");
+
+	if (pp_is_valid(res, KEY_ARP_OPCODE)) {
+		code = GET_VALUE(res, KEY_ARP_OPCODE).ui16;
+		switch (code) {
+		case ARPOP_REQUEST:
+			buf_cur += sprintf(buf_cur, "REQUEST ");
+			break;
+		case ARPOP_REPLY:
+			buf_cur += sprintf(buf_cur, "REPLY ");
+			break;
+		case ARPOP_NAK:
+			buf_cur += sprintf(buf_cur, "NAK ");
+			break;
+		default:
+			buf_cur += sprintf(buf_cur, "CODE=%u ", code);
+		}
+
+		if (pp_is_valid(res, KEY_ARP_SHA) && (code == ARPOP_REPLY)) {
+			mac = GET_VALUE(res, KEY_ARP_SHA).ptr;
+			buf_cur += sprintf(buf_cur, "REPLY_MAC="
+					   "%02x:%02x:%02x:%02x:%02x:%02x ",
+					   mac[0], mac[1], mac[2],
+					   mac[3], mac[4], mac[5]);
+		}
+	}
+
+	return buf_cur - buf;
+}
+
+
+int printpkt_bridge(struct ulogd_key *res, char *buf)
+{
+	char *buf_cur = buf;
+
+	switch (GET_VALUE(res, KEY_OOB_PROTOCOL).ui16) {
+	case ETH_P_IP:
+		buf_cur += printpkt_ipv4(res, buf_cur);
+		break;
+	case ETH_P_IPV6:
+		buf_cur += printpkt_ipv6(res, buf_cur);
+		break;
+	case ETH_P_ARP:
+		buf_cur += printpkt_arp(res, buf_cur);
+		break;
+	default:
+		buf_cur += sprintf(buf_cur, "PROTO=%u ",
+			   GET_VALUE(res, KEY_OOB_PROTOCOL).ui16);
+	}
+
+	return buf_cur - buf;
+}
+
 int printpkt_print(struct ulogd_key *res, char *buf)
 {
 	char *buf_cur = buf;
@@ -365,6 +443,9 @@ int printpkt_print(struct ulogd_key *res, char *buf)
 		break;
 	case AF_INET6:
 		buf_cur += printpkt_ipv6(res, buf_cur);
+		break;
+	case AF_BRIDGE:
+		buf_cur += printpkt_bridge(res, buf_cur);
 		break;
 	}
 
