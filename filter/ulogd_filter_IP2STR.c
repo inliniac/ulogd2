@@ -27,11 +27,13 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <ulogd/ulogd.h>
+#include <netinet/if_ether.h>
 
 #define IPADDR_LENGTH 128
 
 enum input_keys {
 	KEY_OOB_FAMILY,
+	KEY_OOB_PROTOCOL,
 	KEY_IP_SADDR,
 	START_KEY = KEY_IP_SADDR,
 	KEY_IP_DADDR,
@@ -39,7 +41,9 @@ enum input_keys {
 	KEY_ORIG_IP_DADDR,
 	KEY_REPLY_IP_SADDR,
 	KEY_REPLY_IP_DADDR,
-	MAX_KEY = KEY_REPLY_IP_DADDR,
+	KEY_ARP_SPA,
+	KEY_ARP_TPA,
+	MAX_KEY = KEY_ARP_TPA,
 };
 
 static struct ulogd_key ip2str_inp[] = {
@@ -47,6 +51,11 @@ static struct ulogd_key ip2str_inp[] = {
 		.type = ULOGD_RET_UINT8,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.family",
+	},
+	[KEY_OOB_PROTOCOL] = {
+		.type = ULOGD_RET_UINT16,
+		.flags = ULOGD_RETF_NONE,
+		.name = "oob.protocol",
 	},
 	[KEY_IP_SADDR] = {
 		.type = ULOGD_RET_IPADDR,
@@ -77,6 +86,16 @@ static struct ulogd_key ip2str_inp[] = {
 		.type	= ULOGD_RET_IPADDR,
 		.flags	= ULOGD_RETF_NONE|ULOGD_KEYF_OPTIONAL,
 		.name	= "reply.ip.daddr",
+	},
+	[KEY_ARP_SPA] = {
+		.type = ULOGD_RET_IPADDR,
+		.flags = ULOGD_RETF_NONE,
+		.name = "arp.saddr",
+	},
+	[KEY_ARP_TPA] = {
+		.type = ULOGD_RET_IPADDR,
+		.flags = ULOGD_RETF_NONE,
+		.name = "arp.daddr",
 	},
 };
 
@@ -111,26 +130,62 @@ static struct ulogd_key ip2str_keys[] = {
 		.flags = ULOGD_RETF_FREE,
 		.name = "reply.ip.daddr.str",
 	},
+	{
+		.type = ULOGD_RET_STRING,
+		.flags = ULOGD_RETF_FREE,
+		.name = "arp.saddr.str",
+	},
+	{
+		.type = ULOGD_RET_STRING,
+		.flags = ULOGD_RETF_FREE,
+		.name = "arp.daddr.str",
+	},
 };
 
-static char *ip2str(struct ulogd_key* inp, int index, char family)
+static char *ip2str(struct ulogd_key *inp, int index)
 {
 	char tmp[IPADDR_LENGTH];
-	switch (family) {
-		case AF_INET6:
-			inet_ntop(AF_INET6,
-					&GET_VALUE(inp, index).ptr,
-					tmp, sizeof(tmp));
+	char family = GET_VALUE(inp, KEY_OOB_FAMILY).ui8;
+	char convfamily = family;
+
+	if (family == AF_BRIDGE) {
+		if (!pp_is_valid(inp, KEY_OOB_PROTOCOL)) {
+			ulogd_log(ULOGD_NOTICE,
+				  "No protocol inside AF_BRIDGE packet\n");
+			return NULL;
+		}
+		switch (GET_VALUE(inp, KEY_OOB_PROTOCOL).ui16) {
+		case ETH_P_IPV6:
+			convfamily = AF_INET6;
 			break;
-		case AF_INET:
-			inet_ntop(AF_INET,
-					&GET_VALUE(inp, index).ui32,
-					tmp, sizeof(tmp));
+		case ETH_P_IP:
+			convfamily = AF_INET;
+			break;
+		case ETH_P_ARP:
+			convfamily = AF_INET;
 			break;
 		default:
-			/* TODO error handling */
-			ulogd_log(ULOGD_NOTICE, "Unknown protocol family\n");
+			ulogd_log(ULOGD_NOTICE,
+				  "Unknown protocol inside AF_BRIDGE packet\n");
 			return NULL;
+		}
+	}
+
+	switch (convfamily) {
+	case AF_INET6:
+		inet_ntop(AF_INET6,
+			  &GET_VALUE(inp, index).ptr,
+			  tmp, sizeof(tmp));
+		break;
+	case AF_INET:
+		inet_ntop(AF_INET,
+			  &GET_VALUE(inp, index).ui32,
+			  tmp, sizeof(tmp));
+		break;
+	default:
+		/* TODO error handling */
+		ulogd_log(ULOGD_NOTICE, "Unknown protocol family\n");
+		return NULL;
 	}
 	return strdup(tmp);
 }
@@ -140,13 +195,12 @@ static int interp_ip2str(struct ulogd_pluginstance *pi)
 	struct ulogd_key *ret = pi->output.keys;
 	struct ulogd_key *inp = pi->input.keys;
 	int i;
-	int oob_family = GET_VALUE(inp, KEY_OOB_FAMILY).ui8;
 
 	/* Iter on all addr fields */
-	for(i = START_KEY; i < MAX_KEY; i++) {
+	for (i = START_KEY; i <= MAX_KEY; i++) {
 		if (pp_is_valid(inp, i)) {
-			ret[i-1].u.value.ptr = ip2str(inp, i, oob_family);
-			ret[i-1].flags |= ULOGD_RETF_VALID;
+			ret[i-START_KEY].u.value.ptr = ip2str(inp, i);
+			ret[i-START_KEY].flags |= ULOGD_RETF_VALID;
 		}
 	}
 
