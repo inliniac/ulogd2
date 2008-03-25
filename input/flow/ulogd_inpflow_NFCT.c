@@ -559,8 +559,10 @@ static int event_handler(void *arg, unsigned int flags, int type,
 {
 	struct nfct_conntrack *ct = arg;
 	struct ulogd_pluginstance *upi = data;
+	struct ulogd_pluginstance *npi = NULL;
 	struct nfct_pluginstance *cpi = 
 				(struct nfct_pluginstance *) upi->private;
+	int ret = 0;
 
 	if (type == NFCT_MSG_NEW) {
 		if (usehash_ce(upi->config_kset).u.value != 0)
@@ -571,6 +573,14 @@ static int event_handler(void *arg, unsigned int flags, int type,
 		if (usehash_ce(upi->config_kset).u.value != 0)
 			ts = ct_hash_get(cpi->ct_active, ct->id);
 
+		/* since we support the re-use of one instance in
+		 * several different stacks, we duplicate the message
+		 * to let them know */
+		llist_for_each_entry(npi, &upi->plist, plist) {
+			ret = propagate_ct(npi, ct, flags, ts);
+			if (ret != 0)
+				return ret;
+		}
 		return propagate_ct(upi, ct, flags, ts);
 	}
 	return 0;
