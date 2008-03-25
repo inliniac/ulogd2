@@ -529,6 +529,7 @@ pluginstance_alloc_init(struct ulogd_plugin *pl, char *pi_id,
 	/* initialize */
 	memset(pi, 0, size);
 	INIT_LLIST_HEAD(&pi->list);
+	INIT_LLIST_HEAD(&pi->plist);
 	pi->plugin = pl;
 	pi->stack = stack;
 	memcpy(pi->id, pi_id, sizeof(pi->id));
@@ -721,6 +722,7 @@ static int pluginstance_started(struct ulogd_pluginstance *npi)
 			if (!strcmp(pi->id, npi->id)) {
 				ulogd_log(ULOGD_INFO, "%s instance already "
 						      "loaded\n", pi->id);
+				llist_add(&pi->plist, &npi->plist);
 				return 1;
 			}
 		}

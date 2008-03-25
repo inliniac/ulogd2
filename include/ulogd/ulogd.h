@@ -168,6 +168,8 @@ struct ulogd_plugin {
 struct ulogd_pluginstance {
 	/* local list of plugins in this stack */
 	struct llist_head list;
+	/* local list of plugininstance in other stacks */
+	struct llist_head plist;
 	/* plugin */
 	struct ulogd_plugin *plugin;
 	/* stack that we're part of */
