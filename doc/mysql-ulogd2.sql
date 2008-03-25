@@ -14,7 +14,7 @@ CREATE TABLE `_format` (
   `version` int(4) NOT NULL
 ) ENGINE=INNODB;
 
-INSERT INTO _format (version) VALUES (5);
+INSERT INTO _format (version) VALUES (6);
 
 -- this table could be used to know which user-defined tables are linked
 -- to ulog
@@ -42,6 +42,7 @@ CREATE TABLE `ulog2` (
   `_id` bigint unsigned NOT NULL auto_increment,
   `oob_time_sec` int(10) unsigned default NULL,
   `oob_time_usec` int(10) unsigned default NULL,
+  `oob_hook` tinyint(3) unsigned default NULL,
   `oob_prefix` varchar(32) default NULL,
   `oob_mark` int(10) unsigned default NULL,
   `oob_in` varchar(32) default NULL,
@@ -171,6 +172,7 @@ CREATE SQL SECURITY INVOKER VIEW `ulog` AS
         SELECT _id,
         oob_time_sec,
         oob_time_usec,
+        oob_hook,
         oob_prefix,
         oob_mark,
         oob_in,
@@ -417,6 +419,7 @@ DROP FUNCTION IF EXISTS INSERT_IP_PACKET;
 CREATE FUNCTION INSERT_IP_PACKET(
 		_oob_time_sec int(10) unsigned,
 		_oob_time_usec int(10) unsigned,
+		_oob_hook tinyint(3) unsigned,
 		_oob_prefix varchar(32),
 		_oob_mark int(10) unsigned,
 		_oob_in varchar(32),
@@ -430,9 +433,9 @@ SQL SECURITY INVOKER
 NOT DETERMINISTIC
 READS SQL DATA
 BEGIN
-	INSERT INTO ulog2 (oob_time_sec, oob_time_usec, oob_prefix, oob_mark, oob_in, oob_out, oob_family,
+	INSERT INTO ulog2 (oob_time_sec, oob_time_usec, oob_hook, oob_prefix, oob_mark, oob_in, oob_out, oob_family,
 			   ip_saddr, ip_daddr, ip_protocol) VALUES 
-		(_oob_time_sec, _oob_time_usec, _oob_prefix, _oob_mark, _oob_in, _oob_out, _oob_family,
+		(_oob_time_sec, _oob_time_usec, _oob_hook, _oob_prefix, _oob_mark, _oob_in, _oob_out, _oob_family,
 		 _ip_saddr, _ip_daddr, _ip_protocol);
 	RETURN LAST_INSERT_ID();
 END
@@ -443,6 +446,7 @@ DROP FUNCTION IF EXISTS INSERT_IP_PACKET_FULL;
 CREATE FUNCTION INSERT_IP_PACKET_FULL(
 		_oob_time_sec int(10) unsigned,
 		_oob_time_usec int(10) unsigned,
+		_oob_hook tinyint(3) unsigned,
 		_oob_prefix varchar(32),
 		_oob_mark int(10) unsigned,
 		_oob_in varchar(32),
@@ -463,10 +467,10 @@ SQL SECURITY INVOKER
 NOT DETERMINISTIC
 READS SQL DATA
 BEGIN
-	INSERT INTO ulog2 (oob_time_sec, oob_time_usec, oob_prefix, oob_mark, oob_in, oob_out, oob_family,
+	INSERT INTO ulog2 (oob_time_sec, oob_time_usec, oob_hook, oob_prefix, oob_mark, oob_in, oob_out, oob_family,
 			   ip_saddr, ip_daddr, ip_protocol, ip_tos, ip_ttl, ip_totlen, ip_ihl,
 		 	   ip_csum, ip_id, ip_fragoff ) VALUES 
-		(_oob_time_sec, _oob_time_usec, _oob_prefix, _oob_mark, _oob_in, _oob_out, _oob_family,
+		(_oob_time_sec, _oob_time_usec, _oob_hook, _oob_prefix, _oob_mark, _oob_in, _oob_out, _oob_family,
 		 _ip_saddr, _ip_daddr, _ip_protocol, _ip_tos, _ip_ttl, _ip_totlen, _ip_ihl,
 		 _ip_csum, _ip_id, _ip_fragoff);
 	RETURN LAST_INSERT_ID();
@@ -582,6 +586,7 @@ DROP FUNCTION IF EXISTS INSERT_PACKET_FULL;
 CREATE FUNCTION INSERT_PACKET_FULL(
 		_oob_time_sec int(10) unsigned,
 		_oob_time_usec int(10) unsigned,
+		_oob_hook tinyint(3) unsigned,
 		_oob_prefix varchar(32),
 		_oob_mark int(10) unsigned,
 		_oob_in varchar(32),
@@ -629,7 +634,7 @@ CREATE FUNCTION INSERT_PACKET_FULL(
 		) RETURNS bigint unsigned
 READS SQL DATA
 BEGIN
-	SET @lastid = INSERT_IP_PACKET_FULL(_oob_time_sec, _oob_time_usec, _oob_prefix,
+	SET @lastid = INSERT_IP_PACKET_FULL(_oob_time_sec, _oob_time_usec, _oob_hook, _oob_prefix,
 					   _oob_mark, _oob_in, _oob_out, _oob_family, 
 					   _ip_saddr, _ip_daddr, _ip_protocol, _ip_tos,
 					   _ip_ttl, _ip_totlen, _ip_ihl, _ip_csum, _ip_id,

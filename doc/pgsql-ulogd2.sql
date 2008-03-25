@@ -13,7 +13,7 @@ CREATE TABLE _format (
   version integer
 ) WITH (OIDS=FALSE);
 
-INSERT INTO _format (version) VALUES (5);
+INSERT INTO _format (version) VALUES (6);
 
 -- this table could be used to know which user-defined tables are linked
 -- to ulog
@@ -41,6 +41,7 @@ CREATE TABLE ulog2 (
   _id bigint PRIMARY KEY UNIQUE NOT NULL DEFAULT nextval('ulog2__id_seq'),
   oob_time_sec integer default NULL,
   oob_time_usec integer default NULL,
+  oob_hook smallint default NULL,
   oob_prefix varchar(32) default NULL,
   oob_mark integer default NULL,
   oob_in varchar(32) default NULL,
@@ -149,6 +150,7 @@ CREATE OR REPLACE VIEW ulog AS
         SELECT _id,
         oob_time_sec,
         oob_time_usec,
+        oob_hook,
         oob_prefix,
         oob_mark,
         oob_in,
@@ -343,6 +345,7 @@ $$ LANGUAGE SQL SECURITY INVOKER;
 CREATE OR REPLACE FUNCTION INSERT_IP_PACKET_FULL(
                 IN oob_time_sec integer,
                 IN oob_time_usec integer,
+                IN oob_hook integer,
                 IN oob_prefix varchar(32),
                 IN oob_mark integer,
                 IN oob_in varchar(32),
@@ -360,10 +363,10 @@ CREATE OR REPLACE FUNCTION INSERT_IP_PACKET_FULL(
                 IN ip_fragoff integer
         )
 RETURNS bigint AS $$
-        INSERT INTO ulog2 (oob_time_sec,oob_time_usec,oob_prefix,oob_mark,
+        INSERT INTO ulog2 (oob_time_sec,oob_time_usec,oob_hook,oob_prefix,oob_mark,
                         oob_in,oob_out,oob_family,ip_saddr_str,ip_daddr_str,ip_protocol,
                         ip_tos,ip_ttl,ip_totlen,ip_ihl,ip_csum,ip_id,ip_fragoff)
-                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17);
+                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18);
         SELECT currval('ulog2__id_seq');
 $$ LANGUAGE SQL SECURITY INVOKER;
 
@@ -436,6 +439,7 @@ $$ LANGUAGE SQL SECURITY INVOKER;
 CREATE OR REPLACE FUNCTION INSERT_PACKET_FULL(
                 IN oob_time_sec integer,
                 IN oob_time_usec integer,
+                IN oob_hook integer,
                 IN oob_prefix varchar(32),
                 IN oob_mark integer,
                 IN oob_in varchar(32),
@@ -482,15 +486,15 @@ RETURNS bigint AS $$
 DECLARE
         _id bigint;
 BEGIN
-        _id := INSERT_IP_PACKET_FULL($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) ;
+        _id := INSERT_IP_PACKET_FULL($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) ;
         IF (ip_protocol = 6) THEN
-                PERFORM INSERT_TCP_FULL(_id,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29);
+                PERFORM INSERT_TCP_FULL(_id,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30);
         ELSIF (ip_protocol = 17) THEN
-                PERFORM INSERT_UDP(_id,$30,$31,$32);
+                PERFORM INSERT_UDP(_id,$31,$32,$33);
         ELSIF (ip_protocol = 1) THEN
-                PERFORM INSERT_ICMP(_id,$33,$34,$35,$36,$37,$38);
+                PERFORM INSERT_ICMP(_id,$34,$35,$36,$37,$38,$39);
         ELSIF (ip_protocol = 58) THEN
-                PERFORM INSERT_ICMPV6(_id,$39,$40,$41,$42,$43);
+                PERFORM INSERT_ICMPV6(_id,$40,$41,$42,$43,$44);
         END IF;
         RETURN _id;
 END
