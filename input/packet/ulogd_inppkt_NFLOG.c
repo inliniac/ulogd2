@@ -406,7 +406,7 @@ static int start(struct ulogd_pluginstance *upi)
 				    af_ce(upi->config_kset).u.value) < 0) {
 			ulogd_log(ULOGD_ERROR, "unable to force-unbind "
 				  "existing log handler for protocol %d\n",
-			  	  af_ce(upi->config_kset).u.value);
+				  af_ce(upi->config_kset).u.value);
 			goto out_handle;
 		}
 	}
