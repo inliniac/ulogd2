@@ -215,6 +215,7 @@ static int interp_packet(struct ulogd_pluginstance *ip, ulog_packet_msg_t *pkt)
 static int ulog_read_cb(int fd, unsigned int what, void *param)
 {
 	struct ulogd_pluginstance *upi = (struct ulogd_pluginstance *)param;
+	struct ulogd_pluginstance *npi = NULL;
 	struct ulog_input *u = (struct ulog_input *) &upi->private;
 	ulog_packet_msg_t *upkt;
 	int len;
@@ -239,6 +240,11 @@ static int ulog_read_cb(int fd, unsigned int what, void *param)
 		while ((upkt = ipulog_get_packet(u->libulog_h,
 						 u->libulog_buf, len))) {
 			ulogd_log(ULOGD_DEBUG, "==> ulog packet received\n");
+			/* since we support the re-use of one instance in
+			 * several different stacks, we duplicate the message
+			 * to let them know */
+			llist_for_each_entry(npi, &upi->plist, plist)
+				interp_packet(npi, upkt);
 			interp_packet(upi, upkt);
 		}
 	}
