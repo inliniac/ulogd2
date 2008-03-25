@@ -710,6 +710,24 @@ create_stack_resolve_keys(struct ulogd_pluginstance_stack *stack)
 	return 0;
 }
 
+/* iterate on already defined stack to find a plugininstance matching */
+static int pluginstance_started(struct ulogd_pluginstance *npi)
+{
+	struct ulogd_pluginstance_stack *stack;
+	struct ulogd_pluginstance *pi;
+
+	llist_for_each_entry(stack, &ulogd_pi_stacks, stack_list) {
+		llist_for_each_entry(pi, &stack->list, list) {
+			if (!strcmp(pi->id, npi->id)) {
+				ulogd_log(ULOGD_INFO, "%s instance already "
+						      "loaded\n", pi->id);
+				return 1;
+			}
+		}
+	}
+	return 0;
+}
+
 static int create_stack_start_instances(struct ulogd_pluginstance_stack *stack)
 {
 	int ret;
@@ -720,11 +738,15 @@ static int create_stack_start_instances(struct ulogd_pluginstance_stack *stack)
 		if (!pi->plugin->start)
 			continue;
 
-		ret = pi->plugin->start(pi);
-		if (ret < 0) {
-			ulogd_log(ULOGD_ERROR, "error during start of `%s'\n",
-				  pi->id);
-			return ret;
+		/* only call start if a plugin with same ID was not started */
+		if (!pluginstance_started(pi)) {
+			ret = pi->plugin->start(pi);
+			if (ret < 0) {
+				ulogd_log(ULOGD_ERROR, 
+					  "error starting `%s'\n",
+					  pi->id);
+				return ret;
+			}
 		}
 	}
 	return 0;
