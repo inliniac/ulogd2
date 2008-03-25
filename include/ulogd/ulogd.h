@@ -47,6 +47,7 @@
 /* types with length field */
 #define ULOGD_RET_STRING	0x8020
 #define ULOGD_RET_RAW		0x8030
+#define ULOGD_RET_RAWSTR	0x8040
 
 
 /* FLAGS */

@@ -294,9 +294,12 @@ static int __interp_db(struct ulogd_pluginstance *upi)
 			}
 			sprintf(di->stmt_ins, "',");
 			break;
-		case ULOGD_RET_RAW:
+		case ULOGD_RET_RAWSTR:
 			sprintf(di->stmt_ins, "%s,", res->u.value.ptr);
 			break;
+		case ULOGD_RET_RAW:
+			ulogd_log(ULOGD_NOTICE,
+				"Unsupported RAW type is unsupported in SQL output");
 		default:
 			ulogd_log(ULOGD_NOTICE,
 				"unknown type %d for %s\n",

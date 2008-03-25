@@ -82,32 +82,32 @@ static struct ulogd_key ip2bin_inp[] = {
 
 static struct ulogd_key ip2bin_keys[] = {
 	{
-		.type = ULOGD_RET_RAW,
+		.type = ULOGD_RET_RAWSTR,
 		.flags = ULOGD_RETF_FREE,
 		.name = "ip.saddr.bin",
 	},
 	{
-		.type = ULOGD_RET_RAW,
+		.type = ULOGD_RET_RAWSTR,
 		.flags = ULOGD_RETF_FREE,
 		.name = "ip.daddr.bin",
 	},
 	{
-		.type = ULOGD_RET_RAW,
+		.type = ULOGD_RET_RAWSTR,
 		.flags = ULOGD_RETF_FREE,
 		.name = "orig.ip.saddr.bin",
 	},
 	{
-		.type = ULOGD_RET_RAW,
+		.type = ULOGD_RET_RAWSTR,
 		.flags = ULOGD_RETF_FREE,
 		.name = "orig.ip.daddr.bin",
 	},
 	{
-		.type = ULOGD_RET_RAW,
+		.type = ULOGD_RET_RAWSTR,
 		.flags = ULOGD_RETF_FREE,
 		.name = "reply.ip.saddr.bin",
 	},
 	{
-		.type = ULOGD_RET_RAW,
+		.type = ULOGD_RET_RAWSTR,
 		.flags = ULOGD_RETF_FREE,
 		.name = "reply.ip.daddr.bin",
 	},
