@@ -66,9 +66,10 @@ struct nfct_pluginstance {
 
 #define HTABLE_SIZE	(8192)
 #define MAX_ENTRIES	(4 * HTABLE_SIZE)
+#define EVENT_MASK	NF_NETLINK_CONNTRACK_NEW | NF_NETLINK_CONNTRACK_DESTROY
 
 static struct config_keyset nfct_kset = {
-	.num_ces = 5,
+	.num_ces = 6,
 	.ces = {
 		{
 			.key	 = "pollinterval",
@@ -100,6 +101,13 @@ static struct config_keyset nfct_kset = {
 			.options = CONFIG_OPT_NONE,
 			.u.value = MAX_ENTRIES,
 		},
+		{
+			.key	 = "event_mask",
+			.type	 = CONFIG_TYPE_INT,
+			.options = CONFIG_OPT_NONE,
+			.u.value = EVENT_MASK,
+		},
+
 	},
 };
 #define pollint_ce(x)	(x->ces[0])
@@ -107,6 +115,7 @@ static struct config_keyset nfct_kset = {
 #define prealloc_ce(x)	(x->ces[2])
 #define buckets_ce(x)	(x->ces[3])
 #define maxentries_ce(x) (x->ces[4])
+#define eventmask_ce(x) (x->ces[5])
 
 enum nfct_keys {
 	NFCT_ORIG_IP_SADDR = 0,
@@ -127,6 +136,7 @@ enum nfct_keys {
 	NFCT_ICMP_TYPE,
 	NFCT_CT_MARK,
 	NFCT_CT_ID,
+	NFCT_CT_EVENT,
 	NFCT_FLOW_START_SEC,
 	NFCT_FLOW_START_USEC,
 	NFCT_FLOW_END_SEC,
@@ -301,6 +311,12 @@ static struct ulogd_key nfct_okeys[] = {
 		},
 	},
 	{
+		.type	= ULOGD_RET_UINT32,
+		.flags	= ULOGD_RETF_NONE,
+		.name	= "ct.event",
+	},
+
+	{
 		.type 	= ULOGD_RET_UINT32,
 		.flags 	= ULOGD_RETF_NONE,
 		.name	= "flow.start.sec",
@@ -454,11 +470,15 @@ static struct ct_timestamp *ct_hash_get(struct ct_htable *htable, uint32_t id)
 static int propagate_ct(struct ulogd_pluginstance *upi,
 			struct nfct_conntrack *ct,
 			unsigned int flags,
+			int type,
 			struct ct_timestamp *ts)
 {
 	struct ulogd_key *ret = upi->output.keys;
 	int dir;
-	
+
+	ret[NFCT_CT_EVENT].u.value.ui32 = type;
+	ret[NFCT_CT_EVENT].flags |= ULOGD_RETF_VALID;
+
 	dir = NFCT_DIR_ORIGINAL;
 	ret[NFCT_ORIG_IP_SADDR].u.value.ui32 = htonl(ct->tuple[dir].src.v4);
 	ret[NFCT_ORIG_IP_SADDR].flags |= ULOGD_RETF_VALID;
@@ -562,28 +582,28 @@ static int event_handler(void *arg, unsigned int flags, int type,
 	struct ulogd_pluginstance *npi = NULL;
 	struct nfct_pluginstance *cpi = 
 				(struct nfct_pluginstance *) upi->private;
+	struct ct_timestamp *ts = NULL;
 	int ret = 0;
 
 	if (type == NFCT_MSG_NEW) {
-		if (usehash_ce(upi->config_kset).u.value != 0)
+		if (usehash_ce(upi->config_kset).u.value != 0) {
 			ct_hash_add(cpi->ct_active, ct->id);
+			return 0;
+		}
 	} else if (type == NFCT_MSG_DESTROY) {
-		struct ct_timestamp *ts = NULL;
-
 		if (usehash_ce(upi->config_kset).u.value != 0)
 			ts = ct_hash_get(cpi->ct_active, ct->id);
-
-		/* since we support the re-use of one instance in
-		 * several different stacks, we duplicate the message
-		 * to let them know */
-		llist_for_each_entry(npi, &upi->plist, plist) {
-			ret = propagate_ct(npi, ct, flags, ts);
-			if (ret != 0)
-				return ret;
-		}
-		return propagate_ct(upi, ct, flags, ts);
 	}
-	return 0;
+
+	/* since we support the re-use of one instance in
+	 * several different stacks, we duplicate the message
+	 * to let them know */
+	llist_for_each_entry(npi, &upi->plist, plist) {
+		ret = propagate_ct(npi, ct, flags, type, ts);
+		if (ret != 0)
+			return ret;
+	}
+	return propagate_ct(upi, ct, flags, type, ts);
 }
 
 static int read_cb_nfct(int fd, unsigned int what, void *param)
@@ -641,9 +661,8 @@ static int constructor_nfct(struct ulogd_pluginstance *upi)
 			(struct nfct_pluginstance *)upi->private;
 	int prealloc;
 
-	/* FIXME: make eventmask configurable */
-	cpi->cth = nfct_open(NFNL_SUBSYS_CTNETLINK, NF_NETLINK_CONNTRACK_NEW|
-			     NF_NETLINK_CONNTRACK_DESTROY);
+	cpi->cth = nfct_open(NFNL_SUBSYS_CTNETLINK,
+			     eventmask_ce(upi->config_kset).u.value);
 	if (!cpi->cth) {
 		ulogd_log(ULOGD_FATAL, "error opening ctnetlink\n");
 		return -1;
