@@ -45,6 +45,7 @@ enum printflow_fields {
 	PRINTFLOW_REPLY_RAW_PKTCOUNT,
 	PRINTFLOW_ICMP_CODE,
 	PRINTFLOW_ICMP_TYPE,
+	PRINTFLOW_EVENT_TYPE,
 };
 
 struct ulogd_key printflow_keys[FLOW_IDS] = {
@@ -128,6 +129,11 @@ struct ulogd_key printflow_keys[FLOW_IDS] = {
 		.flags = ULOGD_RETF_NONE,
 		.name = "icmp.type",
 	},
+	{
+		.type = ULOGD_RET_UINT32,
+		.flags = ULOGD_RETF_NONE,
+		.name = "ct.event",
+	},
 };
 int printflow_keys_num = sizeof(printflow_keys)/sizeof(*printflow_keys);
 
@@ -138,6 +144,20 @@ int printflow_keys_num = sizeof(printflow_keys)/sizeof(*printflow_keys);
 int printflow_print(struct ulogd_key *res, char *buf)
 {
 	char *buf_cur = buf;
+
+	if (pp_is_valid(res, PRINTFLOW_EVENT_TYPE)) {
+		switch (GET_VALUE(res, PRINTFLOW_EVENT_TYPE).ui32) {
+			case 1:
+				buf_cur += sprintf(buf_cur, "[NEW] ");
+				break;
+			case 2:
+				buf_cur += sprintf(buf_cur, "[UPDATE] ");
+				break;
+			case 3:
+				buf_cur += sprintf(buf_cur, "[DESTROY] ");
+				break;
+		}
+	}
 
 	buf_cur += sprintf(buf_cur, "ORIG: ");
 
