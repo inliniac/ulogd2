@@ -176,6 +176,8 @@ static int _init_reconnect(struct ulogd_pluginstance *upi)
 	struct db_instance *di = (struct db_instance *) upi->private;
 
 	if (reconnect_ce(upi->config_kset).u.value) {
+		if (time(NULL) < di->reconnect)
+			return -1;
 		di->reconnect = time(NULL);
 		if (di->reconnect != TIME_ERR) {
 			ulogd_log(ULOGD_ERROR, "no connection to database, "
@@ -312,8 +314,11 @@ static int __interp_db(struct ulogd_pluginstance *upi)
 
 	/* now we have created our statement, insert it */
 
-	if (di->driver->execute(upi, di->stmt, strlen(di->stmt)) < 0)
-		return _init_db(upi);
+	if (di->driver->execute(upi, di->stmt, strlen(di->stmt)) < 0) {
+		/* error occur, database connexion need to be closed */
+		di->driver->close_db(upi);
+		return _init_reconnect(upi);
+	}
 
 	return 0;
 }

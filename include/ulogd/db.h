@@ -23,6 +23,7 @@ struct db_instance {
 	struct db_driver *driver;
 };
 #define TIME_ERR		((time_t)-1)	/* Be paranoid */
+#define RECONNECT_DEFAULT	2
 
 #define DB_CES							\
 		{						\
@@ -33,6 +34,7 @@ struct db_instance {
 		{						\
 			.key = "reconnect",			\
 			.type = CONFIG_TYPE_INT,		\
+			.u.value = RECONNECT_DEFAULT,		\
 		},						\
 		{						\
 			.key = "ip_as_string",			\
