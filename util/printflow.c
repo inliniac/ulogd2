@@ -153,7 +153,7 @@ int printflow_print(struct ulogd_key *res, char *buf)
 			case 2:
 				buf_cur += sprintf(buf_cur, "[UPDATE] ");
 				break;
-			case 3:
+			case 4:
 				buf_cur += sprintf(buf_cur, "[DESTROY] ");
 				break;
 		}
