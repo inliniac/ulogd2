@@ -163,7 +163,7 @@ int ulogd_key_size(struct ulogd_key *key)
 		ret = key->len;
 		break;
 	default:
-		ulogd_log(ULOGD_ERROR, "don't know sizeo f unknown key "
+		ulogd_log(ULOGD_ERROR, "don't know sizeof unknown key "
 			  "`%s' type 0x%x\n", key->name, key->type);
 		ret = -1;
 		break;
