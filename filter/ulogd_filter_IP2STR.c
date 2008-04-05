@@ -89,12 +89,12 @@ static struct ulogd_key ip2str_inp[] = {
 	},
 	[KEY_ARP_SPA] = {
 		.type = ULOGD_RET_IPADDR,
-		.flags = ULOGD_RETF_NONE,
+		.flags = ULOGD_RETF_NONE|ULOGD_KEYF_OPTIONAL,
 		.name = "arp.saddr",
 	},
 	[KEY_ARP_TPA] = {
 		.type = ULOGD_RET_IPADDR,
-		.flags = ULOGD_RETF_NONE,
+		.flags = ULOGD_RETF_NONE|ULOGD_KEYF_OPTIONAL,
 		.name = "arp.daddr",
 	},
 };
