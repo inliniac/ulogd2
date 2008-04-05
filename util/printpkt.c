@@ -428,7 +428,7 @@ int printpkt_print(struct ulogd_key *res, char *buf)
 	/* FIXME: configurable */
 	if (pp_is_valid(res, KEY_RAW_MAC)) {
 		unsigned char *mac = (unsigned char *) GET_VALUE(res, KEY_RAW_MAC).ptr;
-		int i, len = GET_VALUE(res, KEY_RAW_MACLEN).ui16 * 2;
+		int i, len = GET_VALUE(res, KEY_RAW_MACLEN).ui16;
 
 		buf_cur += sprintf(buf_cur, "MAC=");
 		for (i = 0; i < len; i++)
