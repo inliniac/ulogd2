@@ -209,7 +209,7 @@ static struct ulogd_key output_keys[] = {
 		},
 	},
 	{ 
-		.type = ULOGD_RET_STRING, 
+		.type = ULOGD_RET_UINT16, 
 		.flags = ULOGD_RETF_NONE, 
 		.name = "raw.mac_len", 
 	},
