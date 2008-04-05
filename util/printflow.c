@@ -52,12 +52,12 @@ struct ulogd_key printflow_keys[FLOW_IDS] = {
 	{
 		.type = ULOGD_RET_IPADDR,
 		.flags = ULOGD_RETF_NONE,
-		.name = "orig.ip.saddr",
+		.name = "orig.ip.saddr.str",
 	},
 	{
 		.type = ULOGD_RET_IPADDR,
 		.flags = ULOGD_RETF_NONE,
-		.name = "orig.ip.daddr",
+		.name = "orig.ip.daddr.str",
 	},
 	{
 		.type = ULOGD_RET_UINT8,
@@ -87,12 +87,12 @@ struct ulogd_key printflow_keys[FLOW_IDS] = {
 	{
 		.type = ULOGD_RET_IPADDR,
 		.flags = ULOGD_RETF_NONE,
-		.name = "reply.ip.saddr",
+		.name = "reply.ip.saddr.str",
 	},
 	{
 		.type = ULOGD_RET_IPADDR,
 		.flags = ULOGD_RETF_NONE,
-		.name = "reply.ip.daddr",
+		.name = "reply.ip.daddr.str",
 	},
 	{
 		.type = ULOGD_RET_UINT8,
@@ -162,12 +162,14 @@ int printflow_print(struct ulogd_key *res, char *buf)
 	buf_cur += sprintf(buf_cur, "ORIG: ");
 
 	if (pp_is_valid(res, PRINTFLOW_ORIG_IP_SADDR))
-		buf_cur += sprintf(buf_cur, "SRC=%s ", inet_ntoa(
-				(struct in_addr) {htonl(GET_VALUE(res, PRINTFLOW_ORIG_IP_SADDR).ui32)}));
+		buf_cur += sprintf(buf_cur,
+				   "SRC=%s ", 
+				   GET_VALUE(res, PRINTFLOW_ORIG_IP_SADDR).ptr);
 
 	if (pp_is_valid(res, PRINTFLOW_ORIG_IP_DADDR))
-		buf_cur += sprintf(buf_cur, "DST=%s ", inet_ntoa(
-				(struct in_addr) {htonl(GET_VALUE(res, PRINTFLOW_ORIG_IP_DADDR).ui32)}));
+		buf_cur += sprintf(buf_cur,
+				   "DST=%s ",
+				   GET_VALUE(res, PRINTFLOW_ORIG_IP_DADDR).ptr);
 
 	if (!pp_is_valid(res, PRINTFLOW_ORIG_IP_PROTOCOL))
 		goto orig_out;
@@ -211,12 +213,14 @@ orig_out:
 	buf_cur += sprintf(buf_cur, ", REPLY: ");
 
 	if (pp_is_valid(res, PRINTFLOW_REPLY_IP_SADDR))
-		buf_cur += sprintf(buf_cur, "SRC=%s ", inet_ntoa(
-				(struct in_addr) {htonl(GET_VALUE(res, PRINTFLOW_REPLY_IP_SADDR).ui32)}));
+		buf_cur += sprintf(buf_cur,
+				   "SRC=%s ",
+				   GET_VALUE(res,PRINTFLOW_REPLY_IP_SADDR).ptr);
 
 	if (pp_is_valid(res, PRINTFLOW_REPLY_IP_DADDR))
-		buf_cur += sprintf(buf_cur, "DST=%s ", inet_ntoa(
-				(struct in_addr) {htonl(GET_VALUE(res, PRINTFLOW_REPLY_IP_DADDR).ui32)}));
+		buf_cur += sprintf(buf_cur,
+				   "DST=%s ",
+				   GET_VALUE(res,PRINTFLOW_REPLY_IP_DADDR).ptr);
 
 	if (!pp_is_valid(res, PRINTFLOW_REPLY_IP_PROTOCOL))
 		goto reply_out;
