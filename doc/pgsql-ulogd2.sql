@@ -68,12 +68,10 @@ CREATE INDEX ulog2_timestamp ON ulog2(timestamp);
 CREATE TABLE mac (
   _mac_id bigint PRIMARY KEY UNIQUE NOT NULL,
   mac_saddr macaddr default NULL,
-  mac_daddr macaddr default NULL,
   mac_protocol smallint default NULL
 ) WITH (OIDS=FALSE);
 
 CREATE INDEX mac_saddr ON mac(mac_saddr);
-CREATE INDEX mac_daddr ON mac(mac_daddr);
 
 CREATE TABLE tcp (
   _tcp_id bigint PRIMARY KEY UNIQUE NOT NULL,
@@ -191,7 +189,9 @@ CREATE OR REPLACE VIEW ulog AS
         icmpv6_code,
         icmpv6_echoid,
         icmpv6_echoseq,
-        icmpv6_csum
+        icmpv6_csum,
+        mac_saddr AS mac_saddr_str,
+        mac_protocol AS oob_protocol
         FROM ulog2 LEFT JOIN tcp ON ulog2._id = tcp._tcp_id LEFT JOIN udp ON ulog2._id = udp._udp_id
                 LEFT JOIN icmp ON ulog2._id = icmp._icmp_id LEFT JOIN mac ON ulog2._id = mac._mac_id
                 LEFT JOIN icmpv6 ON ulog2._id = icmpv6._icmpv6_id;
@@ -433,6 +433,16 @@ RETURNS bigint AS $$
         SELECT currval('ulog2__id_seq');
 $$ LANGUAGE SQL SECURITY INVOKER;
 
+CREATE OR REPLACE FUNCTION INSERT_MAC(
+                IN mac_id bigint,
+                IN mac_saddr macaddr,
+                IN mac_protocol integer
+        )
+RETURNS bigint AS $$
+        INSERT INTO mac (_mac_id,mac_saddr,mac_protocol)
+                VALUES ($1,$2,$3);
+        SELECT currval('ulog2__id_seq');
+$$ LANGUAGE SQL SECURITY INVOKER;
 
 -- this function requires plpgsql
 -- su -c "createlang plpgsql ulog2" postgres
@@ -480,7 +490,9 @@ CREATE OR REPLACE FUNCTION INSERT_PACKET_FULL(
                 IN icmpv6_code integer,
                 IN icmpv6_echoid integer,
                 IN icmpv6_echoseq integer,
-                IN icmpv6_csum integer
+                IN icmpv6_csum integer,
+                IN mac_saddr varchar(32),
+                IN mac_protocol integer
         )
 RETURNS bigint AS $$
 DECLARE
@@ -495,6 +507,9 @@ BEGIN
                 PERFORM INSERT_ICMP(_id,$34,$35,$36,$37,$38,$39);
         ELSIF (ip_protocol = 58) THEN
                 PERFORM INSERT_ICMPV6(_id,$40,$41,$42,$43,$44);
+        END IF;
+        IF (mac_saddr IS NOT NULL) THEN
+                PERFORM INSERT_MAC(_id,$45::macaddr,$46);
         END IF;
         RETURN _id;
 END
