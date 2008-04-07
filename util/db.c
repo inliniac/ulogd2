@@ -265,17 +265,6 @@ static int __interp_db(struct ulogd_pluginstance *upi)
 			sprintf(di->stmt_ins, "%u,", res->u.value.ui16);
 			break;
 		case ULOGD_RET_IPADDR:
-			if (asstring_ce(upi->config_kset).u.value) {
-				memset(&addr, 0, sizeof(addr));
-				addr.s_addr = ntohl(res->u.value.ui32);
-				*(di->stmt_ins++) = '\'';
-				tmpstr = inet_ntoa(addr);
-				di->driver->escape_string(upi, di->stmt_ins,
-							  tmpstr, strlen(tmpstr));
-				di->stmt_ins = di->stmt + strlen(di->stmt);
-				sprintf(di->stmt_ins, "',");
-				break;
-			}
 			/* fallthrough when logging IP as u_int32_t */
 		case ULOGD_RET_UINT32:
 			sprintf(di->stmt_ins, "%u,", res->u.value.ui32);
