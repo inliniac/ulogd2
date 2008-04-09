@@ -283,8 +283,8 @@ DROP VIEW IF EXISTS `conntrack`;
 CREATE SQL SECURITY INVOKER VIEW `conntrack` AS
 	SELECT _ct_id,
 	       oob_family,
-	       orig_ip_saddr AS orig_ip_saddr_raw,
-	       orig_ip_daddr AS orig_ip_daddr_raw,
+	       orig_ip_saddr AS orig_ip_saddr_bin,
+	       orig_ip_daddr AS orig_ip_daddr_bin,
 	       orig_ip_protocol,
 	       orig_l4_sport,
 	       orig_l4_dport,
