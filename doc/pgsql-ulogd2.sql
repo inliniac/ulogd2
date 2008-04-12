@@ -78,7 +78,7 @@ CREATE TABLE tcp (
   tcp_sport integer default NULL,
   tcp_dport integer default NULL,
   tcp_seq bigint default NULL,
-  tcp_ackseq integer default NULL,
+  tcp_ackseq bigint default NULL,
   tcp_window integer default NULL,
   tcp_urg boolean default NULL,
   tcp_urgp integer  default NULL,
@@ -112,8 +112,8 @@ CREATE TABLE icmp (
   _icmp_id bigint PRIMARY KEY UNIQUE NOT NULL,
   icmp_type smallint default NULL,
   icmp_code smallint default NULL,
-  icmp_echoid smallint default NULL,
-  icmp_echoseq smallint default NULL,
+  icmp_echoid integer default NULL,
+  icmp_echoseq integer default NULL,
   icmp_gateway integer default NULL,
   icmp_fragmtu smallint  default NULL
 ) WITH (OIDS=FALSE);
@@ -122,8 +122,8 @@ CREATE TABLE icmpv6 (
   _icmpv6_id bigint PRIMARY KEY UNIQUE NOT NULL,
   icmpv6_type smallint default NULL,
   icmpv6_code smallint default NULL,
-  icmpv6_echoid smallint default NULL,
-  icmpv6_echoseq smallint default NULL,
+  icmpv6_echoid integer default NULL,
+  icmpv6_echoseq integer default NULL,
   icmpv6_csum integer default NULL
 ) WITH (OIDS=FALSE);
 
@@ -284,7 +284,7 @@ DROP TABLE IF EXISTS nufw;
 CREATE TABLE nufw (
   _nufw_id bigint PRIMARY KEY UNIQUE NOT NULL,
   username varchar(30) default NULL,
-  user_id smallint default NULL,
+  user_id integer default NULL,
   client_os varchar(100) default NULL,
   client_app varchar(256) default NULL
 ) WITH (OIDS=FALSE);
@@ -375,7 +375,7 @@ CREATE OR REPLACE FUNCTION INSERT_TCP_FULL(
                 IN tcp_sport integer,
                 IN tcp_dport integer,
                 IN tcp_seq bigint,
-                IN tcp_ackseq integer,
+                IN tcp_ackseq bigint,
                 IN tcp_window integer,
                 IN tcp_urg boolean,
                 IN tcp_urgp integer ,
@@ -468,7 +468,7 @@ CREATE OR REPLACE FUNCTION INSERT_PACKET_FULL(
                 IN tcp_sport integer,
                 IN tcp_dport integer,
                 IN tcp_seq bigint,
-                IN tcp_ackseq integer,
+                IN tcp_ackseq bigint,
                 IN tcp_window integer,
                 IN tcp_urg boolean,
                 IN tcp_urgp integer ,
