@@ -48,6 +48,10 @@ struct ulogd_key printpkt_keys[] = {
 	[KEY_OOB_UID]		= { .name = "oob.uid",
 				    .flags = ULOGD_KEYF_OPTIONAL
 				  },
+	[KEY_OOB_GID]		= { .name = "oob.gid",
+				    .flags = ULOGD_KEYF_OPTIONAL
+				  },
+	[KEY_OOB_MARK]		= { .name = "oob.mark", },
 	[KEY_RAW_MAC]		= { .name = "raw.mac", },
 	[KEY_RAW_MACLEN]	= { .name = "raw.mac_len", },
 	[KEY_IP_SADDR]		= { .name = "ip.saddr.str", },
@@ -450,8 +454,14 @@ int printpkt_print(struct ulogd_key *res, char *buf)
 	}
 
 	if (pp_is_valid(res, KEY_OOB_UID))
-		buf_cur += sprintf(buf_cur, "UID=%d",
+		buf_cur += sprintf(buf_cur, "UID=%u ",
 				   GET_VALUE(res, KEY_OOB_UID).ui32);
+	if (pp_is_valid(res, KEY_OOB_GID))
+		buf_cur += sprintf(buf_cur, "GID=%u ",
+				   GET_VALUE(res, KEY_OOB_GID).ui32);
+	if (pp_is_valid(res, KEY_OOB_MARK))
+		buf_cur += sprintf(buf_cur, "MARK=%x ",
+				   GET_VALUE(res, KEY_OOB_MARK).ui32);
 
 	strcat(buf_cur, "\n");
 

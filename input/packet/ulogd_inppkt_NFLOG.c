@@ -107,6 +107,7 @@ enum nflog_keys {
 	NFLOG_KEY_OOB_FAMILY,
 	NFLOG_KEY_OOB_PROTOCOL,
 	NFLOG_KEY_OOB_UID,
+	NFLOG_KEY_OOB_GID,
 };
 
 static struct ulogd_key output_keys[] = {
@@ -265,7 +266,7 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 	u_int32_t outdev = nflog_get_outdev(ldata);
 	u_int32_t seq;
 	u_int32_t uid;
-	
+	u_int32_t gid;
 
 	ret[NFLOG_KEY_OOB_FAMILY].u.value.ui8 = af_ce(upi->config_kset).u.value;
 	ret[NFLOG_KEY_OOB_FAMILY].flags |= ULOGD_RETF_VALID;
@@ -329,6 +330,10 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 	if (nflog_get_uid(ldata, &uid) == 0) {
 		ret[NFLOG_KEY_OOB_UID].u.value.ui32 = uid;
 		ret[NFLOG_KEY_OOB_UID].flags |= ULOGD_RETF_VALID;
+	}
+	if (nflog_get_gid(ldata, &gid) == 0) {
+		ret[NFLOG_KEY_OOB_GID].u.value.ui32 = gid;
+		ret[NFLOG_KEY_OOB_GID].flags |= ULOGD_RETF_VALID;
 	}
 
 	if (nflog_get_seq(ldata, &seq) == 0) {
