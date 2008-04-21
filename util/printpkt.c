@@ -108,7 +108,7 @@ static int printpkt_proto(struct ulogd_key *res, char *buf, int protocol)
 
 	switch (protocol) {
 	case IPPROTO_TCP:
-		buf_cur += sprintf(buf_cur, "PROTO=KEY_TCP ");
+		buf_cur += sprintf(buf_cur, "PROTO=TCP ");
 
 		if (!pp_is_valid(res, KEY_TCP_SPORT)) {
 			buf_cur += sprintf(buf_cur, "INCOMPLETE");
@@ -152,7 +152,7 @@ static int printpkt_proto(struct ulogd_key *res, char *buf, int protocol)
 		break;
 
 	case IPPROTO_UDP:
-		buf_cur += sprintf(buf_cur, "PROTO=KEY_UDP ");
+		buf_cur += sprintf(buf_cur, "PROTO=UDP ");
 
 		if (!pp_is_valid(res, KEY_UDP_SPORT)) {
 			buf_cur += sprintf(buf_cur, "INCOMPLETE");
