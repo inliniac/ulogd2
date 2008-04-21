@@ -717,13 +717,17 @@ static int pluginstance_started(struct ulogd_pluginstance *npi)
 	struct ulogd_pluginstance_stack *stack;
 	struct ulogd_pluginstance *pi;
 
-	llist_for_each_entry(stack, &ulogd_pi_stacks, stack_list) {
-		llist_for_each_entry(pi, &stack->list, list) {
-			if (!strcmp(pi->id, npi->id)) {
-				ulogd_log(ULOGD_INFO, "%s instance already "
-						      "loaded\n", pi->id);
-				llist_add(&pi->plist, &npi->plist);
-				return 1;
+	/* Only SOURCE plugin need to be started once */
+	if (npi->plugin->input.type == ULOGD_DTYPE_SOURCE) {
+		llist_for_each_entry(stack, &ulogd_pi_stacks, stack_list) {
+			llist_for_each_entry(pi, &stack->list, list) {
+				if (!strcmp(pi->id, npi->id)) {
+					ulogd_log(ULOGD_INFO,
+							"%s instance already "
+							"loaded\n", pi->id);
+					llist_add(&pi->plist, &npi->plist);
+					return 1;
+				}
 			}
 		}
 	}
