@@ -335,11 +335,12 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 		ret[NFLOG_KEY_OOB_UID].u.value.ui32 = uid;
 		ret[NFLOG_KEY_OOB_UID].flags |= ULOGD_RETF_VALID;
 	}
+#ifdef HAVE_NFLOG_GET_GID
 	if (nflog_get_gid(ldata, &gid) == 0) {
 		ret[NFLOG_KEY_OOB_GID].u.value.ui32 = gid;
 		ret[NFLOG_KEY_OOB_GID].flags |= ULOGD_RETF_VALID;
 	}
-
+#endif
 	if (nflog_get_seq(ldata, &seq) == 0) {
 		ret[NFLOG_KEY_OOB_SEQ_LOCAL].u.value.ui32 = seq;
 		ret[NFLOG_KEY_OOB_SEQ_LOCAL].flags |= ULOGD_RETF_VALID;
