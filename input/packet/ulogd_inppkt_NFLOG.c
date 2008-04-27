@@ -86,8 +86,8 @@ static struct config_keyset libulog_kset = {
 #define rmem_ce(x)	(x->ces[2])
 #define af_ce(x)	(x->ces[3])
 #define unbind_ce(x)	(x->ces[4])
-#define seq_ce(x)	(x->ces[4])
-#define seq_global_ce(x)	(x->ces[5])
+#define seq_ce(x)	(x->ces[5])
+#define seq_global_ce(x)	(x->ces[6])
 
 enum nflog_keys {
 	NFLOG_KEY_RAW_MAC = 0,
