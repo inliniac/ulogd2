@@ -67,6 +67,7 @@ enum ulog_keys {
 	ULOG_KEY_OOB_MARK,
 	ULOG_KEY_OOB_IN,
 	ULOG_KEY_OOB_OUT,
+	ULOG_KEY_OOB_HOOK,
 	ULOG_KEY_RAW_MAC_LEN,
 	ULOG_KEY_OOB_FAMILY,
 	ULOG_KEY_OOB_PROTOCOL,
@@ -142,6 +143,15 @@ static struct ulogd_key output_keys[] = {
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.out", 
 	},
+	{
+		.type = ULOGD_RET_UINT8,
+		.flags = ULOGD_RETF_NONE,
+		.name = "oob.hook",
+		.ipfix = {
+			.vendor = IPFIX_VENDOR_NETFILTER,
+			.field_id = IPFIX_NF_hook,
+		},
+	},
 	{ 
 		.type = ULOGD_RET_UINT16, 
 		.flags = ULOGD_RETF_NONE, 
@@ -200,6 +210,9 @@ static int interp_packet(struct ulogd_pluginstance *ip, ulog_packet_msg_t *pkt)
 	ret[ULOG_KEY_OOB_IN].flags |= ULOGD_RETF_VALID;
 	ret[ULOG_KEY_OOB_OUT].u.value.ptr = pkt->outdev_name;
 	ret[ULOG_KEY_OOB_OUT].flags |= ULOGD_RETF_VALID;
+
+	ret[ULOG_KEY_OOB_HOOK].u.value.ui8 = pkt->hook;
+	ret[ULOG_KEY_OOB_HOOK].flags |= ULOGD_RETF_VALID;
 
 	/* ULOG is IPv4 only */
 	ret[ULOG_KEY_OOB_FAMILY].u.value.ui8 = AF_INET;
