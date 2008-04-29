@@ -34,7 +34,7 @@ struct ulog_input {
 /* configuration entries */
 
 static struct config_keyset libulog_kset = {
-	.num_ces = 3,
+	.num_ces = 4,
 	.ces = {
 	{
 		.key 	 = "bufsize",
@@ -54,6 +54,13 @@ static struct config_keyset libulog_kset = {
 		.options = CONFIG_OPT_NONE,
 		.u.value = ULOGD_RMEM_DEFAULT,
 	},
+	{
+		.key	 = "numeric_label",
+		.type	 = CONFIG_TYPE_INT,
+		.options = CONFIG_OPT_NONE,
+		.u.value = 0,
+	},
+
 	}
 };
 enum ulog_keys {
@@ -71,6 +78,7 @@ enum ulog_keys {
 	ULOG_KEY_RAW_MAC_LEN,
 	ULOG_KEY_OOB_FAMILY,
 	ULOG_KEY_OOB_PROTOCOL,
+	ULOG_KEY_RAW_LABEL,
 };
 
 static struct ulogd_key output_keys[] = {
@@ -167,6 +175,11 @@ static struct ulogd_key output_keys[] = {
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.protocol",
 	},
+	{
+		.type = ULOGD_RET_UINT8,
+		.flags = ULOGD_RETF_NONE,
+		.name = "raw.label",
+	},
 
 };
 
@@ -180,6 +193,9 @@ static int interp_packet(struct ulogd_pluginstance *ip, ulog_packet_msg_t *pkt)
 		ret[ULOG_KEY_RAW_MAC_LEN].u.value.ui16 = pkt->mac_len;
 		ret[ULOG_KEY_RAW_MAC_LEN].flags |= ULOGD_RETF_VALID;
 	}
+
+	ret[ULOG_KEY_RAW_LABEL].u.value.ui8 = ip->config_kset->ces[3].u.value;
+	ret[ULOG_KEY_RAW_LABEL].flags |= ULOGD_RETF_VALID;
 
 	/* include pointer to raw ipv4 packet */
 	ret[ULOG_KEY_RAW_PCKT].u.value.ptr = pkt->payload;

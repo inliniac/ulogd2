@@ -97,6 +97,7 @@ group=0
 [log2]
 group=1 # Group has to be different from the one use in log1
 addressfamily=10 # 10 is value of AF_INET6
+numeric_label=1 # you can label the log info based on the packet verdict
 
 # ebtables logging through NFLOG
 [log3]
@@ -106,6 +107,7 @@ addressfamily=7 # 7 is value of AF_BRIDGE
 [ulog1]
 # netlink multicast group (the same as the iptables --ulog-nlgroup param)
 nlgroup=1
+#numeric_label=0 # optional argument
 
 [emu1]
 file="/var/log/ulogd_syslogemu.log"

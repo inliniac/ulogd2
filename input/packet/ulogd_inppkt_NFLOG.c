@@ -34,7 +34,7 @@ struct nflog_input {
 /* configuration entries */
 
 static struct config_keyset libulog_kset = {
-	.num_ces = 7,
+	.num_ces = 8,
 	.ces = {
 		{
 			.key 	 = "bufsize",
@@ -78,6 +78,13 @@ static struct config_keyset libulog_kset = {
 			.options = CONFIG_OPT_NONE,
 			.u.value = 0,
 		},
+		{
+			.key	 = "numeric_label",
+			.type	 = CONFIG_TYPE_INT,
+			.options = CONFIG_OPT_NONE,
+			.u.value = 0,
+		},
+
 	}
 };
 
@@ -88,6 +95,7 @@ static struct config_keyset libulog_kset = {
 #define unbind_ce(x)	(x->ces[4])
 #define seq_ce(x)	(x->ces[5])
 #define seq_global_ce(x)	(x->ces[6])
+#define label_ce(x)	(x->ces[7])
 
 enum nflog_keys {
 	NFLOG_KEY_RAW_MAC = 0,
@@ -108,6 +116,7 @@ enum nflog_keys {
 	NFLOG_KEY_OOB_PROTOCOL,
 	NFLOG_KEY_OOB_UID,
 	NFLOG_KEY_OOB_GID,
+	NFLOG_KEY_RAW_LABEL,
 };
 
 static struct ulogd_key output_keys[] = {
@@ -252,6 +261,12 @@ static struct ulogd_key output_keys[] = {
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.gid",
 	},
+	{
+		.type = ULOGD_RET_UINT8,
+		.flags = ULOGD_RETF_NONE,
+		.name = "raw.label",
+	},
+
 };
 
 static inline int 
@@ -274,6 +289,9 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 
 	ret[NFLOG_KEY_OOB_FAMILY].u.value.ui8 = af_ce(upi->config_kset).u.value;
 	ret[NFLOG_KEY_OOB_FAMILY].flags |= ULOGD_RETF_VALID;
+
+	ret[NFLOG_KEY_RAW_LABEL].u.value.ui8 = label_ce(upi->config_kset).u.value;
+	ret[NFLOG_KEY_RAW_LABEL].flags |= ULOGD_RETF_VALID;
 
 	if (ph) {
 		/* FIXME */
