@@ -94,6 +94,8 @@ plugin="@libdir@/ulogd/ulogd_raw2packet_BASE.so"
 [log1]
 # netlink multicast group (the same as the iptables --nflog-group param)
 group=0
+#netlink_socket_buffer_size=217088
+#netlink_socket_buffer_maxsize=1085440
 
 # IPv6 logging through NFLOG
 [log2]
