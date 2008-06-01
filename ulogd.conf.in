@@ -83,12 +83,24 @@ plugin="@libdir@/ulogd/ulogd_raw2packet_BASE.so"
 # this is a stack for flow-based logging to MySQL
 #stack=ct1:NFCT,ip2bin1:IP2BIN,mysql2:MYSQL
 
+# this is a stack for flow-based logging to PGSQL
+#stack=ct1:NFCT,ip2str1:IP2STR,pgsql2:PGSQL
+
+# this is a stack for flow-based logging to PGSQL without local hash
+#stack=ct1:NFCT,ip2str1:IP2STR,pgsql3:PGSQL
+
+
 # this is a stack for flow-based logging in NACCT compatible format
 #stack=ct1:NFCT,ip2str1:IP2STR,nacct1:NACCT
 
 [ct1]
 #netlink_socket_buffer_size=217088
 #netlink_socket_buffer_maxsize=1085440
+
+[ct2]
+#netlink_socket_buffer_size=217088
+#netlink_socket_buffer_maxsize=1085440
+hash_enable=0
 
 # IPv4 logging through NFLOG
 [log1]
@@ -132,6 +144,14 @@ table="ulog"
 pass="changeme"
 procedure="INSERT_PACKET_FULL"
 
+[mysql2]
+db="nulog"
+host="localhost"
+user="nupik"
+table="ulog"
+pass="changeme"
+procedure="INSERT_CT"
+
 [pgsql1]
 db="nulog"
 host="localhost"
@@ -139,6 +159,22 @@ user="nupik"
 table="ulog"
 pass="changeme"
 procedure="INSERT_PACKET_FULL"
+
+[pgsql2]
+db="nulog"
+host="localhost"
+user="nupik"
+table="ulog2_ct"
+pass="changeme"
+procedure="INSERT_CT"
+
+[pgsql3]
+db="nulog"
+host="localhost"
+user="nupik"
+table="ulog2_ct"
+pass="changeme"
+procedure="INSERT_OR_REPLACE_CT"
 
 [sys2]
 facility=LOG_LOCAL2
