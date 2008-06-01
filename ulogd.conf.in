@@ -87,6 +87,8 @@ plugin="@libdir@/ulogd/ulogd_raw2packet_BASE.so"
 #stack=ct1:NFCT,ip2str1:IP2STR,nacct1:NACCT
 
 [ct1]
+#netlink_socket_buffer_size=217088
+#netlink_socket_buffer_maxsize=1085440
 
 # IPv4 logging through NFLOG
 [log1]
