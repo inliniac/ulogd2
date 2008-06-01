@@ -732,10 +732,13 @@ static int read_cb_nfct(int fd, unsigned int what, void *param)
 					  "`netlink_socket_buffer_size' and "
 					  "`netlink_socket_buffer_maxsize\n'");
 			}
-
-			nfct_send(cpi->ovh, NFCT_Q_DUMP, &family);
-			/* TODO: configurable retry timer */
-			ulogd_add_timer(&cpi->ov_timer, 2);
+			
+			/* internal hash can deal with refresh */
+			if (usehash_ce(upi->config_kset).u.value != 0) {
+				nfct_send(cpi->ovh, NFCT_Q_DUMP, &family);
+				/* TODO: configurable retry timer */
+				ulogd_add_timer(&cpi->ov_timer, 2);
+			}
 		}
 	}
 
@@ -880,13 +883,16 @@ static int constructor_nfct(struct ulogd_pluginstance *upi)
 					"set to %d\n", cpi->nlbufsiz);
 	}
 
-	cpi->ovh = nfct_open(NFNL_SUBSYS_CTNETLINK, 0);
-	if (!cpi->ovh) {
-		ulogd_log(ULOGD_FATAL, "error opening ctnetlink\n");
-		return -1;
-	}
+	if (usehash_ce(upi->config_kset).u.value != 0) {
+		cpi->ovh = nfct_open(NFNL_SUBSYS_CTNETLINK, 0);
+		if (!cpi->ovh) {
+			ulogd_log(ULOGD_FATAL, "error opening ctnetlink\n");
+			return -1;
+		}
 
-	nfct_callback_register(cpi->ovh, NFCT_T_ALL, &overrun_handler, upi);
+		nfct_callback_register(cpi->ovh, NFCT_T_ALL,
+				       &overrun_handler, upi);
+	}
 
 	cpi->pgh = nfct_open(NFNL_SUBSYS_CTNETLINK, 0);
 	if (!cpi->pgh) {
@@ -903,14 +909,14 @@ static int constructor_nfct(struct ulogd_pluginstance *upi)
 
 	ulogd_register_fd(&cpi->nfct_fd);
 
-	cpi->nfct_ov.fd = nfct_fd(cpi->ovh);
-	cpi->nfct_ov.cb = &read_cb_ovh;
-	cpi->nfct_ov.data = cpi;
-	cpi->nfct_ov.when = ULOGD_FD_READ;
-
-	ulogd_register_fd(&cpi->nfct_ov);
-
 	if (usehash_ce(upi->config_kset).u.value != 0) {
+		cpi->nfct_ov.fd = nfct_fd(cpi->ovh);
+		cpi->nfct_ov.cb = &read_cb_ovh;
+		cpi->nfct_ov.data = cpi;
+		cpi->nfct_ov.when = ULOGD_FD_READ;
+
+		ulogd_register_fd(&cpi->nfct_ov);
+
 		cpi->ct_active =
 		     hashtable_create(buckets_ce(upi->config_kset).u.value,
 		     		      maxentries_ce(upi->config_kset).u.value,
@@ -940,9 +946,12 @@ static int destructor_nfct(struct ulogd_pluginstance *pi)
 	if (rc < 0)
 		return rc;
 
-	rc = nfct_close(cpi->ovh);
-	if (rc < 0)
-		return rc;
+
+	if (usehash_ce(pi->config_kset).u.value != 0) {
+		rc = nfct_close(cpi->ovh);
+		if (rc < 0)
+			return rc;
+	}
 
 	rc = nfct_close(cpi->pgh);
 	if (rc < 0)
