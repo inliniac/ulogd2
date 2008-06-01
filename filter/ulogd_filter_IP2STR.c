@@ -174,7 +174,7 @@ static char *ip2str(struct ulogd_key *inp, int index)
 	switch (convfamily) {
 	case AF_INET6:
 		inet_ntop(AF_INET6,
-			  GET_VALUE(inp, index).ptr,
+			  GET_VALUE(inp, index).ui128,
 			  tmp, sizeof(tmp));
 		break;
 	case AF_INET:

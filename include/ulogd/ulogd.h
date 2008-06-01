@@ -105,10 +105,12 @@ struct ulogd_key {
 			u_int16_t	ui16;
 			u_int32_t	ui32;
 			u_int64_t	ui64;
+			u_int32_t	ui128[4];
 			int8_t		i8;
 			int16_t		i16;
 			int32_t		i32;
 			int64_t		i64;
+			int32_t		i128[4];
 			void		*ptr;
 		} value;
 		struct ulogd_key *source;
@@ -251,5 +253,17 @@ int ulogd_select_main(struct timeval *tv);
  * timer handling
  ***********************************************************************/
 #include <ulogd/timer.h>
+
+/***********************************************************************
+ * other declarations
+ ***********************************************************************/
+
+#ifndef IPPROTO_DCCP
+#define IPPROTO_DCCP 33
+#endif
+
+#ifndef IPPROTO_UDPLITE
+#define IPPROTO_UDPLITE 136
+#endif
 
 #endif /* _ULOGD_H */

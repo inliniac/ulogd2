@@ -453,77 +453,112 @@ static int propagate_ct(struct ulogd_pluginstance *upi,
 	ret[NFCT_OOB_PROTOCOL].flags |= ULOGD_RETF_VALID;
 
 	switch (nfct_get_attr_u8(ct, ATTR_L3PROTO)) {
-		case AF_INET:
-			ret[NFCT_ORIG_IP_SADDR].u.value.ui32 = nfct_get_attr_u32(ct, ATTR_ORIG_IPV4_SRC);
-			ret[NFCT_ORIG_IP_SADDR].flags |= ULOGD_RETF_VALID;
-			ret[NFCT_ORIG_IP_DADDR].u.value.ui32 = nfct_get_attr_u32(ct, ATTR_ORIG_IPV4_DST);
-			ret[NFCT_ORIG_IP_DADDR].flags |= ULOGD_RETF_VALID;
+	case AF_INET:
+		ret[NFCT_ORIG_IP_SADDR].u.value.ui32 =
+			nfct_get_attr_u32(ct, ATTR_ORIG_IPV4_SRC);
+		ret[NFCT_ORIG_IP_SADDR].flags |= ULOGD_RETF_VALID;
 
-			ret[NFCT_REPLY_IP_SADDR].u.value.ui32 = nfct_get_attr_u32(ct, ATTR_REPL_IPV4_SRC);
-			ret[NFCT_REPLY_IP_SADDR].flags |= ULOGD_RETF_VALID;
-			ret[NFCT_REPLY_IP_DADDR].u.value.ui32 = nfct_get_attr_u32(ct, ATTR_REPL_IPV4_DST);
-			ret[NFCT_REPLY_IP_DADDR].flags |= ULOGD_RETF_VALID;
+		ret[NFCT_ORIG_IP_DADDR].u.value.ui32 =
+			nfct_get_attr_u32(ct, ATTR_ORIG_IPV4_DST);
+		ret[NFCT_ORIG_IP_DADDR].flags |= ULOGD_RETF_VALID;
 
-			break;
-		case AF_INET6:
-			ret[NFCT_ORIG_IP_SADDR].u.value.ptr = (struct in6_addr *)nfct_get_attr(ct, ATTR_ORIG_IPV6_SRC);
-			ret[NFCT_ORIG_IP_SADDR].flags |= ULOGD_RETF_VALID;
-			ret[NFCT_ORIG_IP_DADDR].u.value.ptr = (struct in6_addr *)nfct_get_attr(ct, ATTR_ORIG_IPV6_DST);
-			ret[NFCT_ORIG_IP_DADDR].flags |= ULOGD_RETF_VALID;
+		ret[NFCT_REPLY_IP_SADDR].u.value.ui32 =
+			nfct_get_attr_u32(ct, ATTR_REPL_IPV4_SRC);
+		ret[NFCT_REPLY_IP_SADDR].flags |= ULOGD_RETF_VALID;
 
-			ret[NFCT_REPLY_IP_SADDR].u.value.ptr = (struct in6_addr *)nfct_get_attr(ct, ATTR_REPL_IPV6_SRC);
-			ret[NFCT_REPLY_IP_SADDR].flags |= ULOGD_RETF_VALID;
-			ret[NFCT_REPLY_IP_DADDR].u.value.ptr = (struct in6_addr *)nfct_get_attr(ct, ATTR_REPL_IPV6_DST);
-			ret[NFCT_REPLY_IP_DADDR].flags |= ULOGD_RETF_VALID;
+		ret[NFCT_REPLY_IP_DADDR].u.value.ui32 =
+			nfct_get_attr_u32(ct, ATTR_REPL_IPV4_DST);
+		ret[NFCT_REPLY_IP_DADDR].flags |= ULOGD_RETF_VALID;
 
-			break;
-		default:
-			ulogd_log(ULOGD_NOTICE, "Unknown protocol family (%d)\n",
-				  nfct_get_attr_u8(ct, ATTR_L3PROTO));
+		break;
+	case AF_INET6:
+		memcpy(ret[NFCT_ORIG_IP_SADDR].u.value.ui128,
+		       nfct_get_attr(ct, ATTR_ORIG_IPV6_SRC),
+		       sizeof(int32_t) * 4);
+		ret[NFCT_ORIG_IP_SADDR].flags |= ULOGD_RETF_VALID;
+
+		memcpy(ret[NFCT_ORIG_IP_DADDR].u.value.ui128,
+		       nfct_get_attr(ct, ATTR_ORIG_IPV6_DST),
+		       sizeof(int32_t) * 4);
+		ret[NFCT_ORIG_IP_DADDR].flags |= ULOGD_RETF_VALID;
+
+		memcpy(ret[NFCT_REPLY_IP_SADDR].u.value.ui128,
+		       nfct_get_attr(ct, ATTR_REPL_IPV6_SRC),
+		       sizeof(int32_t) * 4);
+		ret[NFCT_REPLY_IP_SADDR].flags |= ULOGD_RETF_VALID;
+
+		memcpy(ret[NFCT_REPLY_IP_DADDR].u.value.ui128,
+		       nfct_get_attr(ct, ATTR_REPL_IPV6_DST),
+		       sizeof(int32_t) * 4);
+		ret[NFCT_REPLY_IP_DADDR].flags |= ULOGD_RETF_VALID;
+
+		break;
+	default:
+		ulogd_log(ULOGD_NOTICE, "Unknown protocol family (%d)\n",
+			  nfct_get_attr_u8(ct, ATTR_L3PROTO));
 	}
-	ret[NFCT_ORIG_IP_PROTOCOL].u.value.ui8 = nfct_get_attr_u8(ct, ATTR_ORIG_L4PROTO);
+	ret[NFCT_ORIG_IP_PROTOCOL].u.value.ui8 =
+		nfct_get_attr_u8(ct, ATTR_ORIG_L4PROTO);
 	ret[NFCT_ORIG_IP_PROTOCOL].flags |= ULOGD_RETF_VALID;
-	ret[NFCT_REPLY_IP_PROTOCOL].u.value.ui8 = nfct_get_attr_u8(ct, ATTR_REPL_L4PROTO);
+
+	ret[NFCT_REPLY_IP_PROTOCOL].u.value.ui8 =
+		nfct_get_attr_u8(ct, ATTR_REPL_L4PROTO);
 	ret[NFCT_REPLY_IP_PROTOCOL].flags |= ULOGD_RETF_VALID;
 
 	switch (nfct_get_attr_u8(ct, ATTR_ORIG_L4PROTO)) {
 	case IPPROTO_TCP:
 	case IPPROTO_UDP:
+	case IPPROTO_UDPLITE:
 	case IPPROTO_SCTP:
-		/* FIXME: DCCP */
-		ret[NFCT_ORIG_L4_SPORT].u.value.ui16 = htons(nfct_get_attr_u16(ct, ATTR_ORIG_PORT_SRC));
+	case IPPROTO_DCCP:
+		ret[NFCT_ORIG_L4_SPORT].u.value.ui16 =
+			htons(nfct_get_attr_u16(ct, ATTR_ORIG_PORT_SRC));
 		ret[NFCT_ORIG_L4_SPORT].flags |= ULOGD_RETF_VALID;
-		ret[NFCT_ORIG_L4_DPORT].u.value.ui16 = htons(nfct_get_attr_u16(ct, ATTR_ORIG_PORT_DST));
+
+		ret[NFCT_ORIG_L4_DPORT].u.value.ui16 =
+			htons(nfct_get_attr_u16(ct, ATTR_ORIG_PORT_DST));
 		ret[NFCT_ORIG_L4_DPORT].flags |= ULOGD_RETF_VALID;
 		break;
 	case IPPROTO_ICMP:
-		ret[NFCT_ICMP_CODE].u.value.ui8 = nfct_get_attr_u8(ct, ATTR_ICMP_CODE);
+		ret[NFCT_ICMP_CODE].u.value.ui8 =
+			nfct_get_attr_u8(ct, ATTR_ICMP_CODE);
 		ret[NFCT_ICMP_CODE].flags |= ULOGD_RETF_VALID;
-		ret[NFCT_ICMP_TYPE].u.value.ui8 = nfct_get_attr_u8(ct, ATTR_ICMP_TYPE);
+
+		ret[NFCT_ICMP_TYPE].u.value.ui8 =
+			nfct_get_attr_u8(ct, ATTR_ICMP_TYPE);
 		ret[NFCT_ICMP_TYPE].flags |= ULOGD_RETF_VALID;
 		break;
 	}
 
 	switch (nfct_get_attr_u8(ct, ATTR_REPL_L4PROTO)) {
-		case IPPROTO_TCP:
-		case IPPROTO_UDP:
-		case IPPROTO_SCTP:
-			ret[NFCT_REPLY_L4_SPORT].u.value.ui16 = htons(nfct_get_attr_u16(ct, ATTR_REPL_PORT_SRC));
-			ret[NFCT_REPLY_L4_SPORT].flags |= ULOGD_RETF_VALID;
-			ret[NFCT_REPLY_L4_DPORT].u.value.ui16 = htons(nfct_get_attr_u16(ct, ATTR_REPL_PORT_DST));
-			ret[NFCT_REPLY_L4_DPORT].flags |= ULOGD_RETF_VALID;
+	case IPPROTO_TCP:
+	case IPPROTO_UDP:
+	case IPPROTO_UDPLITE:
+	case IPPROTO_SCTP:
+	case IPPROTO_DCCP:
+		ret[NFCT_REPLY_L4_SPORT].u.value.ui16 =
+			htons(nfct_get_attr_u16(ct, ATTR_REPL_PORT_SRC));
+		ret[NFCT_REPLY_L4_SPORT].flags |= ULOGD_RETF_VALID;
+
+		ret[NFCT_REPLY_L4_DPORT].u.value.ui16 =
+			htons(nfct_get_attr_u16(ct, ATTR_REPL_PORT_DST));
+		ret[NFCT_REPLY_L4_DPORT].flags |= ULOGD_RETF_VALID;
 	}
 
-	ret[NFCT_ORIG_RAW_PKTLEN].u.value.ui32 = nfct_get_attr_u32(ct, ATTR_ORIG_COUNTER_BYTES);
+	ret[NFCT_ORIG_RAW_PKTLEN].u.value.ui32 =
+		nfct_get_attr_u32(ct, ATTR_ORIG_COUNTER_BYTES);
 	ret[NFCT_ORIG_RAW_PKTLEN].flags |= ULOGD_RETF_VALID;
 
-	ret[NFCT_ORIG_RAW_PKTCOUNT].u.value.ui32 = nfct_get_attr_u32(ct, ATTR_ORIG_COUNTER_PACKETS);
+	ret[NFCT_ORIG_RAW_PKTCOUNT].u.value.ui32 =
+		nfct_get_attr_u32(ct, ATTR_ORIG_COUNTER_PACKETS);
 	ret[NFCT_ORIG_RAW_PKTCOUNT].flags |= ULOGD_RETF_VALID;
 
-	ret[NFCT_REPLY_RAW_PKTLEN].u.value.ui32 = nfct_get_attr_u32(ct, ATTR_REPL_COUNTER_BYTES);;
+	ret[NFCT_REPLY_RAW_PKTLEN].u.value.ui32 =
+		nfct_get_attr_u32(ct, ATTR_REPL_COUNTER_BYTES);;
 	ret[NFCT_REPLY_RAW_PKTLEN].flags |= ULOGD_RETF_VALID;
 
-	ret[NFCT_REPLY_RAW_PKTCOUNT].u.value.ui32 = nfct_get_attr_u32(ct, ATTR_REPL_COUNTER_PACKETS);
+	ret[NFCT_REPLY_RAW_PKTCOUNT].u.value.ui32 =
+		nfct_get_attr_u32(ct, ATTR_REPL_COUNTER_PACKETS);
 	ret[NFCT_REPLY_RAW_PKTCOUNT].flags |= ULOGD_RETF_VALID;
 
 	ret[NFCT_CT_MARK].u.value.ui32 = nfct_get_attr_u32(ct, ATTR_MARK);
@@ -535,10 +570,13 @@ static int propagate_ct(struct ulogd_pluginstance *upi,
 	if (ts) {
 		ret[NFCT_FLOW_START_SEC].u.value.ui32 = ts->time[START].tv_sec;
 		ret[NFCT_FLOW_START_SEC].flags |= ULOGD_RETF_VALID;
+
 		ret[NFCT_FLOW_START_USEC].u.value.ui32 = ts->time[START].tv_usec;
 		ret[NFCT_FLOW_START_USEC].flags |= ULOGD_RETF_VALID;
+
 		ret[NFCT_FLOW_END_SEC].u.value.ui32 = ts->time[STOP].tv_sec;
 		ret[NFCT_FLOW_END_SEC].flags |= ULOGD_RETF_VALID;
+
 		ret[NFCT_FLOW_END_USEC].u.value.ui32 = ts->time[STOP].tv_usec;
 		ret[NFCT_FLOW_END_USEC].flags |= ULOGD_RETF_VALID;
 	}
