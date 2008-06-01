@@ -344,13 +344,14 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 
 	/* god knows why timestamp_usec contains crap if timestamp_sec
 	 * == 0 if (pkt->timestamp_sec || pkt->timestamp_usec) { */
-	if (nflog_get_timestamp(ldata, &ts) == 0 && ts.tv_sec) {
-		/* FIXME: convert endianness */
-		ret[NFLOG_KEY_OOB_TIME_SEC].u.value.ui32 = ts.tv_sec & 0xffffffff;
-		ret[NFLOG_KEY_OOB_TIME_SEC].flags |= ULOGD_RETF_VALID;
-		ret[NFLOG_KEY_OOB_TIME_USEC].u.value.ui32 = ts.tv_usec & 0xffffffff;
-		ret[NFLOG_KEY_OOB_TIME_USEC].flags |= ULOGD_RETF_VALID;
-	}
+	if (! (nflog_get_timestamp(ldata, &ts) == 0 && ts.tv_sec))
+		gettimeofday(&ts, NULL);
+
+	/* FIXME: convert endianness */
+	ret[NFLOG_KEY_OOB_TIME_SEC].u.value.ui32 = ts.tv_sec & 0xffffffff;
+	ret[NFLOG_KEY_OOB_TIME_SEC].flags |= ULOGD_RETF_VALID;
+	ret[NFLOG_KEY_OOB_TIME_USEC].u.value.ui32 = ts.tv_usec & 0xffffffff;
+	ret[NFLOG_KEY_OOB_TIME_USEC].flags |= ULOGD_RETF_VALID;
 
 	ret[NFLOG_KEY_OOB_MARK].u.value.ui32 = mark;
 	ret[NFLOG_KEY_OOB_MARK].flags |= ULOGD_RETF_VALID;
