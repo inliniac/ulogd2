@@ -13,12 +13,13 @@
  *      Added timestamp accounting support of the conntrack entries,
  *      reworked by Harald Welte.
  *
+ * 11 May 2008, Pablo Neira Ayuso <pablo@netfilter.org>
+ * 	Use a generic hashtable to store the existing flows
+ *
  * TODO:
  * 	- add nanosecond-accurate packet receive timestamp of event-changing
  * 	  packets to {ip,nf}_conntrack_netlink, so we can have accurate IPFIX
  *	  flowStart / flowEnd NanoSeconds.
- *	- if using preallocated data structure, get rid of all list heads and
- *	  use per-bucket arrays instead.
  *	- SIGHUP for reconfiguration without loosing hash table contents, but
  *	  re-read of config and reallocation / rehashing of table, if required
  *	- Split hashtable code into separate [filter] plugin, so we can run 
@@ -34,6 +35,8 @@
 #include <sys/time.h>
 #include <time.h>
 #include <ulogd/linuxlist.h>
+#include <ulogd/jhash.h>
+#include <ulogd/hash.h>
 
 #include <ulogd/ulogd.h>
 #include <ulogd/timer.h>
@@ -44,24 +47,15 @@
 typedef enum TIMES_ { START, STOP, __TIME_MAX } TIMES;
  
 struct ct_timestamp {
-	struct llist_head list;
 	struct timeval time[__TIME_MAX];
-	int id;
-};
-
-struct ct_htable {
-	struct llist_head *buckets;
-	int num_buckets;
-	int prealloc;
-	struct llist_head idle;
-	struct ct_timestamp *ts;
+	struct nf_conntrack *ct;
 };
 
 struct nfct_pluginstance {
 	struct nfct_handle *cth;
 	struct ulogd_fd nfct_fd;
 	struct ulogd_timer timer;
-	struct ct_htable *ct_active;
+	struct hashtable *ct_active;
 };
 
 #define HTABLE_SIZE	(8192)
@@ -69,7 +63,7 @@ struct nfct_pluginstance {
 #define EVENT_MASK	NF_NETLINK_CONNTRACK_NEW | NF_NETLINK_CONNTRACK_DESTROY
 
 static struct config_keyset nfct_kset = {
-	.num_ces = 6,
+	.num_ces = 5,
 	.ces = {
 		{
 			.key	 = "pollinterval",
@@ -79,12 +73,6 @@ static struct config_keyset nfct_kset = {
 		},
 		{
 			.key	 = "hash_enable",
-			.type	 = CONFIG_TYPE_INT,
-			.options = CONFIG_OPT_NONE,
-			.u.value = 1,
-		},
-		{
-			.key	 = "hash_prealloc",
 			.type	 = CONFIG_TYPE_INT,
 			.options = CONFIG_OPT_NONE,
 			.u.value = 1,
@@ -112,10 +100,9 @@ static struct config_keyset nfct_kset = {
 };
 #define pollint_ce(x)	(x->ces[0])
 #define usehash_ce(x)	(x->ces[1])
-#define prealloc_ce(x)	(x->ces[2])
-#define buckets_ce(x)	(x->ces[3])
-#define maxentries_ce(x) (x->ces[4])
-#define eventmask_ce(x) (x->ces[5])
+#define buckets_ce(x)	(x->ces[2])
+#define maxentries_ce(x) (x->ces[3])
+#define eventmask_ce(x) (x->ces[4])
 
 enum nfct_keys {
 	NFCT_ORIG_IP_SADDR = 0,
@@ -366,117 +353,68 @@ static struct ulogd_key nfct_okeys[] = {
 	},
 };
 
-static struct ct_htable *htable_alloc(int htable_size, int prealloc)
+static uint32_t __hash4(const struct nf_conntrack *ct, struct hashtable *table)
 {
-	struct ct_htable *htable;
-	struct ct_timestamp *ct;
-	int i;
+	unsigned int a, b;
 
-	htable = malloc(sizeof(*htable)
-			+ sizeof(struct llist_head)*htable_size);
-	if (!htable)
-		return NULL;
+	a = jhash(nfct_get_attr(ct, ATTR_ORIG_IPV4_SRC), sizeof(uint32_t),
+		  ((nfct_get_attr_u8(ct, ATTR_ORIG_L3PROTO) << 16) |
+		   (nfct_get_attr_u8(ct, ATTR_ORIG_L4PROTO))));
 
-	htable->buckets = (void *)htable + sizeof(*htable);
-	htable->num_buckets = htable_size;
-	htable->prealloc = prealloc;
-	INIT_LLIST_HEAD(&htable->idle);
+	b = jhash(nfct_get_attr(ct, ATTR_ORIG_IPV4_DST), sizeof(uint32_t),
+		  ((nfct_get_attr_u16(ct, ATTR_ORIG_PORT_SRC) << 16) |
+		   (nfct_get_attr_u16(ct, ATTR_ORIG_PORT_DST))));
 
-	for (i = 0; i < htable->num_buckets; i++)
-		INIT_LLIST_HEAD(&htable->buckets[i]);
-	
-	if (!htable->prealloc)
-		return htable;
-
-	ct = malloc(sizeof(struct ct_timestamp)
-		    * htable->num_buckets * htable->prealloc);
-	if (!ct) {
-		free(htable);
-		return NULL;
-	}
-
-	/* save the pointer for later free()ing */
-	htable->ts = ct;
-
-	for (i = 0; i < htable->num_buckets * htable->prealloc; i++)
-		llist_add(&ct[i].list, &htable->idle);
-
-	return htable;
+	/*
+	 * Instead of returning hash % table->hashsize (implying a divide)
+	 * we return the high 32 bits of the (hash * table->hashsize) that will
+	 * give results between [0 and hashsize-1] and same hash distribution,
+	 * but using a multiply, less expensive than a divide. See:
+	 * http://www.mail-archive.com/netdev@vger.kernel.org/msg56623.html
+	 */
+	return ((uint64_t)jhash_2words(a, b, 0) * table->hashsize) >> 32;
 }
 
-static void htable_free(struct ct_htable *htable)
+static uint32_t __hash6(const struct nf_conntrack *ct, struct hashtable *table)
 {
-	struct llist_head *ptr, *ptr2;
-	int i;
+	unsigned int a, b;
 
-	if (htable->prealloc) {
-		/* the easy case */
-		free(htable->ts);
-		free(htable);
+	a = jhash(nfct_get_attr(ct, ATTR_ORIG_IPV6_SRC), sizeof(uint32_t)*4,
+		  ((nfct_get_attr_u8(ct, ATTR_ORIG_L3PROTO) << 16) |
+		   (nfct_get_attr_u8(ct, ATTR_ORIG_L4PROTO))));
 
-		return;
-	}
+	b = jhash(nfct_get_attr(ct, ATTR_ORIG_IPV6_DST), sizeof(uint32_t)*4,
+		  ((nfct_get_attr_u16(ct, ATTR_ORIG_PORT_SRC) << 16) |
+		   (nfct_get_attr_u16(ct, ATTR_ORIG_PORT_DST))));
 
-	/* non-prealloc case */
-
-	for (i = 0; i < htable->num_buckets; i++) {
-		llist_for_each_safe(ptr, ptr2, &htable->buckets[i])
-			free(container_of(ptr, struct ct_timestamp, list));
-	}
-
-	/* don't need to check for 'idle' list, since it is only used in
-	 * the preallocated case */
+	return ((uint64_t)jhash_2words(a, b, 0) * table->hashsize) >> 32;
 }
 
-static int ct_hash_add(struct ct_htable *htable, unsigned int id)
+static uint32_t hash(const void *data, struct hashtable *table)
 {
-	struct ct_timestamp *ct;
+	int ret = 0;
+	const struct ct_timestamp *ts = data;
 
-	if (htable->prealloc) {
-		if (llist_empty(&htable->idle)) {
-			ulogd_log(ULOGD_ERROR, "Not enough ct_timestamp entries\n");
-			return -1;
-		}
-
-		ct = container_of(htable->idle.next, struct ct_timestamp, list);
-
-		ct->id = id;
-		gettimeofday(&ct->time[START], NULL);
-
-		llist_move(&ct->list, &htable->buckets[id % htable->num_buckets]);
-	} else {
-		ct = malloc(sizeof *ct);
-		if (!ct) {
-			ulogd_log(ULOGD_ERROR, "Not enough memory\n");
-			return -1;
-		}
-
-		ct->id = id;
-		gettimeofday(&ct->time[START], NULL);
-
-		llist_add(&ct->list, &htable->buckets[id % htable->num_buckets]);
-	}
-
-	return 0;
-}
-
-static struct ct_timestamp *ct_hash_get(struct ct_htable *htable, uint32_t id)
-{
-	struct ct_timestamp *ct = NULL;
-	struct llist_head *ptr;
-
-	llist_for_each(ptr, &htable->buckets[id % htable->num_buckets]) {
-		ct = container_of(ptr, struct ct_timestamp, list);
-		if (ct->id == id) {
-			gettimeofday(&ct->time[STOP], NULL);
-			if (htable->prealloc)
-				llist_move(&ct->list, &htable->idle);
-			else
-				free(ct);
+	switch(nfct_get_attr_u8(ts->ct, ATTR_L3PROTO)) {
+		case AF_INET:
+			ret = __hash4(ts->ct, table);
 			break;
-		}
+		case AF_INET6:
+			ret = __hash6(ts->ct, table);
+			break;
+		default:
+			break;
 	}
-	return ct;
+
+	return ret;
+}
+
+static int compare(const void *data1, const void *data2)
+{
+	const struct ct_timestamp *u1 = data1;
+	const struct ct_timestamp *u2 = data2;
+
+	return nfct_cmp(u1->ct, u2->ct, NFCT_CMP_ORIG | NFCT_CMP_REPL);
 }
 
 static int propagate_ct(struct ulogd_pluginstance *upi,
@@ -600,28 +538,69 @@ static int event_handler(enum nf_conntrack_msg_type type,
 	struct nfct_pluginstance *cpi = 
 				(struct nfct_pluginstance *) upi->private;
 	struct ct_timestamp *ts = NULL;
+	struct ct_timestamp tmp = {
+		.ct = ct,
+	};
 	struct ulogd_pluginstance *npi = NULL;
 	int ret = 0;
 
-	if (type == NFCT_MSG_NEW) {
-		if (usehash_ce(upi->config_kset).u.value != 0) {
-			ct_hash_add(cpi->ct_active, nfct_get_attr_u32(ct, ATTR_ID));
-			return 0;
+	if (!usehash_ce(upi->config_kset).u.value && type == NFCT_T_DESTROY) {
+		/* since we support the re-use of one instance in
+		 * several different stacks, we duplicate the message
+		 * to let them know */
+		llist_for_each_entry(npi, &upi->plist, plist) {
+			ret = propagate_ct(npi, ct, type, ts);
+			if (ret != 0)
+				break;
 		}
-	} else if (type == NFCT_MSG_DESTROY) {
-		if (usehash_ce(upi->config_kset).u.value != 0)
-			ts = ct_hash_get(cpi->ct_active, nfct_get_attr_u32(ct, ATTR_ID));
+
+		propagate_ct(upi, ct, type, ts);
+
+		return NFCT_CB_CONTINUE;
 	}
 
-	/* since we support the re-use of one instance in
-	 * several different stacks, we duplicate the message
-	 * to let them know */
-	llist_for_each_entry(npi, &upi->plist, plist) {
-		ret = propagate_ct(npi, ct, type, ts);
-		if (ret != 0)
-			return ret;
+	switch(type) {
+	case NFCT_T_NEW:
+		ts = hashtable_add(cpi->ct_active, &tmp);
+		gettimeofday(&ts->time[START], NULL);
+		return NFCT_CB_STOLEN;
+	case NFCT_T_UPDATE:
+		ts = hashtable_get(cpi->ct_active, &tmp);
+		if (ts)
+			nfct_copy(ts->ct, ct, NFCT_CP_META);
+		else {
+			ts = hashtable_add(cpi->ct_active, &tmp);
+			gettimeofday(&ts->time[START], NULL);
+			return NFCT_CB_STOLEN;
+		}
+		break;
+	case NFCT_T_DESTROY:
+		ts = hashtable_get(cpi->ct_active, &tmp);
+		if (ts)
+			gettimeofday(&ts->time[STOP], NULL);
+
+		/* since we support the re-use of one instance in
+		 * several different stacks, we duplicate the message
+		 * to let them know */
+		llist_for_each_entry(npi, &upi->plist, plist) {
+			ret = propagate_ct(npi, ct, type, ts);
+			if (ret != 0)
+				break;
+		}
+
+		propagate_ct(upi, ct, type, ts);
+
+		if (ts) {
+			hashtable_del(cpi->ct_active, ts);
+			free(ts->ct);
+		}
+		break;
+	default:
+		ulogd_log(ULOGD_NOTICE, "unknown netlink message type\n");
+		break;
 	}
-	return propagate_ct(upi, ct, type, ts);
+
+	return NFCT_CB_CONTINUE;
 }
 
 static int read_cb_nfct(int fd, unsigned int what, void *param)
@@ -677,7 +656,6 @@ static int constructor_nfct(struct ulogd_pluginstance *upi)
 {
 	struct nfct_pluginstance *cpi = 
 			(struct nfct_pluginstance *)upi->private;
-	int prealloc;
 
 	cpi->cth = nfct_open(NFNL_SUBSYS_CTNETLINK,
 			     eventmask_ce(upi->config_kset).u.value);
@@ -695,15 +673,13 @@ static int constructor_nfct(struct ulogd_pluginstance *upi)
 
 	ulogd_register_fd(&cpi->nfct_fd);
 
-	if (prealloc_ce(upi->config_kset).u.value != 0)
-		prealloc = maxentries_ce(upi->config_kset).u.value / 
-				buckets_ce(upi->config_kset).u.value;
-	else
-		prealloc = 0;
-
 	if (usehash_ce(upi->config_kset).u.value != 0) {
-		cpi->ct_active = htable_alloc(buckets_ce(upi->config_kset).u.value,
-					      prealloc);
+		cpi->ct_active =
+		     hashtable_create(buckets_ce(upi->config_kset).u.value,
+		     		      maxentries_ce(upi->config_kset).u.value,
+				      sizeof(struct ct_timestamp),
+				      hash,
+				      compare);
 		if (!cpi->ct_active) {
 			ulogd_log(ULOGD_FATAL, "error allocating hash\n");
 			nfct_close(cpi->cth);
@@ -719,7 +695,7 @@ static int destructor_nfct(struct ulogd_pluginstance *pi)
 	struct nfct_pluginstance *cpi = (void *) pi;
 	int rc;
 	
-	htable_free(cpi->ct_active);
+	hashtable_destroy(cpi->ct_active);
 
 	rc = nfct_close(cpi->cth);
 	if (rc < 0)
