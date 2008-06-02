@@ -769,9 +769,11 @@ static int _interp_ipv6hdr(struct ulogd_pluginstance *pi, u_int32_t len)
 	if (len < sizeof(struct ip6_hdr))
 		return 0;
 
-	ret[KEY_IP_SADDR].u.value.ptr = &ipv6h->ip6_src;
+	memcpy(ret[KEY_IP_SADDR].u.value.ui128, &ipv6h->ip6_src,
+	       sizeof(ipv6h->ip6_src));
 	ret[KEY_IP_SADDR].flags |= ULOGD_RETF_VALID;
-	ret[KEY_IP_DADDR].u.value.ptr = &ipv6h->ip6_dst;
+	memcpy(ret[KEY_IP_DADDR].u.value.ui128, &ipv6h->ip6_dst,
+	       sizeof(ipv6h->ip6_dst));
 	ret[KEY_IP_DADDR].flags |= ULOGD_RETF_VALID;
 	ret[KEY_IP6_PAYLOAD_LEN].u.value.ui16 = ntohs(ipv6h->ip6_plen);
 	ret[KEY_IP6_PAYLOAD_LEN].flags |= ULOGD_RETF_VALID;
