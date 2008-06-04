@@ -625,7 +625,7 @@ static int event_handler(enum nf_conntrack_msg_type type,
 		.ct = ct,
 	};
 
-	if (!usehash_ce(upi->config_kset).u.value && type == NFCT_T_DESTROY) {
+	if (!usehash_ce(upi->config_kset).u.value) {
 		switch(type) {
 		case NFCT_T_NEW:
 			gettimeofday(&tmp.time[START], NULL);
