@@ -75,8 +75,8 @@
 
 /* global variables */
 static FILE *logfile = NULL;		/* logfile pointer */
-static char *ulogd_configfile = ULOGD_CONFIGFILE;
-static char *ulogd_logfile = ULOGD_LOGFILE_DEFAULT;
+static char *ulogd_logfile = NULL;
+static const char *ulogd_configfile = ULOGD_CONFIGFILE;
 static FILE syslog_dummy;
 
 static int info_mode = 0;
@@ -880,8 +880,10 @@ static void ulogd_main_loop(void)
 /* open the logfile */
 static int logfile_open(const char *name)
 {
-	if (name)
-		ulogd_logfile = name;
+	if (name) {
+	        free(ulogd_logfile);
+		ulogd_logfile = strdup(name);
+	}
 
 	if (!strcmp(name, "stdout")) {
 		logfile = stdout;
@@ -891,12 +893,12 @@ static int logfile_open(const char *name)
 	} else {
 		logfile = fopen(ulogd_logfile, "a");
 		if (!logfile) {
-			fprintf(stderr, "ERROR: can't open logfile %s: %s\n", 
+			fprintf(stderr, "ERROR: can't open logfile '%s': %s\n", 
 				name, strerror(errno));
 			exit(2);
 		}
 	}
-	ulogd_log(ULOGD_INFO, "ulogd Version %s starting\n", ULOGD_VERSION);
+	ulogd_log(ULOGD_INFO, "ulogd Version %s (re-)starting\n", ULOGD_VERSION);
 	return 0;
 }
 
@@ -959,8 +961,10 @@ static void sigterm_handler(int signal)
 
 	deliver_signal_pluginstances(signal);
 
-	if (logfile != stdout)
+	if (logfile != NULL  && logfile != stdout) {
 		fclose(logfile);
+		logfile = NULL;
+	}
 
 	exit(0);
 }
@@ -975,8 +979,13 @@ static void signal_handler(int signal)
 		if (logfile != stdout && logfile != &syslog_dummy) {
 			fclose(logfile);
 			logfile = fopen(ulogd_logfile, "a");
-			if (!logfile)
+ 			if (!logfile) {
+				fprintf(stderr, 
+					"ERROR: can't open logfile %s: %s\n", 
+					ulogd_logfile, strerror(errno));
 				sigterm_handler(signal);
+			}
+	
 		}
 		break;
 	default:
@@ -1021,6 +1030,7 @@ int main(int argc, char* argv[])
 	uid_t uid = 0;
 	gid_t gid = 0;
 
+	ulogd_logfile = strdup(ULOGD_LOGFILE_DEFAULT);
 
 	while ((argch = getopt_long(argc, argv, "c:dh::Vu:i:", opts, NULL)) != -1) {
 		switch (argch) {
