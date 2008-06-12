@@ -477,6 +477,7 @@ static void ulogd_clean_results(struct ulogd_pluginstance *pi)
 void ulogd_propagate_results(struct ulogd_pluginstance *pi)
 {
 	struct ulogd_pluginstance *cur = pi;
+	int abort_stack = 0;
 	/* iterate over remaining plugin stack */
 	llist_for_each_entry_continue(cur, &pi->stack->list, list) {
 		int ret;
@@ -489,6 +490,7 @@ void ulogd_propagate_results(struct ulogd_pluginstance *pi)
 			/* fallthrough */
 		case ULOGD_IRET_STOP:
 			/* we shall abort further iteration of the stack */
+			abort_stack = 1;
 			break;
 		case ULOGD_IRET_OK:
 			/* we shall continue travelling down the stack */
@@ -497,8 +499,12 @@ void ulogd_propagate_results(struct ulogd_pluginstance *pi)
 			ulogd_log(ULOGD_NOTICE,
 				  "unknown return value `%d' from plugin %s\n",
 				  ret, cur->plugin->name);
+			abort_stack = 1;
 			break;
 		}
+
+		if (abort_stack)
+			break;
 	}
 
 	ulogd_clean_results(pi);
