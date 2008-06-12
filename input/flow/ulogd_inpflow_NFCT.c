@@ -46,7 +46,7 @@
 #include <libnetfilter_conntrack/libnetfilter_conntrack.h>
 
 typedef enum TIMES_ { START, STOP, __TIME_MAX } TIMES;
- 
+
 struct ct_timestamp {
 	struct timeval time[__TIME_MAX];
 	struct nf_conntrack *ct;
@@ -730,7 +730,7 @@ static int read_cb_nfct(int fd, unsigned int what, void *param)
 					  "We are losing events. Please, "
 					  "consider using the clauses "
 					  "`netlink_socket_buffer_size' and "
-					  "`netlink_socket_buffer_maxsize\n'");
+					  "`netlink_socket_buffer_maxsize'\n");
 			}
 			
 			/* internal hash can deal with refresh */
@@ -919,7 +919,7 @@ static int constructor_nfct(struct ulogd_pluginstance *upi)
 
 		cpi->ct_active =
 		     hashtable_create(buckets_ce(upi->config_kset).u.value,
-		     		      maxentries_ce(upi->config_kset).u.value,
+				      maxentries_ce(upi->config_kset).u.value,
 				      sizeof(struct ct_timestamp),
 				      hash,
 				      compare);

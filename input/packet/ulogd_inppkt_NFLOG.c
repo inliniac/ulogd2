@@ -434,7 +434,7 @@ static int nful_read_cb(int fd, unsigned int what, void *param)
 					  "We are losing events. Please, "
 					  "consider using the clauses "
 					  "`netlink_socket_buffer_size' and "
-					  "`netlink_socket_buffer_maxsize\n'");
+					  "`netlink_socket_buffer_maxsize'\n");
 			}
 		}
 		return len;
