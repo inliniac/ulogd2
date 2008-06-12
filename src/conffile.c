@@ -192,7 +192,7 @@ int config_parse_file(const char *section, struct config_keyset *kset)
 					}
 					break;
 				case CONFIG_TYPE_INT:
-					ce->u.value = atoi(args);
+					ce->u.value = strtoul(args, NULL, 0);
 					break;
 				case CONFIG_TYPE_CALLBACK:
 					(ce->u.parser)(args);
