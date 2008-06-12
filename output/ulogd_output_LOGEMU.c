@@ -108,7 +108,7 @@ static int _output_logemu(struct ulogd_pluginstance *upi)
 			fflush(li->of);
 	}
 
-	return 0;
+	return ULOGD_IRET_OK;
 }
 
 static void signal_handler_logemu(struct ulogd_pluginstance *pi, int signal)

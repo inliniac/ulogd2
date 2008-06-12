@@ -186,7 +186,7 @@ static int interp_ip2bin(struct ulogd_pluginstance *pi)
 		}
 	}
 
-	return 0;
+	return ULOGD_IRET_OK;
 }
 
 static struct ulogd_plugin ip2bin_pluging = {

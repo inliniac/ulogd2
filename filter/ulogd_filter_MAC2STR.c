@@ -74,7 +74,7 @@ static int interp_mac2str(struct ulogd_pluginstance *pi)
 		int i;
 		
 		if (mac_str == NULL)
-			return -1;
+			return ULOGD_IRET_ERR;
 
 		for (i = 0; i < len; i++)
 			buf_cur += sprintf(buf_cur, "%02x%c", mac[i],
@@ -84,7 +84,7 @@ static int interp_mac2str(struct ulogd_pluginstance *pi)
 		ret[KEY_MAC_SADDR].flags |= ULOGD_RETF_VALID;
 	}
 
-	return 0;
+	return ULOGD_IRET_OK;
 }
 
 static struct ulogd_plugin mac2str_pluging = {

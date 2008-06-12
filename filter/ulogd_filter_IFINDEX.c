@@ -76,7 +76,7 @@ static int interp_ifindex(struct ulogd_pluginstance *pi)
 		((char *)(ret[1].u.value.ptr))[0] = 0; 
 	ret[1].flags |= ULOGD_RETF_VALID;
 
-	return 0;
+	return ULOGD_IRET_OK;
 }
 
 static int nlif_read_cb(int fd, unsigned int what, void *param)

@@ -154,7 +154,7 @@ nacct_interp(struct ulogd_pluginstance *pi)
 	if (NACCT_CFG_SYNC(pi) != 0)
 		fflush(priv->of);
 
-	return 0;
+	return ULOGD_IRET_OK;
 }
 
 static struct config_keyset nacct_kset = {

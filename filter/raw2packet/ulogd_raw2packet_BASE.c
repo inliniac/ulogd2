@@ -519,7 +519,7 @@ static int _interp_tcp(struct ulogd_pluginstance *pi, struct tcphdr *tcph,
 	struct ulogd_key *ret = pi->output.keys;
 
 	if (len < sizeof(struct tcphdr))
-		return 0;
+		return ULOGD_IRET_OK;
 	
 	ret[KEY_TCP_SPORT].u.value.ui16 = ntohs(tcph->source);
 	ret[KEY_TCP_SPORT].flags |= ULOGD_RETF_VALID;
@@ -559,7 +559,7 @@ static int _interp_tcp(struct ulogd_pluginstance *pi, struct tcphdr *tcph,
 	ret[KEY_TCP_CSUM].u.value.ui16 = ntohs(tcph->check);
 	ret[KEY_TCP_CSUM].u.value.ui16 = ULOGD_RETF_VALID;
 	
-	return 0;
+	return ULOGD_IRET_OK;
 }
 
 /***********************************************************************
@@ -573,7 +573,7 @@ static int _interp_udp(struct ulogd_pluginstance *pi, struct udphdr *udph,
 	struct ulogd_key *ret = pi->output.keys;
 
 	if (len < sizeof(struct udphdr))
-		return 0;
+		return ULOGD_IRET_OK;
 
 	ret[KEY_UDP_SPORT].u.value.ui16 = ntohs(udph->source);
 	ret[KEY_UDP_SPORT].flags |= ULOGD_RETF_VALID;
@@ -584,7 +584,7 @@ static int _interp_udp(struct ulogd_pluginstance *pi, struct udphdr *udph,
 	ret[KEY_UDP_CSUM].u.value.ui16 = ntohs(udph->check);
 	ret[KEY_UDP_CSUM].flags |= ULOGD_RETF_VALID;
 	
-	return 0;
+	return ULOGD_IRET_OK;
 }
 
 /***********************************************************************
@@ -597,7 +597,7 @@ static int _interp_icmp(struct ulogd_pluginstance *pi, struct icmphdr *icmph,
 	struct ulogd_key *ret = pi->output.keys;
 
 	if (len < sizeof(struct icmphdr))
-		return 0;
+		return ULOGD_IRET_OK;
 
 	ret[KEY_ICMP_TYPE].u.value.ui8 = icmph->type;
 	ret[KEY_ICMP_TYPE].flags |= ULOGD_RETF_VALID;
@@ -627,7 +627,7 @@ static int _interp_icmp(struct ulogd_pluginstance *pi, struct icmphdr *icmph,
 	ret[KEY_ICMP_CSUM].u.value.ui16 = icmph->checksum;
 	ret[KEY_ICMP_CSUM].flags |= ULOGD_RETF_VALID;
 
-	return 0;
+	return ULOGD_IRET_OK;
 }
 
 /***********************************************************************
@@ -640,7 +640,7 @@ static int _interp_icmpv6(struct ulogd_pluginstance *pi, struct icmp6_hdr *icmph
 	struct ulogd_key *ret = pi->output.keys;
 
 	if (len < sizeof(struct icmp6_hdr))
-		return 0;
+		return ULOGD_IRET_OK;
 
 	ret[KEY_ICMPV6_TYPE].u.value.ui8 = icmph->icmp6_type;
 	ret[KEY_ICMPV6_TYPE].flags |= ULOGD_RETF_VALID;
@@ -659,7 +659,7 @@ static int _interp_icmpv6(struct ulogd_pluginstance *pi, struct icmp6_hdr *icmph
 	ret[KEY_ICMPV6_CSUM].u.value.ui16 = icmph->icmp6_cksum;
 	ret[KEY_ICMPV6_CSUM].flags |= ULOGD_RETF_VALID;
 
-	return 0;
+	return ULOGD_IRET_OK;
 }
 
 
@@ -680,7 +680,7 @@ static int _interp_ahesp(struct ulogd_pluginstance *pi, void *protoh,
 	ret[KEY_AHESP_SPI].flags |= ULOGD_RETF_VALID;
 #endif
 
-	return 0;
+	return ULOGD_IRET_OK;
 }
 
 /***********************************************************************
@@ -695,7 +695,7 @@ static int _interp_iphdr(struct ulogd_pluginstance *pi, u_int32_t len)
 	void *nexthdr = (u_int32_t *)iph + iph->ihl;
 
 	if (len < sizeof(struct iphdr) || len <= iph->ihl * 4)
-		return 0;
+		return ULOGD_IRET_OK;
 	len -= iph->ihl * 4;
 
 	ret[KEY_IP_SADDR].u.value.ui32 = iph->saddr;
@@ -735,7 +735,7 @@ static int _interp_iphdr(struct ulogd_pluginstance *pi, u_int32_t len)
 		break;
 	}
 
-	return 0;
+	return ULOGD_IRET_OK;
 }
 
 /***********************************************************************
@@ -751,9 +751,9 @@ static int ip6_ext_hdr(u_int8_t nexthdr)
 	case IPPROTO_ESP:
 	case IPPROTO_AH:
 	case IPPROTO_DSTOPTS:
-		return 1;
+		return ULOGD_IRET_OK;
 	default:
-		return 0;
+		return ULOGD_IRET_STOP;
 	}
 }
 
@@ -767,7 +767,7 @@ static int _interp_ipv6hdr(struct ulogd_pluginstance *pi, u_int32_t len)
 	int fragment = 0;
 
 	if (len < sizeof(struct ip6_hdr))
-		return 0;
+		return ULOGD_IRET_OK;
 
 	memcpy(ret[KEY_IP_SADDR].u.value.ui128, &ipv6h->ip6_src,
 	       sizeof(ipv6h->ip6_src));
@@ -792,7 +792,7 @@ static int _interp_ipv6hdr(struct ulogd_pluginstance *pi, u_int32_t len)
 		struct ip6_ext *ext = (void *)ipv6h + ptr;
 
 		if (len < sizeof(struct ip6_ext))
-			return 0;
+			return ULOGD_IRET_OK;
 
 		switch (curhdr) {
 		case IPPROTO_FRAGMENT: {
@@ -800,7 +800,7 @@ static int _interp_ipv6hdr(struct ulogd_pluginstance *pi, u_int32_t len)
 
 			hdrlen = sizeof(struct ip6_frag);
 			if (len < hdrlen)
-				return 0;
+				return ULOGD_IRET_OK;
 			len -= hdrlen;
 
 			ret[KEY_IP6_FRAG_OFF].u.value.ui16 = ntohs(fh->ip6f_offlg & IP6F_OFF_MASK);
@@ -820,7 +820,7 @@ static int _interp_ipv6hdr(struct ulogd_pluginstance *pi, u_int32_t len)
 
 			hdrlen = (ext->ip6e_len + 1) << 3;
 			if (len < hdrlen)
-				return 0;
+				return ULOGD_IRET_OK;
 			len -= hdrlen;
 			break;
 		case IPPROTO_AH:
@@ -829,7 +829,7 @@ static int _interp_ipv6hdr(struct ulogd_pluginstance *pi, u_int32_t len)
 
 			hdrlen = (ext->ip6e_len + 2) << 2;
 			if (len < hdrlen)
-				return 0;
+				return ULOGD_IRET_OK;
 			len -= hdrlen;
 
 			_interp_ahesp(pi, (void *)ext, len);
@@ -840,13 +840,13 @@ static int _interp_ipv6hdr(struct ulogd_pluginstance *pi, u_int32_t len)
 
 			hdrlen = (ext->ip6e_len + 2) << 2;
 			if (len < hdrlen)
-				return 0;
+				return ULOGD_IRET_OK;
 			len -= hdrlen;
 
 			_interp_ahesp(pi, (void *)ext, len);
 			goto out;
 		default:
-			return 0;
+			return ULOGD_IRET_OK;
 		}
 
 		curhdr = ext->ip6e_nxt;
@@ -875,7 +875,7 @@ static int _interp_ipv6hdr(struct ulogd_pluginstance *pi, u_int32_t len)
 out:
 	ret[KEY_IP6_NEXTHDR].u.value.ui8 = curhdr;
 	ret[KEY_IP6_NEXTHDR].flags |= ULOGD_RETF_VALID;
-	return 0;
+	return ULOGD_IRET_OK;
 }
 
 /***********************************************************************
@@ -888,7 +888,7 @@ static int _interp_arp(struct ulogd_pluginstance *pi, u_int32_t len)
 		GET_VALUE(pi->input.keys, INKEY_RAW_PCKT).ptr;
 
 	if (len < sizeof(struct ether_arp))
-		return 0;
+		return ULOGD_IRET_OK;
 
 	ret[KEY_ARP_HTYPE].u.value.ui16 = ntohs(arph->arp_hrd);
 	SET_VALID(ret[KEY_ARP_HTYPE]);
@@ -911,7 +911,7 @@ static int _interp_arp(struct ulogd_pluginstance *pi, u_int32_t len)
 	       sizeof(u_int32_t));
 	SET_VALID(ret[KEY_ARP_TPA]);
 
-	return 0;
+	return ULOGD_IRET_OK;
 }
 
 /***********************************************************************
@@ -939,7 +939,7 @@ static int _interp_bridge(struct ulogd_pluginstance *pi, u_int32_t len)
 	/* ETH_P_8021Q ?? others? */
 	};
 
-	return 0;
+	return ULOGD_IRET_OK;
 }
 
 
@@ -961,7 +961,7 @@ static int _interp_pkt(struct ulogd_pluginstance *pi)
 	case AF_BRIDGE:
 		return _interp_bridge(pi, len);
 	}
-	return 0;
+	return ULOGD_IRET_OK;
 }
 
 static struct ulogd_key base_inp[] = {

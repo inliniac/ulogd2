@@ -70,7 +70,7 @@ static int interp_pwsniff(struct ulogd_pluginstance *pi)
 	int len, pw_len, i, cont = 0;
 
 	if (!IS_VALID(pi->input.keys[0]))
-		return 0;
+		return ULOGD_IRET_STOP;
 	
 	iph = (struct iphdr *) pi->input.keys[0].u.value.ptr;
 	protoh = (u_int32_t *)iph + iph->ihl;
@@ -81,7 +81,7 @@ static int interp_pwsniff(struct ulogd_pluginstance *pi)
 	begp = pw_begp = NULL;
 
 	if (iph->protocol != IPPROTO_TCP)
-		return 0;
+		return ULOGD_IRET_STOP;
 	
 	for (i = 0; i < ARRAY_SIZE(pwsniff_ports); i++)
 	{
@@ -91,7 +91,7 @@ static int interp_pwsniff(struct ulogd_pluginstance *pi)
 		}
 	}
 	if (!cont)
-		return 0;
+		return ULOGD_IRET_STOP;
 
 	DEBUGP("----> pwsniff detected, tcplen=%d, struct=%d, iphtotlen=%d, "
 		"ihl=%d\n", tcplen, sizeof(struct tcphdr), ntohs(iph->tot_len),
@@ -120,7 +120,7 @@ static int interp_pwsniff(struct ulogd_pluginstance *pi)
 		ret[0].flags |= ULOGD_RETF_VALID;
 		if (!ret[0].u.value.ptr) {
 			ulogd_log(ULOGD_ERROR, "OOM (size=%u)\n", len);
-			return 0;
+			return ULOGD_IRET_ERR;
 		}
 		strncpy((char *) ret[0].u.value.ptr, (char *)begp, len);
 		*((char *)ret[0].u.value.ptr + len) = '\0';
@@ -130,13 +130,13 @@ static int interp_pwsniff(struct ulogd_pluginstance *pi)
 		ret[1].flags |= ULOGD_RETF_VALID;
 		if (!ret[1].u.value.ptr){
 			ulogd_log(ULOGD_ERROR, "OOM (size=%u)\n", pw_len);
-			return 0;
+			return ULOGD_IRET_ERR;
 		}
 		strncpy((char *)ret[1].u.value.ptr, (char *)pw_begp, pw_len);
 		*((char *)ret[1].u.value.ptr + pw_len) = '\0';
 
 	}
-	return 0;
+	return ULOGD_IRET_OK;
 }
 
 static struct ulogd_key pwsniff_inp[] = {

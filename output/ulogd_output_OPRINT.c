@@ -94,7 +94,7 @@ static int oprint_interp(struct ulogd_pluginstance *upi)
 	if (upi->config_kset->ces[1].u.value != 0)
 		fflush(opi->of);
 
-	return 0;
+	return ULOGD_IRET_OK;
 }
 
 static struct config_keyset oprint_kset = {

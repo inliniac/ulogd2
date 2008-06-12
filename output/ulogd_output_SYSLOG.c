@@ -79,7 +79,7 @@ static int _output_syslog(struct ulogd_pluginstance *upi)
 		syslog(li->syslog_level | li->syslog_facility, "%s",
 				res[0].u.source->u.value.ptr);
 
-	return 0;
+	return ULOGD_IRET_OK;
 }
 		
 static int syslog_configure(struct ulogd_pluginstance *pi,

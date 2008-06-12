@@ -154,18 +154,18 @@ static int interp_pcap(struct ulogd_pluginstance *upi)
 	if (fwrite(&pchdr, sizeof(pchdr), 1, pi->of) != 1) {
 		ulogd_log(ULOGD_ERROR, "Error during write: %s\n",
 			  strerror(errno));
-		return 1;
+		return ULOGD_IRET_ERR;
 	}
 	if (fwrite(GET_VALUE(res, 0).ptr, pchdr.caplen, 1, pi->of) != 1) {
 		ulogd_log(ULOGD_ERROR, "Error during write: %s\n",
 			  strerror(errno));
-		return 1;
+		return ULOGD_IRET_ERR;
 	}
 
 	if (upi->config_kset->ces[1].u.value)
 		fflush(pi->of);
 
-	return 0;
+	return ULOGD_IRET_OK;
 }
 
 /* stolen from libpcap savefile.c */

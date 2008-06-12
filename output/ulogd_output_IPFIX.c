@@ -328,7 +328,7 @@ static int output_ipfix(struct ulogd_pluginstance *upi)
 		template = build_template_for_bitmask(upi, ii->valid_bitmask);
 		if (!template) {
 			ulogd_log(ULOGD_ERROR, "can't build new template!\n");
-			return -1;
+			return ULOGD_IRET_ERR;
 		}
 		/* FIXME: prepend? */
 		list_add(&ii->template_list, &template->list);
@@ -344,7 +344,7 @@ static int output_ipfix(struct ulogd_pluginstance *upi)
 		total_size += sizeof(template->tmpl);
 	}
 
-	return 0;
+	return ULOGD_IRET_OK;
 }
 
 static int open_connect_socket(struct ulogd_pluginstance *pi)
