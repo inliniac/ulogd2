@@ -59,6 +59,7 @@ CREATE TABLE `ulog2` (
   `ip_id` smallint(5) unsigned default NULL,
   `ip_fragoff` smallint(5) unsigned default NULL,
   `label` tinyint(3) unsigned default NULL,
+  `mac_id` bigint unsigned default NULL,
   `timestamp` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
   UNIQUE KEY `key_id` (`_id`)
 ) ENGINE=INNODB COMMENT='Table for IP packets';
@@ -72,13 +73,13 @@ ALTER TABLE ulog2 ADD KEY `timestamp` (`timestamp`);
 -- ALTER TABLE ulog2 ADD KEY `oob_time_sec` (`oob_time_sec`);
 
 CREATE TABLE `mac` (
-  `_mac_id` bigint unsigned NOT NULL,
+  `_mac_id` bigint unsigned NOT NULL auto_increment,
   `mac_saddr` varchar(32) default NULL,
-  `mac_protocol` smallint(5) default NULL
+  `mac_protocol` smallint(5) default NULL,
+  UNIQUE KEY `key_id` (`_mac_id`)
 ) ENGINE=INNODB;
 
-ALTER TABLE mac ADD UNIQUE KEY `_mac_id` (`_mac_id`);
-ALTER TABLE mac ADD KEY `mac_saddr` (`mac_saddr`);
+ALTER TABLE mac ADD UNIQUE KEY `mac_saddr` (`mac_saddr`,`mac_protocol`);
 ALTER TABLE mac ADD KEY `index_mac_id` (`_mac_id`);
 
 CREATE TABLE `tcp` (
@@ -603,15 +604,17 @@ $$
 
 
 delimiter $$
-DROP PROCEDURE IF EXISTS PACKET_ADD_MAC;
-CREATE PROCEDURE PACKET_ADD_MAC(
-		IN `id` int(10) unsigned,
-		IN `_saddr` varchar(32),
-		IN `_protocol` smallint(5)
-		)
+DROP FUNCTION IF EXISTS INSERT_OR_SELECT_MAC;
+CREATE FUNCTION INSERT_OR_SELECT_MAC(
+		`_saddr` varchar(32),
+		`_protocol` smallint(5)
+		) RETURNS bigint unsigned
+NOT DETERMINISTIC
+READS SQL DATA
 BEGIN
-	INSERT INTO mac (_mac_id, mac_saddr, mac_protocol) VALUES
-	(id, _saddr, _protocol);
+	INSERT IGNORE INTO mac (mac_saddr, mac_protocol) VALUES (_saddr, _protocol);
+	SELECT _mac_id FROM mac WHERE mac_saddr = _saddr AND mac_protocol = _protocol INTO @last_id;
+	RETURN @last_id;
 END
 $$
 
@@ -687,7 +690,10 @@ BEGIN
 				       icmpv6_echoseq, icmpv6_csum);
 	END IF;
 	IF mac_protocol IS NOT NULL THEN
-		CALL PACKET_ADD_MAC(@lastid, mac_saddr, mac_protocol);
+		SET @mac_id = INSERT_OR_SELECT_MAC(mac_saddr, mac_protocol);
+		IF @mac_id IS NOT NULL THEN
+			UPDATE ulog2 SET mac_id = @mac_id WHERE _id = @lastid;
+		END IF;
 	END IF;
 	RETURN @lastid;
 END

@@ -58,6 +58,7 @@ CREATE TABLE ulog2 (
   ip_id integer default NULL,
   ip_fragoff smallint default NULL,
   label smallint default NULL,
+  mac_id bigint default NULL,
   timestamp timestamp NOT NULL default 'now'
 ) WITH (OIDS=FALSE);
 
@@ -66,13 +67,16 @@ CREATE INDEX ulog2_ip_saddr ON ulog2(ip_saddr_str);
 CREATE INDEX ulog2_ip_daddr ON ulog2(ip_daddr_str);
 CREATE INDEX ulog2_timestamp ON ulog2(timestamp);
 
+DROP SEQUENCE IF EXISTS mac__id_seq;
+CREATE SEQUENCE mac__id_seq;
 CREATE TABLE mac (
-  _mac_id bigint PRIMARY KEY UNIQUE NOT NULL,
-  mac_saddr macaddr default NULL,
+  _mac_id bigint PRIMARY KEY UNIQUE NOT NULL DEFAULT nextval('mac__id_seq'),
+  mac_saddr macaddr NOT NULL,
   mac_protocol smallint default NULL
 ) WITH (OIDS=FALSE);
 
 CREATE INDEX mac_saddr ON mac(mac_saddr);
+CREATE UNIQUE INDEX unique_mac ON mac(mac_saddr,mac_protocol);
 
 CREATE TABLE tcp (
   _tcp_id bigint PRIMARY KEY UNIQUE NOT NULL,
@@ -195,7 +199,8 @@ CREATE OR REPLACE VIEW ulog AS
         mac_protocol AS oob_protocol,
         label AS raw_label
         FROM ulog2 LEFT JOIN tcp ON ulog2._id = tcp._tcp_id LEFT JOIN udp ON ulog2._id = udp._udp_id
-                LEFT JOIN icmp ON ulog2._id = icmp._icmp_id LEFT JOIN mac ON ulog2._id = mac._mac_id
+                LEFT JOIN icmp ON ulog2._id = icmp._icmp_id
+                LEFT JOIN mac ON ulog2.mac_id = mac._mac_id
                 LEFT JOIN icmpv6 ON ulog2._id = icmpv6._icmpv6_id;
 
 -- shortcuts
@@ -308,6 +313,7 @@ INSERT INTO _extensions (ext_name,table_name,join_name) VALUES
 
 CREATE OR REPLACE FUNCTION ULOG2_DROP_FOREIGN_KEYS()
 RETURNS void AS $$
+  ALTER TABLE ulog2 DROP CONSTRAINT mac_id_fk;
   ALTER TABLE icmpv6 DROP CONSTRAINT icmpv6_id_fk;
   ALTER TABLE icmp DROP CONSTRAINT icmp_id_fk;
   ALTER TABLE udp  DROP CONSTRAINT udp_id_fk;
@@ -321,6 +327,7 @@ RETURNS void AS $$
   ALTER TABLE udp  ADD CONSTRAINT udp_id_fk  FOREIGN KEY (_udp_id)  REFERENCES ulog2(_id);
   ALTER TABLE icmp ADD CONSTRAINT icmp_id_fk FOREIGN KEY (_icmp_id) REFERENCES ulog2(_id);
   ALTER TABLE icmpv6 ADD CONSTRAINT icmpv6_id_fk FOREIGN KEY (_icmpv6_id) REFERENCES ulog2(_id);
+  ALTER TABLE ulog2 ADD CONSTRAINT mac_id_fk FOREIGN KEY (mac_id) REFERENCES mac(_mac_id);
 $$ LANGUAGE SQL SECURITY INVOKER;
 
 
@@ -436,16 +443,22 @@ RETURNS bigint AS $$
         SELECT currval('ulog2__id_seq');
 $$ LANGUAGE SQL SECURITY INVOKER;
 
-CREATE OR REPLACE FUNCTION INSERT_MAC(
-                IN mac_id bigint,
-                IN mac_saddr macaddr,
-                IN mac_protocol integer
+CREATE OR REPLACE FUNCTION INSERT_OR_SELECT_MAC(
+                IN in_mac_saddr macaddr,
+                IN in_mac_protocol integer
         )
 RETURNS bigint AS $$
-        INSERT INTO mac (_mac_id,mac_saddr,mac_protocol)
-                VALUES ($1,$2,$3);
-        SELECT currval('ulog2__id_seq');
-$$ LANGUAGE SQL SECURITY INVOKER;
+DECLARE
+        _id bigint;
+BEGIN
+        SELECT INTO _id _mac_id FROM mac WHERE mac_saddr = $1 AND mac_protocol = $2;
+        IF NOT FOUND THEN
+                INSERT INTO mac (mac_saddr,mac_protocol) VALUES ($1,$2) RETURNING _mac_id INTO _id;
+                RETURN _id;
+        END IF;
+        RETURN _id;
+END
+$$ LANGUAGE plpgsql SECURITY INVOKER;
 
 -- this function requires plpgsql
 -- su -c "createlang plpgsql ulog2" postgres
@@ -500,22 +513,24 @@ CREATE OR REPLACE FUNCTION INSERT_PACKET_FULL(
         )
 RETURNS bigint AS $$
 DECLARE
-        _id bigint;
+        t_id bigint;
+        t_mac_id bigint;
 BEGIN
-        _id := INSERT_IP_PACKET_FULL($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$47);
+        t_id := INSERT_IP_PACKET_FULL($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$47);
         IF (ip_protocol = 6) THEN
-                PERFORM INSERT_TCP_FULL(_id,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30);
+                PERFORM INSERT_TCP_FULL(t_id,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30);
         ELSIF (ip_protocol = 17) THEN
-                PERFORM INSERT_UDP(_id,$31,$32,$33);
+                PERFORM INSERT_UDP(t_id,$31,$32,$33);
         ELSIF (ip_protocol = 1) THEN
-                PERFORM INSERT_ICMP(_id,$34,$35,$36,$37,$38,$39);
+                PERFORM INSERT_ICMP(t_id,$34,$35,$36,$37,$38,$39);
         ELSIF (ip_protocol = 58) THEN
-                PERFORM INSERT_ICMPV6(_id,$40,$41,$42,$43,$44);
+                PERFORM INSERT_ICMPV6(t_id,$40,$41,$42,$43,$44);
         END IF;
         IF (mac_saddr IS NOT NULL) THEN
-                PERFORM INSERT_MAC(_id,$45::macaddr,$46);
+                t_mac_id = INSERT_OR_SELECT_MAC($45::macaddr,$46);
+                UPDATE ulog2 SET mac_id = t_mac_id WHERE _id = t_id;
         END IF;
-        RETURN _id;
+        RETURN t_id;
 END
 $$ LANGUAGE plpgsql SECURITY INVOKER;
 
