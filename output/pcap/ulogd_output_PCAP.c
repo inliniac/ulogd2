@@ -135,7 +135,7 @@ static int interp_pcap(struct ulogd_pluginstance *upi)
 	struct ulogd_key *res = upi->input.keys;
 	struct pcap_sf_pkthdr pchdr;
 
-	pchdr.caplen = GET_VALUE(res, 1).ui32;
+	pchdr.caplen = GET_VALUE(res, 2).ui32;
 	pchdr.len = GET_VALUE(res, 2).ui32;
 
 	if (GET_FLAGS(res, 3) & ULOGD_RETF_VALID
