@@ -270,7 +270,6 @@ static int ulog_read_cb(int fd, unsigned int what, void *param)
 		}
 		while ((upkt = ipulog_get_packet(u->libulog_h,
 						 u->libulog_buf, len))) {
-			ulogd_log(ULOGD_DEBUG, "==> ulog packet received\n");
 			/* since we support the re-use of one instance in
 			 * several different stacks, we duplicate the message
 			 * to let them know */
