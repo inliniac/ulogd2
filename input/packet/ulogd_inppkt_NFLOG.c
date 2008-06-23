@@ -136,7 +136,7 @@ enum nflog_keys {
 };
 
 static struct ulogd_key output_keys[] = {
-	{
+	[NFLOG_KEY_RAW_MAC] = {
 		.type = ULOGD_RET_RAW,
 		.flags = ULOGD_RETF_NONE,
 		.name = "raw.mac",
@@ -145,7 +145,7 @@ static struct ulogd_key output_keys[] = {
 			.field_id = IPFIX_sourceMacAddress,
 		},
 	},
-	{
+	[NFLOG_KEY_RAW_PCKT] = {
 		.type = ULOGD_RET_RAW,
 		.flags = ULOGD_RETF_NONE,
 		.name = "raw.pkt",
@@ -154,7 +154,7 @@ static struct ulogd_key output_keys[] = {
 			.field_id = IPFIX_NF_rawpacket,
 		},
 	},
-	{
+	[NFLOG_KEY_RAW_PCKTLEN] = {
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "raw.pktlen",
@@ -163,7 +163,7 @@ static struct ulogd_key output_keys[] = {
 			.field_id = IPFIX_NF_rawpacket_length,
 		},
 	},
-	{
+	[NFLOG_KEY_RAW_PCKTCOUNT] = {
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "raw.pktcount",
@@ -172,7 +172,7 @@ static struct ulogd_key output_keys[] = {
 			.field_id = IPFIX_packetDeltaCount,
 		},
 	},
-	{
+	[NFLOG_KEY_OOB_PREFIX] = {
 		.type = ULOGD_RET_STRING,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.prefix",
@@ -181,7 +181,8 @@ static struct ulogd_key output_keys[] = {
 			.field_id = IPFIX_NF_prefix,
 		},
 	},
-	{ 	.type = ULOGD_RET_UINT32,
+	[NFLOG_KEY_OOB_TIME_SEC] = {
+		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.time.sec",
 		.ipfix = {
@@ -189,7 +190,7 @@ static struct ulogd_key output_keys[] = {
 			.field_id = IPFIX_flowStartSeconds,
 		},
 	},
-	{
+	[NFLOG_KEY_OOB_TIME_USEC] = {
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.time.usec",
@@ -198,7 +199,7 @@ static struct ulogd_key output_keys[] = {
 			.field_id = IPFIX_flowStartMicroSeconds,
 		},
 	},
-	{
+	[NFLOG_KEY_OOB_MARK] = {
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.mark",
@@ -207,7 +208,7 @@ static struct ulogd_key output_keys[] = {
 			.field_id = IPFIX_NF_mark,
 		},
 	},
-	{
+	[NFLOG_KEY_OOB_IFINDEX_IN] = {
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.ifindex_in",
@@ -216,7 +217,7 @@ static struct ulogd_key output_keys[] = {
 			.field_id = IPFIX_ingressInterface,
 		},
 	},
-	{
+	[NFLOG_KEY_OOB_IFINDEX_OUT] = {
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.ifindex_out",
@@ -225,7 +226,7 @@ static struct ulogd_key output_keys[] = {
 			.field_id = IPFIX_egressInterface,
 		},
 	},
-	{
+	[NFLOG_KEY_OOB_HOOK] = {
 		.type = ULOGD_RET_UINT8,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.hook",
@@ -234,12 +235,12 @@ static struct ulogd_key output_keys[] = {
 			.field_id = IPFIX_NF_hook,
 		},
 	},
-	{
+	[NFLOG_KEY_RAW_MAC_LEN] = {
 		.type = ULOGD_RET_UINT16,
 		.flags = ULOGD_RETF_NONE,
 		.name = "raw.mac_len",
 	},
-	{
+	[NFLOG_KEY_OOB_SEQ_LOCAL] = {
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.seq.local",
@@ -248,7 +249,7 @@ static struct ulogd_key output_keys[] = {
 			.field_id = IPFIX_NF_seq_local,
 		},
 	},
-	{
+	[NFLOG_KEY_OOB_SEQ_GLOBAL] = {
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.seq.global",
@@ -257,27 +258,27 @@ static struct ulogd_key output_keys[] = {
 			.field_id = IPFIX_NF_seq_global,
 		},
 	},
-	{
+	[NFLOG_KEY_OOB_FAMILY] = {
 		.type = ULOGD_RET_UINT8,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.family",
 	},
-	{
+	[NFLOG_KEY_OOB_PROTOCOL] = {
 		.type = ULOGD_RET_UINT16,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.protocol",
 	},
-	{
+	[NFLOG_KEY_OOB_UID] = {
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.uid",
 	},
-	{
+	[NFLOG_KEY_OOB_GID] = {
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.gid",
 	},
-	{
+	[NFLOG_KEY_RAW_LABEL] = {
 		.type = ULOGD_RET_UINT8,
 		.flags = ULOGD_RETF_NONE,
 		.name = "raw.label",

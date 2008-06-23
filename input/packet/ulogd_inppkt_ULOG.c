@@ -83,7 +83,7 @@ enum ulog_keys {
 };
 
 static struct ulogd_key output_keys[] = {
-	{
+	[ULOG_KEY_RAW_MAC] = {
 		.type = ULOGD_RET_RAW,
 		.flags = ULOGD_RETF_NONE,
 		.name = "raw.mac",
@@ -92,7 +92,7 @@ static struct ulogd_key output_keys[] = {
 			.field_id = IPFIX_sourceMacAddress,
 		},
 	},
-	{
+	[ULOG_KEY_RAW_PCKT] = {
 		.type = ULOGD_RET_RAW,
 		.flags = ULOGD_RETF_NONE,
 		.name = "raw.pkt",
@@ -101,7 +101,7 @@ static struct ulogd_key output_keys[] = {
 			.field_id = 1,
 			},
 	},
-	{
+	[ULOG_KEY_RAW_PCKTLEN] = {
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "raw.pktlen",
@@ -110,7 +110,7 @@ static struct ulogd_key output_keys[] = {
 			.field_id = 1
 		},
 	},
-	{
+	[ULOG_KEY_RAW_PCKTCOUNT] = {
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "raw.pktcount",
@@ -119,12 +119,13 @@ static struct ulogd_key output_keys[] = {
 			.field_id = 2
 		},
 	},
-	{
+	[ULOG_KEY_OOB_PREFIX] = {
 		.type = ULOGD_RET_STRING,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.prefix",
 	},
-	{ 	.type = ULOGD_RET_UINT32,
+	[ULOG_KEY_OOB_TIME_SEC] = {
+		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.time.sec",
 		.ipfix = {
@@ -132,27 +133,27 @@ static struct ulogd_key output_keys[] = {
 			.field_id = 22
 		},
 	},
-	{
+	[ULOG_KEY_OOB_TIME_USEC] = {
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.time.usec",
 	},
-	{
+	[ULOG_KEY_OOB_MARK] = {
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.mark",
 	},
-	{
+	[ULOG_KEY_OOB_IN] = {
 		.type = ULOGD_RET_STRING,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.in",
 	},
-	{
+	[ULOG_KEY_OOB_OUT] = {
 		.type = ULOGD_RET_STRING,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.out",
 	},
-	{
+	[ULOG_KEY_OOB_HOOK] = {
 		.type = ULOGD_RET_UINT8,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.hook",
@@ -161,22 +162,22 @@ static struct ulogd_key output_keys[] = {
 			.field_id = IPFIX_NF_hook,
 		},
 	},
-	{
+	[ULOG_KEY_RAW_MAC_LEN] = {
 		.type = ULOGD_RET_UINT16,
 		.flags = ULOGD_RETF_NONE,
 		.name = "raw.mac_len",
 	},
-	{
+	[ULOG_KEY_OOB_FAMILY] = {
 		.type = ULOGD_RET_UINT8,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.family",
 	},
-	{
+	[ULOG_KEY_OOB_PROTOCOL] = {
 		.type = ULOGD_RET_UINT16,
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.protocol",
 	},
-	{
+	[ULOG_KEY_RAW_LABEL] = {
 		.type = ULOGD_RET_UINT8,
 		.flags = ULOGD_RETF_NONE,
 		.name = "raw.label",
