@@ -156,7 +156,7 @@ static struct ulogd_key nfct_okeys[] = {
 		.type 	= ULOGD_RET_IPADDR,
 		.flags 	= ULOGD_RETF_NONE,
 		.name	= "orig.ip.saddr",
-		.ipfix	= { 
+		.ipfix	= {
 			.vendor = IPFIX_VENDOR_IETF,
 			.field_id = IPFIX_sourceIPv4Address,
 		},
@@ -174,7 +174,7 @@ static struct ulogd_key nfct_okeys[] = {
 		.type	= ULOGD_RET_UINT8,
 		.flags	= ULOGD_RETF_NONE,
 		.name	= "orig.ip.protocol",
-		.ipfix	= { 
+		.ipfix	= {
 			.vendor = IPFIX_VENDOR_IETF,
 			.field_id = IPFIX_protocolIdentifier,
 		},
@@ -201,7 +201,7 @@ static struct ulogd_key nfct_okeys[] = {
 		.type	= ULOGD_RET_UINT32,
 		.flags	= ULOGD_RETF_NONE,
 		.name	= "orig.raw.pktlen",
-		.ipfix	= { 
+		.ipfix	= {
 			.vendor 	= IPFIX_VENDOR_IETF,
 			.field_id 	= IPFIX_octetTotalCount,
 			/* FIXME: this could also be octetDeltaCount */
@@ -211,7 +211,7 @@ static struct ulogd_key nfct_okeys[] = {
 		.type	= ULOGD_RET_UINT32,
 		.flags	= ULOGD_RETF_NONE,
 		.name	= "orig.raw.pktcount",
-		.ipfix	= { 
+		.ipfix	= {
 			.vendor 	= IPFIX_VENDOR_IETF,
 			.field_id 	= IPFIX_packetTotalCount,
 			/* FIXME: this could also be packetDeltaCount */
@@ -221,7 +221,7 @@ static struct ulogd_key nfct_okeys[] = {
 		.type 	= ULOGD_RET_IPADDR,
 		.flags 	= ULOGD_RETF_NONE,
 		.name	= "reply.ip.saddr",
-		.ipfix	= { 
+		.ipfix	= {
 			.vendor = IPFIX_VENDOR_IETF,
 			.field_id = IPFIX_sourceIPv4Address,
 		},
@@ -239,7 +239,7 @@ static struct ulogd_key nfct_okeys[] = {
 		.type	= ULOGD_RET_UINT8,
 		.flags	= ULOGD_RETF_NONE,
 		.name	= "reply.ip.protocol",
-		.ipfix	= { 
+		.ipfix	= {
 			.vendor = IPFIX_VENDOR_IETF,
 			.field_id = IPFIX_protocolIdentifier,
 		},
@@ -266,7 +266,7 @@ static struct ulogd_key nfct_okeys[] = {
 		.type	= ULOGD_RET_UINT32,
 		.flags	= ULOGD_RETF_NONE,
 		.name	= "reply.raw.pktlen",
-		.ipfix	= { 
+		.ipfix	= {
 			.vendor 	= IPFIX_VENDOR_IETF,
 			.field_id 	= IPFIX_octetTotalCount,
 			/* FIXME: this could also be octetDeltaCount */
@@ -276,7 +276,7 @@ static struct ulogd_key nfct_okeys[] = {
 		.type	= ULOGD_RET_UINT32,
 		.flags	= ULOGD_RETF_NONE,
 		.name	= "reply.raw.pktcount",
-		.ipfix	= { 
+		.ipfix	= {
 			.vendor 	= IPFIX_VENDOR_IETF,
 			.field_id 	= IPFIX_packetTotalCount,
 			/* FIXME: this could also be packetDeltaCount */
@@ -442,7 +442,7 @@ static int propagate_ct(struct ulogd_pluginstance *upi,
 			struct ct_timestamp *ts)
 {
 	struct ulogd_key *ret = upi->output.keys;
-	
+
 	ret[NFCT_CT_EVENT].u.value.ui32 = type;
 	ret[NFCT_CT_EVENT].flags |= ULOGD_RETF_VALID;
 
@@ -569,7 +569,7 @@ static int propagate_ct(struct ulogd_pluginstance *upi,
 
 	if (ts) {
 		if (ts->time[START].tv_sec) {
-			ret[NFCT_FLOW_START_SEC].u.value.ui32 = 
+			ret[NFCT_FLOW_START_SEC].u.value.ui32 =
 				ts->time[START].tv_sec;
 			ret[NFCT_FLOW_START_SEC].flags |= ULOGD_RETF_VALID;
 
@@ -618,7 +618,7 @@ static int event_handler(enum nf_conntrack_msg_type type,
 			 void *data)
 {
 	struct ulogd_pluginstance *upi = data;
-	struct nfct_pluginstance *cpi = 
+	struct nfct_pluginstance *cpi =
 				(struct nfct_pluginstance *) upi->private;
 	struct ct_timestamp *ts = NULL;
 	struct ct_timestamp tmp = {
@@ -732,7 +732,7 @@ static int read_cb_nfct(int fd, unsigned int what, void *param)
 					  "`netlink_socket_buffer_size' and "
 					  "`netlink_socket_buffer_maxsize'\n");
 			}
-			
+
 			/* internal hash can deal with refresh */
 			if (usehash_ce(upi->config_kset).u.value != 0) {
 				nfct_send(cpi->ovh, NFCT_Q_DUMP, &family);
@@ -816,7 +816,7 @@ static int read_cb_ovh(int fd, unsigned int what, void *param)
 static int get_ctr_zero(struct ulogd_pluginstance *upi)
 {
 	int family = 0; /* any */
-	struct nfct_pluginstance *cpi = 
+	struct nfct_pluginstance *cpi =
 			(struct nfct_pluginstance *)upi->private;
 
 	return nfct_query(cpi->cth, NFCT_Q_DUMP_RESET, &family);
@@ -825,7 +825,7 @@ static int get_ctr_zero(struct ulogd_pluginstance *upi)
 static void getctr_timer_cb(struct ulogd_timer *t, void *data)
 {
 	struct ulogd_pluginstance *upi = data;
-	struct nfct_pluginstance *cpi = 
+	struct nfct_pluginstance *cpi =
 			(struct nfct_pluginstance *)upi->private;
 
 	get_ctr_zero(upi);
@@ -835,10 +835,10 @@ static void getctr_timer_cb(struct ulogd_timer *t, void *data)
 static int configure_nfct(struct ulogd_pluginstance *upi,
 			  struct ulogd_pluginstance_stack *stack)
 {
-	struct nfct_pluginstance *cpi = 
+	struct nfct_pluginstance *cpi =
 			(struct nfct_pluginstance *)upi->private;
 	int ret;
-	
+
 	ret = config_parse_file(upi->id, upi->config_kset);
 	if (ret < 0)
 		return ret;
@@ -865,7 +865,7 @@ static void overrun_timeout(struct ulogd_timer *a, void *data)
 
 static int constructor_nfct(struct ulogd_pluginstance *upi)
 {
-	struct nfct_pluginstance *cpi = 
+	struct nfct_pluginstance *cpi =
 			(struct nfct_pluginstance *)upi->private;
 
 	cpi->cth = nfct_open(NFNL_SUBSYS_CTNETLINK,
@@ -931,7 +931,7 @@ static int constructor_nfct(struct ulogd_pluginstance *upi)
 			return -1;
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -939,7 +939,7 @@ static int destructor_nfct(struct ulogd_pluginstance *pi)
 {
 	struct nfct_pluginstance *cpi = (void *) pi;
 	int rc;
-	
+
 	hashtable_destroy(cpi->ct_active);
 
 	rc = nfct_close(cpi->cth);

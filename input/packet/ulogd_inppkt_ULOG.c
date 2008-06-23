@@ -83,10 +83,10 @@ enum ulog_keys {
 };
 
 static struct ulogd_key output_keys[] = {
-	{ 
-		.type = ULOGD_RET_RAW, 
-		.flags = ULOGD_RETF_NONE, 
-		.name = "raw.mac", 
+	{
+		.type = ULOGD_RET_RAW,
+		.flags = ULOGD_RETF_NONE,
+		.name = "raw.mac",
 		.ipfix = {
 			.vendor = IPFIX_VENDOR_IETF,
 			.field_id = IPFIX_sourceMacAddress,
@@ -105,7 +105,7 @@ static struct ulogd_key output_keys[] = {
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "raw.pktlen",
-		.ipfix = { 
+		.ipfix = {
 			.vendor = IPFIX_VENDOR_IETF,
 			.field_id = 1
 		},
@@ -114,43 +114,43 @@ static struct ulogd_key output_keys[] = {
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "raw.pktcount",
-		.ipfix = { 
+		.ipfix = {
 			.vendor = IPFIX_VENDOR_IETF,
 			.field_id = 2
 		},
 	},
 	{
 		.type = ULOGD_RET_STRING,
-		.flags = ULOGD_RETF_NONE, 
-		.name = "oob.prefix", 
+		.flags = ULOGD_RETF_NONE,
+		.name = "oob.prefix",
 	},
-	{ 	.type = ULOGD_RET_UINT32, 
-		.flags = ULOGD_RETF_NONE, 
-		.name = "oob.time.sec", 
-		.ipfix = { 
-			.vendor = IPFIX_VENDOR_IETF, 
-			.field_id = 22 
+	{ 	.type = ULOGD_RET_UINT32,
+		.flags = ULOGD_RETF_NONE,
+		.name = "oob.time.sec",
+		.ipfix = {
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = 22
 		},
 	},
 	{
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
-		.name = "oob.time.usec", 
+		.name = "oob.time.usec",
 	},
 	{
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
-		.name = "oob.mark", 
+		.name = "oob.mark",
 	},
 	{
 		.type = ULOGD_RET_STRING,
 		.flags = ULOGD_RETF_NONE,
-		.name = "oob.in", 
+		.name = "oob.in",
 	},
 	{
 		.type = ULOGD_RET_STRING,
 		.flags = ULOGD_RETF_NONE,
-		.name = "oob.out", 
+		.name = "oob.out",
 	},
 	{
 		.type = ULOGD_RET_UINT8,
@@ -161,10 +161,10 @@ static struct ulogd_key output_keys[] = {
 			.field_id = IPFIX_NF_hook,
 		},
 	},
-	{ 
-		.type = ULOGD_RET_UINT16, 
-		.flags = ULOGD_RETF_NONE, 
-		.name = "raw.mac_len", 
+	{
+		.type = ULOGD_RET_UINT16,
+		.flags = ULOGD_RETF_NONE,
+		.name = "raw.mac_len",
 	},
 	{
 		.type = ULOGD_RET_UINT8,

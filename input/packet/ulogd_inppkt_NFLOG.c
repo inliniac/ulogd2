@@ -136,10 +136,10 @@ enum nflog_keys {
 };
 
 static struct ulogd_key output_keys[] = {
-	{ 
-		.type = ULOGD_RET_RAW, 
+	{
+		.type = ULOGD_RET_RAW,
 		.flags = ULOGD_RETF_NONE,
-		.name = "raw.mac", 
+		.name = "raw.mac",
 		.ipfix = {
 			.vendor = IPFIX_VENDOR_IETF,
 			.field_id = IPFIX_sourceMacAddress,
@@ -158,7 +158,7 @@ static struct ulogd_key output_keys[] = {
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "raw.pktlen",
-		.ipfix = { 
+		.ipfix = {
 			.vendor = IPFIX_VENDOR_NETFILTER,
 			.field_id = IPFIX_NF_rawpacket_length,
 		},
@@ -167,32 +167,32 @@ static struct ulogd_key output_keys[] = {
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
 		.name = "raw.pktcount",
-		.ipfix = { 
+		.ipfix = {
 			.vendor = IPFIX_VENDOR_IETF,
 			.field_id = IPFIX_packetDeltaCount,
 		},
 	},
 	{
 		.type = ULOGD_RET_STRING,
-		.flags = ULOGD_RETF_NONE, 
-		.name = "oob.prefix", 
+		.flags = ULOGD_RETF_NONE,
+		.name = "oob.prefix",
 		.ipfix = {
 			.vendor = IPFIX_VENDOR_NETFILTER,
-			.field_id = IPFIX_NF_prefix,  
+			.field_id = IPFIX_NF_prefix,
 		},
 	},
-	{ 	.type = ULOGD_RET_UINT32, 
-		.flags = ULOGD_RETF_NONE, 
-		.name = "oob.time.sec", 
-		.ipfix = { 
-			.vendor = IPFIX_VENDOR_IETF, 
-			.field_id = IPFIX_flowStartSeconds, 
+	{ 	.type = ULOGD_RET_UINT32,
+		.flags = ULOGD_RETF_NONE,
+		.name = "oob.time.sec",
+		.ipfix = {
+			.vendor = IPFIX_VENDOR_IETF,
+			.field_id = IPFIX_flowStartSeconds,
 		},
 	},
 	{
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
-		.name = "oob.time.usec", 
+		.name = "oob.time.usec",
 		.ipfix = {
 			.vendor = IPFIX_VENDOR_IETF,
 			.field_id = IPFIX_flowStartMicroSeconds,
@@ -201,7 +201,7 @@ static struct ulogd_key output_keys[] = {
 	{
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
-		.name = "oob.mark", 
+		.name = "oob.mark",
 		.ipfix = {
 			.vendor = IPFIX_VENDOR_NETFILTER,
 			.field_id = IPFIX_NF_mark,
@@ -210,7 +210,7 @@ static struct ulogd_key output_keys[] = {
 	{
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
-		.name = "oob.ifindex_in", 
+		.name = "oob.ifindex_in",
 		.ipfix = {
 			.vendor = IPFIX_VENDOR_IETF,
 			.field_id = IPFIX_ingressInterface,
@@ -219,7 +219,7 @@ static struct ulogd_key output_keys[] = {
 	{
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
-		.name = "oob.ifindex_out", 
+		.name = "oob.ifindex_out",
 		.ipfix = {
 			.vendor = IPFIX_VENDOR_IETF,
 			.field_id = IPFIX_egressInterface,
@@ -234,10 +234,10 @@ static struct ulogd_key output_keys[] = {
 			.field_id = IPFIX_NF_hook,
 		},
 	},
-	{ 
-		.type = ULOGD_RET_UINT16, 
-		.flags = ULOGD_RETF_NONE, 
-		.name = "raw.mac_len", 
+	{
+		.type = ULOGD_RET_UINT16,
+		.flags = ULOGD_RETF_NONE,
+		.name = "raw.mac_len",
 	},
 	{
 		.type = ULOGD_RET_UINT32,
@@ -285,7 +285,7 @@ static struct ulogd_key output_keys[] = {
 
 };
 
-static inline int 
+static inline int
 interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 {
 	struct ulogd_key *ret = upi->output.keys;
@@ -489,9 +489,9 @@ static int start(struct ulogd_pluginstance *upi)
 
 	if (unbind_ce(upi->config_kset).u.value > 0) {
 		ulogd_log(ULOGD_NOTICE, "forcing unbind of existing log "
-			  "handler for protocol %d\n", 
+			  "handler for protocol %d\n",
 			  af_ce(upi->config_kset).u.value);
-		if (nflog_unbind_pf(ui->nful_h, 
+		if (nflog_unbind_pf(ui->nful_h,
 				    af_ce(upi->config_kset).u.value) < 0) {
 			ulogd_log(ULOGD_ERROR, "unable to force-unbind "
 				  "existing log handler for protocol %d\n",
@@ -537,7 +537,7 @@ static int start(struct ulogd_pluginstance *upi)
 			ulogd_log(ULOGD_ERROR, "unable to set flags 0x%x\n",
 				  flags);
 	}
-	
+
 	nflog_callback_register(ui->nful_gh, &msg_cb, upi);
 
 	ui->nful_fd.fd = nflog_fd(ui->nful_h);
