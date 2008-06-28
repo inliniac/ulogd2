@@ -41,10 +41,6 @@ PKG_CHECK_MODULES(LIBNETFILTER_CONNTRACK, libnetfilter_conntrack >= $LIBNETFILTE
 
 PKG_CHECK_MODULES(LIBNETFILTER_LOG, libnetfilter_log >= $LIBNETFILTER_LOG_REQUIRED,, AC_MSG_ERROR(Cannot find libnetfilter_log >= $LIBNETFILTER_LOG_REQUIRED))
 
-AC_CHECK_LIB([netfilter_log], [nflog_get_gid],
-	     AC_DEFINE_UNQUOTED([HAVE_NFLOG_GET_GID],[1],[libnetfilter_log has GID support]),,
-	     [-lnfnetlink])
-
 
 CT_CHECK_POSTGRES_DB()
 AM_CONDITIONAL(HAVE_PGSQL, test "x$PQLIBPATH" != "x")
