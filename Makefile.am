@@ -20,5 +20,3 @@ $(OBJECTS): libtool
 libtool: $(LIBTOOL_DEPS)
 	$(SHELL) ./config.status --recheck
 
-dist-hook:
-	rm -rf `find $(distdir)/debian -name .svn`
