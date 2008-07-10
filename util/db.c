@@ -54,7 +54,7 @@ static int disabled_interp_db(struct ulogd_pluginstance *upi)
 	return 0;
 }
 
-#define SQL_INSERTTEMPL   "insert into X (Y) values (Z)"
+#define SQL_INSERTTEMPL   "SELECT P(Y)"
 #define SQL_VALSIZE	100
 
 /* create the static part of our insert statement */
@@ -80,7 +80,8 @@ static int sql_createstmt(struct ulogd_pluginstance *upi)
 		/* we need space for the key and a comma, as well as
 		 * enough space for the values */
 		size += strlen(upi->input.keys[i].name) + 1 + SQL_VALSIZE;
-	}	
+	}
+	size += srtlen(procedure);
 
 	ulogd_log(ULOGD_DEBUG, "allocating %u bytes for statement\n", size);
 
