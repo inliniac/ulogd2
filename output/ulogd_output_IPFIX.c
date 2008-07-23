@@ -38,6 +38,8 @@
 #include <sys/socket.h>
 #include <netdb.h>
 
+#include <ulogd/linuxlist.h>
+
 #ifdef IPPROTO_SCTP
 /* temporarily disable sctp until we know which headers to use */
 #undef IPPROTO_SCTP
@@ -139,7 +141,7 @@ int bitmasks_equal(const struct bitmask *bm1, const struct bitmask *bm2)
 struct bitmask *bitmask_dup(const struct bitmask *bm_orig)
 {
 	struct bitmask *bm_new;
-	int size = sizoef(*bm_new) + SIZE_OCTETS(bm_orig->size_bits);
+	int size = sizeof(*bm_new) + SIZE_OCTETS(bm_orig->size_bits);
 
 	bm_new = malloc(size);
 	if (!bm_new)
@@ -222,13 +224,13 @@ build_template_for_bitmask(struct ulogd_pluginstance *upi,
 
 	tmpl = malloc(size);
 	if (!tmpl)
-		return -ENOMEM;
+		return NULL;
 	memset(tmpl, 0, size);
 
-	tmpl->bitmask = dup_bitmask(bm);
+	tmpl->bitmask = bitmask_dup(bm);
 	if (!tmpl->bitmask) {
 		free(tmpl);
-		return -ENOMEM;
+		return NULL;
 	}
 
 	/* initialize template header */
@@ -280,7 +282,7 @@ build_template_for_bitmask(struct ulogd_pluginstance *upi,
 
 	tmpl->tmpl.hdr.field_count = htons(j);
 
-	return 0;
+	return tmpl;
 }
 
 
