@@ -137,7 +137,7 @@ static char *ip2bin(struct ulogd_key* inp, int index, char family)
 
 	switch (family) {
 		case AF_INET6:
-			addr = GET_VALUE(inp, index).ui128;
+			addr = (struct in6_addr *) GET_VALUE(inp, index).ui128;
 			break;
 		case AF_INET:
 			/* Convert IPv4 to IPv4 in IPv6 */
