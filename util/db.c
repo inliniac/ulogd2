@@ -81,7 +81,7 @@ static int sql_createstmt(struct ulogd_pluginstance *upi)
 		 * enough space for the values */
 		size += strlen(upi->input.keys[i].name) + 1 + SQL_VALSIZE;
 	}
-	size += srtlen(procedure);
+	size += strlen(procedure);
 
 	ulogd_log(ULOGD_DEBUG, "allocating %u bytes for statement\n", size);
 
