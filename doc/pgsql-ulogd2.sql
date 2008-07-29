@@ -26,6 +26,7 @@ CREATE TABLE _extensions (
 ) WITH (OIDS=FALSE);
 
 DROP TABLE IF EXISTS mac CASCADE;
+DROP TABLE IF EXISTS hwhdr CASCADE;
 DROP TABLE IF EXISTS tcp CASCADE;
 DROP TABLE IF EXISTS udp CASCADE;
 DROP TABLE IF EXISTS icmp CASCADE;
@@ -72,11 +73,22 @@ CREATE SEQUENCE mac__id_seq;
 CREATE TABLE mac (
   _mac_id bigint PRIMARY KEY UNIQUE NOT NULL DEFAULT nextval('mac__id_seq'),
   mac_saddr macaddr NOT NULL,
+  mac_daddr macaddr default NULL,
   mac_protocol smallint default NULL
 ) WITH (OIDS=FALSE);
 
 CREATE INDEX mac_saddr ON mac(mac_saddr);
-CREATE UNIQUE INDEX unique_mac ON mac(mac_saddr,mac_protocol);
+CREATE INDEX mac_daddr ON mac(mac_daddr);
+CREATE UNIQUE INDEX unique_mac ON mac(mac_saddr,mac_daddr,mac_protocol);
+
+CREATE TABLE hwhdr (
+  _hw_id bigint PRIMARY KEY UNIQUE NOT NULL,
+  raw_type integer default NULL,
+  raw_header varchar(256) default NULL
+) WITH (OIDS=FALSE);
+
+CREATE INDEX raw_type ON hwhdr(raw_type);
+CREATE INDEX raw_header ON hwhdr(raw_header);
 
 CREATE TABLE tcp (
   _tcp_id bigint PRIMARY KEY UNIQUE NOT NULL,
@@ -195,12 +207,16 @@ CREATE OR REPLACE VIEW ulog AS
         icmpv6_echoid,
         icmpv6_echoseq,
         icmpv6_csum,
+        raw_type,
+        raw_header AS mac_str,
         mac_saddr AS mac_saddr_str,
+        mac_daddr AS mac_daddr_str,
         mac_protocol AS oob_protocol,
         label AS raw_label
         FROM ulog2 LEFT JOIN tcp ON ulog2._id = tcp._tcp_id LEFT JOIN udp ON ulog2._id = udp._udp_id
                 LEFT JOIN icmp ON ulog2._id = icmp._icmp_id
                 LEFT JOIN mac ON ulog2.mac_id = mac._mac_id
+                LEFT JOIN hwhdr ON ulog2._id = hwhdr._hw_id
                 LEFT JOIN icmpv6 ON ulog2._id = icmpv6._icmpv6_id;
 
 -- shortcuts
@@ -443,17 +459,33 @@ RETURNS bigint AS $$
         SELECT currval('ulog2__id_seq');
 $$ LANGUAGE SQL SECURITY INVOKER;
 
+CREATE OR REPLACE FUNCTION INSERT_HARDWARE_HEADER(
+                IN hw_id bigint,
+                IN hw_type integer,
+                IN hw_addr varchar(256)
+        )
+RETURNS bigint AS $$
+        INSERT INTO hwhdr (_hw_id,raw_type,raw_header)
+                VALUES ($1,$2,$3);
+        SELECT currval('ulog2__id_seq');
+$$ LANGUAGE SQL SECURITY INVOKER;
+
 CREATE OR REPLACE FUNCTION INSERT_OR_SELECT_MAC(
                 IN in_mac_saddr macaddr,
+                IN in_mac_daddr macaddr,
                 IN in_mac_protocol integer
         )
 RETURNS bigint AS $$
 DECLARE
         _id bigint;
 BEGIN
-        SELECT INTO _id _mac_id FROM mac WHERE mac_saddr = $1 AND mac_protocol = $2;
+        IF $2 IS NULL THEN
+                SELECT INTO _id _mac_id FROM mac WHERE mac_saddr = $1 AND mac_daddr IS NULL AND mac_protocol = $3;
+        ELSE
+                SELECT INTO _id _mac_id FROM mac WHERE mac_saddr = $1 AND mac_daddr = $2 AND mac_protocol = $3;
+        END IF;
         IF NOT FOUND THEN
-                INSERT INTO mac (mac_saddr,mac_protocol) VALUES ($1,$2) RETURNING _mac_id INTO _id;
+                INSERT INTO mac (mac_saddr,mac_daddr,mac_protocol) VALUES ($1,$2,$3) RETURNING _mac_id INTO _id;
                 RETURN _id;
         END IF;
         RETURN _id;
@@ -507,7 +539,10 @@ CREATE OR REPLACE FUNCTION INSERT_PACKET_FULL(
                 IN icmpv6_echoid integer,
                 IN icmpv6_echoseq integer,
                 IN icmpv6_csum integer,
+                IN raw_type integer,
+                IN raw_header varchar(256),
                 IN mac_saddr varchar(32),
+                IN mac_daddr varchar(32),
                 IN mac_protocol integer,
                 IN label integer
         )
@@ -516,7 +551,7 @@ DECLARE
         t_id bigint;
         t_mac_id bigint;
 BEGIN
-        t_id := INSERT_IP_PACKET_FULL($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$47);
+        t_id := INSERT_IP_PACKET_FULL($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$50);
         IF (ip_protocol = 6) THEN
                 PERFORM INSERT_TCP_FULL(t_id,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30);
         ELSIF (ip_protocol = 17) THEN
@@ -526,9 +561,11 @@ BEGIN
         ELSIF (ip_protocol = 58) THEN
                 PERFORM INSERT_ICMPV6(t_id,$40,$41,$42,$43,$44);
         END IF;
-        IF (mac_saddr IS NOT NULL) THEN
-                t_mac_id = INSERT_OR_SELECT_MAC($45::macaddr,$46);
+        IF (raw_type = 1) THEN
+                t_mac_id = INSERT_OR_SELECT_MAC($47::macaddr,$48::macaddr,$49);
                 UPDATE ulog2 SET mac_id = t_mac_id WHERE _id = t_id;
+        ELSE
+                PERFORM INSERT_HARDWARE_HEADER(t_id,$45,$46);
         END IF;
         RETURN t_id;
 END

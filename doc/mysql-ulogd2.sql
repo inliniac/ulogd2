@@ -28,6 +28,7 @@ CREATE TABLE `_extensions` (
 ) ENGINE=INNODB;
 
 DROP TABLE IF EXISTS `mac`;
+DROP TABLE IF EXISTS `hwhdr`;
 DROP TABLE IF EXISTS `tcp`;
 DROP TABLE IF EXISTS `udp`;
 DROP TABLE IF EXISTS `icmp`;
@@ -75,12 +76,23 @@ ALTER TABLE ulog2 ADD KEY `timestamp` (`timestamp`);
 CREATE TABLE `mac` (
   `_mac_id` bigint unsigned NOT NULL auto_increment,
   `mac_saddr` varchar(32) default NULL,
+  `mac_daddr` varchar(32) default NULL,
   `mac_protocol` smallint(5) default NULL,
   UNIQUE KEY `key_id` (`_mac_id`)
 ) ENGINE=INNODB;
 
-ALTER TABLE mac ADD UNIQUE KEY `mac_saddr` (`mac_saddr`,`mac_protocol`);
+ALTER TABLE mac ADD UNIQUE KEY `mac_addr` (`mac_saddr`,`mac_daddr`,`mac_protocol`);
 ALTER TABLE mac ADD KEY `index_mac_id` (`_mac_id`);
+
+CREATE TABLE `hwhdr` (
+  `_hw_id` bigint unsigned NOT NULL,
+  `raw_type` int(10) unsigned default NULL,
+  `raw_header` varchar(255) default NULL
+) ENGINE=INNODB;
+
+ALTER TABLE hwhdr ADD UNIQUE KEY `_hw_id` (`_hw_id`);
+ALTER TABLE hwhdr ADD KEY `raw_type` (`raw_type`);
+ALTER TABLE hwhdr ADD KEY `raw_header` (`raw_header`);
 
 CREATE TABLE `tcp` (
   `_tcp_id` bigint unsigned NOT NULL,
@@ -176,8 +188,8 @@ CREATE SQL SECURITY INVOKER VIEW `ulog` AS
         oob_prefix,
         oob_mark,
         oob_in,
-	oob_out,
-	oob_family,
+        oob_out,
+        oob_family,
         ip_saddr AS ip_saddr_bin,
         ip_daddr AS ip_daddr_bin,
         ip_protocol,
@@ -209,17 +221,20 @@ CREATE SQL SECURITY INVOKER VIEW `ulog` AS
         icmp_echoseq,
         icmp_gateway,
         icmp_fragmtu,
-	icmpv6_type,
-	icmpv6_code,
-	icmpv6_echoid,
-	icmpv6_echoseq,
-	icmpv6_csum,
-	mac_saddr as mac_saddr_str,
-	mac_protocol as oob_protocol,
-	label as raw_label
+        icmpv6_type,
+        icmpv6_code,
+        icmpv6_echoid,
+        icmpv6_echoseq,
+        icmpv6_csum,
+        raw_type,
+        raw_header AS mac_str,
+        mac_saddr as mac_saddr_str,
+        mac_daddr as mac_daddr_str,
+        mac_protocol as oob_protocol,
+        label as raw_label
         FROM ulog2 LEFT JOIN tcp ON ulog2._id = tcp._tcp_id LEFT JOIN udp ON ulog2._id = udp._udp_id
-                LEFT JOIN icmp ON ulog2._id = icmp._icmp_id LEFT JOIN mac ON ulog2._id = mac._mac_id
-                LEFT JOIN icmpv6 ON ulog2._id = icmpv6._icmpv6_id;
+                LEFT JOIN icmp ON ulog2._id = icmp._icmp_id LEFT JOIN mac ON ulog2.mac_id = mac._mac_id
+		LEFT JOIN hwhdr ON ulog2._id = hwhdr._hw_id LEFT JOIN icmpv6 ON ulog2._id = icmpv6._icmpv6_id;
 
 
 -- shortcuts
@@ -607,14 +622,28 @@ delimiter $$
 DROP FUNCTION IF EXISTS INSERT_OR_SELECT_MAC;
 CREATE FUNCTION INSERT_OR_SELECT_MAC(
 		`_saddr` varchar(32),
+		`_daddr` varchar(32),
 		`_protocol` smallint(5)
 		) RETURNS bigint unsigned
 NOT DETERMINISTIC
 READS SQL DATA
 BEGIN
-	INSERT IGNORE INTO mac (mac_saddr, mac_protocol) VALUES (_saddr, _protocol);
-	SELECT _mac_id FROM mac WHERE mac_saddr = _saddr AND mac_protocol = _protocol INTO @last_id;
+	INSERT IGNORE INTO mac (mac_saddr, mac_daddr, mac_protocol) VALUES (_saddr, _daddr, _protocol);
+	SELECT _mac_id FROM mac WHERE mac_saddr = _saddr AND mac_daddr = _daddr AND mac_protocol = _protocol INTO @last_id;
 	RETURN @last_id;
+END
+$$
+
+delimiter $$
+DROP PROCEDURE IF EXISTS PACKET_ADD_HARDWARE_HEADER;
+CREATE PROCEDURE PACKET_ADD_HARDWARE_HEADER(
+		IN `id` int(10) unsigned,
+		IN `_hw_type` integer,
+		IN `_hw_addr` varchar(256)
+		)
+BEGIN
+	INSERT INTO hwhdr (_hw_id, raw_type, raw_header) VALUES
+	(id, _hw_type, _hw_addr);
 END
 $$
 
@@ -665,7 +694,10 @@ CREATE FUNCTION INSERT_PACKET_FULL(
 		icmpv6_echoid smallint(5) unsigned,
 		icmpv6_echoseq smallint(5) unsigned,
 		icmpv6_csum int(10) unsigned,
+                raw_type integer,
+                raw_header varchar(256),
 		mac_saddr varchar(32),
+		mac_daddr varchar(32),
 		mac_protocol smallint(5),
 		_label tinyint(4) unsigned
 		) RETURNS bigint unsigned
@@ -689,11 +721,13 @@ BEGIN
 		CALL PACKET_ADD_ICMPV6(@lastid, icmpv6_type, icmpv6_code, icmpv6_echoid,
 				       icmpv6_echoseq, icmpv6_csum);
 	END IF;
-	IF mac_protocol IS NOT NULL THEN
-		SET @mac_id = INSERT_OR_SELECT_MAC(mac_saddr, mac_protocol);
+	IF raw_type = 1 THEN
+		SET @mac_id = INSERT_OR_SELECT_MAC(mac_saddr, mac_daddr, mac_protocol);
 		IF @mac_id IS NOT NULL THEN
 			UPDATE ulog2 SET mac_id = @mac_id WHERE _id = @lastid;
 		END IF;
+	ELSE
+		CALL PACKET_ADD_HARDWARE_HEADER(@lastid, raw_type, raw_header);
 	END IF;
 	RETURN @lastid;
 END
