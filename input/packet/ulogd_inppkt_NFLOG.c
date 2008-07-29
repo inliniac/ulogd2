@@ -133,6 +133,9 @@ enum nflog_keys {
 	NFLOG_KEY_OOB_UID,
 	NFLOG_KEY_OOB_GID,
 	NFLOG_KEY_RAW_LABEL,
+	NFLOG_KEY_RAW_TYPE,
+	NFLOG_KEY_RAW_MAC_SADDR,
+	NFLOG_KEY_RAW_MAC_ADDRLEN,
 };
 
 static struct ulogd_key output_keys[] = {
@@ -140,6 +143,11 @@ static struct ulogd_key output_keys[] = {
 		.type = ULOGD_RET_RAW,
 		.flags = ULOGD_RETF_NONE,
 		.name = "raw.mac",
+	},
+	[NFLOG_KEY_RAW_MAC_SADDR] = {
+		.type = ULOGD_RET_RAW,
+		.flags = ULOGD_RETF_NONE,
+		.name = "raw.mac.saddr",
 		.ipfix = {
 			.vendor = IPFIX_VENDOR_IETF,
 			.field_id = IPFIX_sourceMacAddress,
@@ -240,6 +248,12 @@ static struct ulogd_key output_keys[] = {
 		.flags = ULOGD_RETF_NONE,
 		.name = "raw.mac_len",
 	},
+	[NFLOG_KEY_RAW_MAC_ADDRLEN] = {
+		.type = ULOGD_RET_UINT16,
+		.flags = ULOGD_RETF_NONE,
+		.name = "raw.mac.addrlen",
+	},
+
 	[NFLOG_KEY_OOB_SEQ_LOCAL] = {
 		.type = ULOGD_RET_UINT32,
 		.flags = ULOGD_RETF_NONE,
@@ -283,6 +297,11 @@ static struct ulogd_key output_keys[] = {
 		.flags = ULOGD_RETF_NONE,
 		.name = "raw.label",
 	},
+	[NFLOG_KEY_RAW_TYPE] = {
+		.type = ULOGD_RET_UINT16,
+		.flags = ULOGD_RETF_NONE,
+		.name = "raw.type",
+	},
 
 };
 
@@ -318,11 +337,22 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 		ret[NFLOG_KEY_OOB_PROTOCOL].flags |= ULOGD_RETF_VALID;
 	}
 
-	if (hw) {
-		ret[NFLOG_KEY_RAW_MAC].u.value.ptr = hw->hw_addr;
+	if (nflog_get_msg_packet_hwhdrlen(ldata)) {
+		ret[NFLOG_KEY_RAW_MAC].u.value.ptr = nflog_get_msg_packet_hwhdr(ldata);
 		ret[NFLOG_KEY_RAW_MAC].flags |= ULOGD_RETF_VALID;
-		ret[NFLOG_KEY_RAW_MAC_LEN].u.value.ui16 = ntohs(hw->hw_addrlen);
+		ret[NFLOG_KEY_RAW_MAC_LEN].u.value.ui16 =
+			nflog_get_msg_packet_hwhdrlen(ldata);
 		ret[NFLOG_KEY_RAW_MAC_LEN].flags |= ULOGD_RETF_VALID;
+		ret[NFLOG_KEY_RAW_TYPE].u.value.ui16 =
+			nflog_get_hwtype(ldata);
+		ret[NFLOG_KEY_RAW_TYPE].flags |= ULOGD_RETF_VALID;
+	}
+
+	if (hw) {
+		ret[NFLOG_KEY_RAW_MAC_SADDR].u.value.ptr = hw->hw_addr;
+		ret[NFLOG_KEY_RAW_MAC_SADDR].flags |= ULOGD_RETF_VALID;
+		ret[NFLOG_KEY_RAW_MAC_ADDRLEN].u.value.ui16 = ntohs(hw->hw_addrlen);
+		ret[NFLOG_KEY_RAW_MAC_ADDRLEN].flags |= ULOGD_RETF_VALID;
 	}
 
 	if (payload_len >= 0) {
