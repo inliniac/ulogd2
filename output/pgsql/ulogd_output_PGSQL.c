@@ -183,7 +183,6 @@ static int get_columns_pgsql(struct ulogd_pluginstance *upi)
 	for (i = 0; i < PQntuples(pi->pgres); i++) {
 		char buf[ULOGD_MAX_KEYLEN+1];
 		char *underscore;
-		int id;
 
 		/* replace all underscores with dots */
 		strncpy(buf, PQgetvalue(pi->pgres, i, 0), ULOGD_MAX_KEYLEN);

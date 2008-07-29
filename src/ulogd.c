@@ -204,7 +204,6 @@ int ulogd_wildcard_inputkeys(struct ulogd_pluginstance *upi)
 
 	/* second pass: copy key names */
 	llist_for_each_entry(pi_cur, &stack->list, list) {
-		struct ulogd_key *cur;
 		int i;
 
 		for (i = 0; i < pi_cur->plugin->output.num_keys; i++)
@@ -1022,7 +1021,7 @@ static struct option opts[] = {
 	{ "help", 0, NULL, 'h' },
 	{ "configfile", 1, NULL, 'c'},
 	{ "uid", 1, NULL, 'u' },
-	{ "info", 1, NULL, 'i'},
+	{ "info", 1, NULL, 'i' },
 	{ 0 }
 };
 

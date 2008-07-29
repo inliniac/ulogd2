@@ -920,9 +920,6 @@ static int _interp_arp(struct ulogd_pluginstance *pi, u_int32_t len)
 
 static int _interp_bridge(struct ulogd_pluginstance *pi, u_int32_t len)
 {
-	struct ulogd_key *ret = pi->output.keys;
-	const struct sk_buff *skb =
-		GET_VALUE(pi->input.keys, INKEY_RAW_PCKT).ptr;
 	const u_int16_t proto =
 		GET_VALUE(pi->input.keys, INKEY_OOB_PROTOCOL).ui16;
 

@@ -31,6 +31,7 @@
 #include <errno.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <time.h>
 
 #include <ulogd/ulogd.h>
 #include <ulogd/db.h>
@@ -62,8 +63,6 @@ static int sql_createstmt(struct ulogd_pluginstance *upi)
 {
 	struct db_instance *mi = (struct db_instance *) upi->private;
 	unsigned int size;
-	char buf[ULOGD_MAX_KEYLEN];
-	char *underscore;
 	int i;
 	char *table = table_ce(upi->config_kset).u.string;
 	char *procedure = procedure_ce(upi->config_kset).u.string;
@@ -245,8 +244,6 @@ static int __interp_db(struct ulogd_pluginstance *upi)
 		}
 		
 		switch (res->type) {
-			char *tmpstr;
-			struct in_addr addr;
 		case ULOGD_RET_INT8:
 			sprintf(di->stmt_ins, "%d,", res->u.value.i8);
 			break;

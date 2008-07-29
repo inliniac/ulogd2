@@ -84,7 +84,7 @@ static int nlif_read_cb(int fd, unsigned int what, void *param)
 	if (!(what & ULOGD_FD_READ))
 		return 0;
 
-	nlif_catch(nlif_inst);
+	return nlif_catch(nlif_inst);
 }
 
 static int ifindex_start(struct ulogd_pluginstance *upi)

@@ -102,7 +102,6 @@ static int get_columns_mysql(struct ulogd_pluginstance *upi)
 	struct mysql_instance *mi = (struct mysql_instance *) upi->private;
 	MYSQL_RES *result;
 	MYSQL_FIELD *field;
-	struct ulogd_key *f, *f2;
 	int i;
 
 	if (!mi->dbh) {
@@ -144,7 +143,6 @@ static int get_columns_mysql(struct ulogd_pluginstance *upi)
 	for (i = 0; field = mysql_fetch_field(result); i++) {
 		char buf[ULOGD_MAX_KEYLEN+1];
 		char *underscore;
-		int id;
 
 		/* replace all underscores with dots */
 		strncpy(buf, field->name, ULOGD_MAX_KEYLEN);

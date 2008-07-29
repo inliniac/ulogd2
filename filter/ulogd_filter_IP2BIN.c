@@ -147,7 +147,7 @@ static char *ip2bin(struct ulogd_key* inp, int index, char family)
 		default:
 			/* TODO handle error */
 			ulogd_log(ULOGD_NOTICE, "Unknown protocol family\n");
-			return;
+			return NULL;
 	}
 
 	buffer = tmp;
@@ -161,7 +161,7 @@ static char *ip2bin(struct ulogd_key* inp, int index, char family)
 				addr8[0], addr8[1], addr8[2], addr8[3]);
 		if (written != 2 * 4) {
 			buffer[0] = 0;
-			return;
+			return NULL;
 		}
 		buffer += written;
 		addr8 += 4;
