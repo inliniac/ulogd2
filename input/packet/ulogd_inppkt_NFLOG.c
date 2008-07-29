@@ -326,19 +326,22 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 	ret[NFLOG_KEY_OOB_FAMILY].u.value.ui8 = af_ce(upi->config_kset).u.value;
 	ret[NFLOG_KEY_OOB_FAMILY].flags |= ULOGD_RETF_VALID;
 
-	ret[NFLOG_KEY_RAW_LABEL].u.value.ui8 = label_ce(upi->config_kset).u.value;
+	ret[NFLOG_KEY_RAW_LABEL].u.value.ui8 =
+			label_ce(upi->config_kset).u.value;
 	ret[NFLOG_KEY_RAW_LABEL].flags |= ULOGD_RETF_VALID;
 
 	if (ph) {
 		/* FIXME */
 		ret[NFLOG_KEY_OOB_HOOK].u.value.ui8 = ph->hook;
 		ret[NFLOG_KEY_OOB_HOOK].flags |= ULOGD_RETF_VALID;
-		ret[NFLOG_KEY_OOB_PROTOCOL].u.value.ui16 = ntohs(ph->hw_protocol);
+		ret[NFLOG_KEY_OOB_PROTOCOL].u.value.ui16 =
+					ntohs(ph->hw_protocol);
 		ret[NFLOG_KEY_OOB_PROTOCOL].flags |= ULOGD_RETF_VALID;
 	}
 
 	if (nflog_get_msg_packet_hwhdrlen(ldata)) {
-		ret[NFLOG_KEY_RAW_MAC].u.value.ptr = nflog_get_msg_packet_hwhdr(ldata);
+		ret[NFLOG_KEY_RAW_MAC].u.value.ptr =
+			nflog_get_msg_packet_hwhdr(ldata);
 		ret[NFLOG_KEY_RAW_MAC].flags |= ULOGD_RETF_VALID;
 		ret[NFLOG_KEY_RAW_MAC_LEN].u.value.ui16 =
 			nflog_get_msg_packet_hwhdrlen(ldata);
@@ -351,7 +354,8 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 	if (hw) {
 		ret[NFLOG_KEY_RAW_MAC_SADDR].u.value.ptr = hw->hw_addr;
 		ret[NFLOG_KEY_RAW_MAC_SADDR].flags |= ULOGD_RETF_VALID;
-		ret[NFLOG_KEY_RAW_MAC_ADDRLEN].u.value.ui16 = ntohs(hw->hw_addrlen);
+		ret[NFLOG_KEY_RAW_MAC_ADDRLEN].u.value.ui16 =
+						ntohs(hw->hw_addrlen);
 		ret[NFLOG_KEY_RAW_MAC_ADDRLEN].flags |= ULOGD_RETF_VALID;
 	}
 
@@ -606,13 +610,13 @@ static int stop(struct ulogd_pluginstance *pi)
 struct ulogd_plugin libulog_plugin = {
 	.name = "NFLOG",
 	.input = {
-			.type = ULOGD_DTYPE_SOURCE,
-		},
+		.type = ULOGD_DTYPE_SOURCE,
+	},
 	.output = {
-			.type = ULOGD_DTYPE_RAW,
-			.keys = output_keys,
-			.num_keys = sizeof(output_keys)/sizeof(struct ulogd_key),
-		},
+		.type = ULOGD_DTYPE_RAW,
+		.keys = output_keys,
+		.num_keys = sizeof(output_keys)/sizeof(struct ulogd_key),
+	},
 	.priv_size 	= sizeof(struct nflog_input),
 	.configure 	= &configure,
 	.start 		= &start,
