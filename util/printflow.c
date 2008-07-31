@@ -164,12 +164,12 @@ int printflow_print(struct ulogd_key *res, char *buf)
 	if (pp_is_valid(res, PRINTFLOW_ORIG_IP_SADDR))
 		buf_cur += sprintf(buf_cur,
 				   "SRC=%s ", 
-				   GET_VALUE(res, PRINTFLOW_ORIG_IP_SADDR).ptr);
+				   (char *) GET_VALUE(res, PRINTFLOW_ORIG_IP_SADDR).ptr);
 
 	if (pp_is_valid(res, PRINTFLOW_ORIG_IP_DADDR))
 		buf_cur += sprintf(buf_cur,
 				   "DST=%s ",
-				   GET_VALUE(res, PRINTFLOW_ORIG_IP_DADDR).ptr);
+				   (char *) GET_VALUE(res, PRINTFLOW_ORIG_IP_DADDR).ptr);
 
 	if (!pp_is_valid(res, PRINTFLOW_ORIG_IP_PROTOCOL))
 		goto orig_out;
@@ -215,12 +215,12 @@ orig_out:
 	if (pp_is_valid(res, PRINTFLOW_REPLY_IP_SADDR))
 		buf_cur += sprintf(buf_cur,
 				   "SRC=%s ",
-				   GET_VALUE(res,PRINTFLOW_REPLY_IP_SADDR).ptr);
+				   (char *) GET_VALUE(res,PRINTFLOW_REPLY_IP_SADDR).ptr);
 
 	if (pp_is_valid(res, PRINTFLOW_REPLY_IP_DADDR))
 		buf_cur += sprintf(buf_cur,
 				   "DST=%s ",
-				   GET_VALUE(res,PRINTFLOW_REPLY_IP_DADDR).ptr);
+				   (char *) GET_VALUE(res,PRINTFLOW_REPLY_IP_DADDR).ptr);
 
 	if (!pp_is_valid(res, PRINTFLOW_REPLY_IP_PROTOCOL))
 		goto reply_out;

@@ -102,7 +102,7 @@ static int _output_logemu(struct ulogd_pluginstance *upi)
 			*tmp = '\0';
 
 		fprintf(li->of, "%.15s %s %s", timestr, hostname,
-				res[0].u.source->u.value.ptr);
+				(char *) res[0].u.source->u.value.ptr);
 
 		if (upi->config_kset->ces[1].u.value)
 			fflush(li->of);

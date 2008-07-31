@@ -130,9 +130,9 @@ nacct_interp(struct ulogd_pluginstance *pi)
 				 "%u\t%u\t%s\t%u\t%s\t%u\t%u\t%u",
 				 GET_VALUE(inp, KEY_FLOW_END).ui32,
 				 GET_VALUE(inp, KEY_IP_PROTO).ui8,
-				 GET_VALUE(inp, KEY_IP_SADDR).ptr,
+				 (char *) GET_VALUE(inp, KEY_IP_SADDR).ptr,
 				 GET_VALUE(inp, KEY_ICMP_TYPE).ui8,
-				 GET_VALUE(inp, KEY_IP_DADDR).ptr,
+				 (char *) GET_VALUE(inp, KEY_IP_DADDR).ptr,
 				 GET_VALUE(inp, KEY_ICMP_CODE).ui8,
 				 GET_VALUE(inp, KEY_RAW_PKTCNT).ui32,
 				 GET_VALUE(inp, KEY_RAW_PKTLEN).ui32);
@@ -141,9 +141,9 @@ nacct_interp(struct ulogd_pluginstance *pi)
 				 "%u\t%u\t%s\t%u\t%s\t%u\t%u\t%u",
 				 GET_VALUE(inp, KEY_FLOW_END).ui32,
 				 GET_VALUE(inp, KEY_IP_PROTO).ui8,
-				 GET_VALUE(inp, KEY_IP_SADDR).ptr,
+				 (char *) GET_VALUE(inp, KEY_IP_SADDR).ptr,
 				 GET_VALUE(inp, KEY_L4_SPORT).ui16,
-				 GET_VALUE(inp, KEY_IP_DADDR).ptr,
+				 (char *) GET_VALUE(inp, KEY_IP_DADDR).ptr,
 				 GET_VALUE(inp, KEY_L4_DPORT).ui16,
 				 GET_VALUE(inp, KEY_RAW_PKTCNT).ui32,
 				 GET_VALUE(inp, KEY_RAW_PKTLEN).ui32);

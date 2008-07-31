@@ -284,7 +284,7 @@ static int __interp_db(struct ulogd_pluginstance *upi)
 			sprintf(di->stmt_ins, "',");
 			break;
 		case ULOGD_RET_RAWSTR:
-			sprintf(di->stmt_ins, "%s,", res->u.value.ptr);
+			sprintf(di->stmt_ins, "%s,", (char *) res->u.value.ptr);
 			break;
 		case ULOGD_RET_RAW:
 			ulogd_log(ULOGD_NOTICE,

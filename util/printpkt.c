@@ -193,11 +193,11 @@ static int printpkt_ipv4(struct ulogd_key *res, char *buf)
 
 	if (pp_is_valid(res, KEY_IP_SADDR))
 		buf_cur += sprintf(buf_cur, "SRC=%s ",
-				   GET_VALUE(res, KEY_IP_SADDR).ptr);
+				   (char *) GET_VALUE(res, KEY_IP_SADDR).ptr);
 
 	if (pp_is_valid(res, KEY_IP_DADDR))
 		buf_cur += sprintf(buf_cur, "DST=%s ",
-				   GET_VALUE(res, KEY_IP_DADDR).ptr);
+				   (char *) GET_VALUE(res, KEY_IP_DADDR).ptr);
 
 	/* FIXME: add pp_is_valid calls to remainder of file */
 	buf_cur += sprintf(buf_cur,"LEN=%u TOS=%02X PREC=0x%02X TTL=%u ID=%u ", 
@@ -279,11 +279,11 @@ static int printpkt_ipv6(struct ulogd_key *res, char *buf)
 
 	if (pp_is_valid(res, KEY_IP_SADDR))
 		buf_cur += sprintf(buf_cur, "SRC=%s ",
-				   GET_VALUE(res, KEY_IP_SADDR).ptr);
+				   (char *) GET_VALUE(res, KEY_IP_SADDR).ptr);
 
 	if (pp_is_valid(res, KEY_IP_DADDR))
 		buf_cur += sprintf(buf_cur, "DST=%s ",
-				   GET_VALUE(res, KEY_IP_DADDR).ptr);
+				   (char *) GET_VALUE(res, KEY_IP_DADDR).ptr);
 
 	if (pp_is_valid(res, KEY_IP6_PAYLOAD_LEN))
 		buf_cur += sprintf(buf_cur, "LEN=%Zu ",
@@ -355,11 +355,11 @@ int printpkt_arp(struct ulogd_key *res, char *buf)
 
 	if (pp_is_valid(res, KEY_ARP_SPA))
 		buf_cur += sprintf(buf_cur, "SRC=%s ",
-				   GET_VALUE(res, KEY_ARP_SPA).ptr);
+				   (char *) GET_VALUE(res, KEY_ARP_SPA).ptr);
 
 	if (pp_is_valid(res, KEY_ARP_TPA))
 		buf_cur += sprintf(buf_cur, "DST=%s ",
-				   GET_VALUE(res, KEY_ARP_TPA).ptr);
+				   (char *) GET_VALUE(res, KEY_ARP_TPA).ptr);
 
 	buf_cur += sprintf(buf_cur, "PROTO=ARP ");
 
