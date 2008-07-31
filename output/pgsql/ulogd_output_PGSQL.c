@@ -288,8 +288,8 @@ static int execute_pgsql(struct ulogd_pluginstance *upi,
 	struct pgsql_instance *pi = (struct pgsql_instance *) upi->private;
 
 	pi->pgres = PQexec(pi->dbh, stmt);
-	if (!(pi->pgres && (PQresultStatus(pi->pgres) == PGRES_COMMAND_OK)
-		|| (PQresultStatus(pi->pgres) == PGRES_TUPLES_OK))) {
+	if (!(pi->pgres && ((PQresultStatus(pi->pgres) == PGRES_COMMAND_OK)
+		|| (PQresultStatus(pi->pgres) == PGRES_TUPLES_OK)))) {
 		ulogd_log(ULOGD_ERROR, "execute failed (%s)\n",
 			  PQerrorMessage(pi->dbh));
 		return -1;
