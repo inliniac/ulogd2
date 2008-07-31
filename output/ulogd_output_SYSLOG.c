@@ -151,10 +151,13 @@ static int syslog_configure(struct ulogd_pluginstance *pi,
 	return 0;
 }
 
-static void syslog_fini(void)
+static int syslog_fini(struct ulogd_pluginstance *pi)
 {
 	closelog();
+
+	return 0;
 }
+
 static int syslog_start(struct ulogd_pluginstance *pi)
 {
 	openlog("ulogd", LOG_NDELAY|LOG_PID, LOG_DAEMON);
@@ -177,6 +180,7 @@ static struct ulogd_plugin syslog_plugin = {
 	
 	.configure	= &syslog_configure,
 	.start		= &syslog_start,
+	.stop		= &syslog_fini,
 	.interp		= &_output_syslog,
 	.version	= ULOGD_VERSION,
 };
