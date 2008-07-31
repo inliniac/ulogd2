@@ -140,7 +140,7 @@ static int get_columns_mysql(struct ulogd_pluginstance *upi)
 	memset(upi->input.keys, 0, sizeof(struct ulogd_key) *
 						upi->input.num_keys);
 
-	for (i = 0; field = mysql_fetch_field(result); i++) {
+	for (i = 0; (field = mysql_fetch_field(result)); i++) {
 		char buf[ULOGD_MAX_KEYLEN+1];
 		char *underscore;
 
