@@ -190,7 +190,7 @@ int ipulog_set_mode()
 
 /* do a BLOCKING read on an ipulog handle */
 ssize_t ipulog_read(struct ipulog_handle *h, unsigned char *buf,
-		    size_t len, int timeout)
+		    size_t len)
 {
 	return ipulog_netlink_recvfrom(h, buf, len);
 }

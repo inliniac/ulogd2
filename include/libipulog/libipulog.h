@@ -29,7 +29,7 @@ struct ipulog_handle *ipulog_create_handle(u_int32_t gmask, u_int32_t rmem);
 void ipulog_destroy_handle(struct ipulog_handle *h);
 
 ssize_t ipulog_read(struct ipulog_handle *h,
-		    unsigned char *buf, size_t len, int timeout);
+		    unsigned char *buf, size_t len);
 
 ulog_packet_msg_t *ipulog_get_packet(struct ipulog_handle *h,
 				     const unsigned char *buf,

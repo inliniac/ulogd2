@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
 
 	/* loop receiving packets and handling them over to handle_packet */
 	for (i = 0; i < atoi(argv[1]); i++) {
-		len = ipulog_read(h, buf, MYBUFSIZ, 1);
+		len = ipulog_read(h, buf, MYBUFSIZ);
 		if (len <= 0) {
 			ipulog_perror("ulog_test: short read");
 			exit(1);
