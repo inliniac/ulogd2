@@ -76,7 +76,6 @@ struct ulogd_key printpkt_keys[] = {
 	[KEY_TCP_WINDOW]	= { .name = "tcp.window", },
 	[KEY_TCP_SYN]		= { .name = "tcp.syn", },
 	[KEY_TCP_ACK]		= { .name = "tcp.ack", },
-	[KEY_TCP_URG]		= { .name = "tcp.urg", },
 	[KEY_TCP_PSH]		= { .name = "tcp.psh", },
 	[KEY_TCP_RST]		= { .name = "tcp.rst", },
 	[KEY_TCP_FIN]		= { .name = "tcp.fin", },
