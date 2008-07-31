@@ -97,7 +97,6 @@ static struct config_keyset ulogd_kset = {
 			.key = "logfile",
 			.type = CONFIG_TYPE_CALLBACK,
 			.options = CONFIG_OPT_NONE,
-			.u.string = ULOGD_LOGFILE_DEFAULT,
 			.u.parser = &logfile_open,
 		},
 		{
@@ -1022,7 +1021,7 @@ static struct option opts[] = {
 	{ "configfile", 1, NULL, 'c'},
 	{ "uid", 1, NULL, 'u' },
 	{ "info", 1, NULL, 'i' },
-	{ 0 }
+	{NULL, 0, NULL, 0}
 };
 
 int main(int argc, char* argv[])
