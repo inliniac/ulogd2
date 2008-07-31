@@ -32,6 +32,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <time.h>
+#include <inttypes.h>
 
 #include <ulogd/ulogd.h>
 #include <ulogd/db.h>
@@ -254,7 +255,7 @@ static int __interp_db(struct ulogd_pluginstance *upi)
 			sprintf(di->stmt_ins, "%d,", res->u.value.i32);
 			break;
 		case ULOGD_RET_INT64:
-			sprintf(di->stmt_ins, "%lld,", res->u.value.i64);
+			sprintf(di->stmt_ins, "%" PRId64 ",", res->u.value.i64);
 			break;
 		case ULOGD_RET_UINT8:
 			sprintf(di->stmt_ins, "%u,", res->u.value.ui8);
@@ -268,7 +269,7 @@ static int __interp_db(struct ulogd_pluginstance *upi)
 			sprintf(di->stmt_ins, "%u,", res->u.value.ui32);
 			break;
 		case ULOGD_RET_UINT64:
-			sprintf(di->stmt_ins, "%llu,", res->u.value.ui64);
+			sprintf(di->stmt_ins, "%" PRIu64 ",", res->u.value.ui64);
 			break;
 		case ULOGD_RET_BOOL:
 			sprintf(di->stmt_ins, "'%d',", res->u.value.b);
