@@ -204,7 +204,7 @@ int ulogd_wildcard_inputkeys(struct ulogd_pluginstance *upi)
 
 	/* second pass: copy key names */
 	llist_for_each_entry(pi_cur, &stack->list, list) {
-		int i;
+		unsigned int i;
 
 		for (i = 0; i < pi_cur->plugin->output.num_keys; i++)
 			upi->input.keys[index++] = pi_cur->output.keys[i];
@@ -280,7 +280,7 @@ char *type_to_string(int type)
 
 void get_plugin_infos(struct ulogd_plugin *me)
 {
-	int i;
+	unsigned int i;
 	printf("Name: %s\n", me->name);
 	if (me->config_kset) {
 		printf("Config options:\n");
@@ -453,7 +453,7 @@ static void ulogd_clean_results(struct ulogd_pluginstance *pi)
 
 	/* iterate through plugin stack */
 	llist_for_each_entry(cur, &pi->stack->list, list) {
-		int i;
+		unsigned int i;
 		
 		/* iterate through input keys of pluginstance */
 		for (i = 0; i < cur->output.num_keys; i++) {
@@ -598,7 +598,7 @@ find_okey_in_stack(char *name,
 	struct ulogd_pluginstance *pi;
 
 	llist_for_each_entry_reverse(pi, &start->list, list) {
-		int i;
+		unsigned int i;
 
 		if ((void *)&pi->list == &stack->list)
 			return NULL;
@@ -666,7 +666,7 @@ create_stack_resolve_keys(struct ulogd_pluginstance_stack *stack)
 			}
 			/* no need to match keys */
 		} else {
-			int j;
+			unsigned int j;
 
 			/* not the last one in the stack */
 			if (!(pi_cur->plugin->input.type &

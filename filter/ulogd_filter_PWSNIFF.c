@@ -66,7 +66,8 @@ static int interp_pwsniff(struct ulogd_pluginstance *pi)
 	struct tcphdr *tcph;	
 	unsigned int tcplen;
 	unsigned char  *ptr, *begp, *pw_begp, *endp, *pw_endp;
-	int len, pw_len, i, cont = 0;
+	int len, pw_len, cont = 0;
+	unsigned int i;
 
 	if (!IS_VALID(pi->input.keys[0]))
 		return ULOGD_IRET_STOP;

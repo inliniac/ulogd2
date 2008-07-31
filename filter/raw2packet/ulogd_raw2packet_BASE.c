@@ -694,7 +694,7 @@ static int _interp_iphdr(struct ulogd_pluginstance *pi, u_int32_t len)
 		GET_VALUE(pi->input.keys, INKEY_RAW_PCKT).ptr;
 	void *nexthdr = (u_int32_t *)iph + iph->ihl;
 
-	if (len < sizeof(struct iphdr) || len <= iph->ihl * 4)
+	if (len < sizeof(struct iphdr) || len <= (u_int32_t)(iph->ihl * 4))
 		return ULOGD_IRET_OK;
 	len -= iph->ihl * 4;
 

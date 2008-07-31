@@ -112,7 +112,7 @@ int config_parse_file(const char *section, struct config_keyset *kset)
 	char *args;
 	int err = 0;
 	int found = 0;
-	int i;
+	unsigned int i;
 	char linebuf[LINE_LEN+1];
 	char *line = linebuf;
 
@@ -147,7 +147,7 @@ int config_parse_file(const char *section, struct config_keyset *kset)
 	/* Parse this section until next section */
 	while (fgets(line, LINE_LEN, cfile))
 	{
-		int i;
+		unsigned int i;
 		char wordbuf[LINE_LEN];
 		char *wordend;
 		

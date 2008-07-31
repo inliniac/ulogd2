@@ -96,7 +96,7 @@ ipulog_netlink_recvfrom(const struct ipulog_handle *h,
 		return -1;
 	}
 	nlh = (struct nlmsghdr *)buf;
-	if (nlh->nlmsg_flags & MSG_TRUNC || status > len) {
+	if (nlh->nlmsg_flags & MSG_TRUNC || (size_t) status > len) {
 		ipulog_errno = IPULOG_ERR_TRUNC;
 		return -1;
 	}

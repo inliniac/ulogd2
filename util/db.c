@@ -63,7 +63,7 @@ static int sql_createstmt(struct ulogd_pluginstance *upi)
 {
 	struct db_instance *mi = (struct db_instance *) upi->private;
 	unsigned int size;
-	int i;
+	unsigned int i;
 	char *table = table_ce(upi->config_kset).u.string;
 	char *procedure = procedure_ce(upi->config_kset).u.string;
 
@@ -223,7 +223,7 @@ static int _init_db(struct ulogd_pluginstance *upi)
 static int __interp_db(struct ulogd_pluginstance *upi)
 {
 	struct db_instance *di = (struct db_instance *) &upi->private;
-	int i;
+	unsigned int i;
 
 	di->stmt_ins = di->stmt_val;
 
