@@ -70,8 +70,7 @@ dnl AC_SUBST(HAVE_PCAP_H)
 dnl AM_CONDITIONAL(HAVE_MYSQL, test x$mysqldir != x)
 dnl AM_CONDITIONAL(HAVE_PGSQL, test x$pgsqldir != x)
 
-AC_OUTPUT(doc/Makefile \
-	  include/Makefile include/ulogd/Makefile include/libipulog/Makefile \
+AC_OUTPUT(include/Makefile include/ulogd/Makefile include/libipulog/Makefile \
 	  libipulog/Makefile \
 	  input/Makefile input/packet/Makefile input/flow/Makefile \
 	  filter/Makefile filter/raw2packet/Makefile filter/packet2flow/Makefile \

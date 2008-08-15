@@ -3,10 +3,10 @@ AUTOMAKE_OPTIONS = foreign dist-bzip2 1.6
 
 man_MANS = ulogd.8
 
-EXTRA_DIST = $(man_MANS) debian ulogd.logrotate ulogd.spec
+EXTRA_DIST = $(man_MANS) debian ulogd.logrotate ulogd.spec ulogd.conf.in doc
 
 INCLUDES = $(all_includes) -I$(top_srcdir)/include
-SUBDIRS = include doc libipulog src input filter output
+SUBDIRS = include libipulog src input filter output
 
 noinst_DATA = ulogd.conf
 
@@ -19,4 +19,7 @@ ulogd.conf: Makefile $(srcdir)/ulogd.conf.in
 $(OBJECTS): libtool
 libtool: $(LIBTOOL_DEPS)
 	$(SHELL) ./config.status --recheck
+
+dist-hook:
+	rm -f ulogd.conf
 
