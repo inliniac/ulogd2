@@ -5,7 +5,7 @@
 <article>
 
 <title>ULOGD 2.x - the Netfilter Userspace Logging Daemon</title>
-<author>Harald Welte &lt;laforge@netfilter.org&gt</author>
+<author>Harald Welte &lt;laforge@netfilter.org&gt, Eric Leblond &lt;eric@inl.fr&gt</author>
 <date>Revision 2008/09/03</date>
 
 <abstract>
@@ -601,10 +601,6 @@ The syslog level (LOG_EMERG, LOG_ALERT, LOG_CRIT, LOG_ERR, LOG_WARNING, LOG_NOTI
 All comments / questions / ... are appreciated.
 <p>
 Just drop a note to netfilter-devel@vger.kernel.org.
-<p>
-Please note also that there is now a mailinglist, ulogd@lists.gnumonks.org. 
-You can subscribe at
-<URL URL="http://lists.gnumonks.org/mailman/listinfo/ulogd/">.
 <p> 
 The preferred method for reporting bugs is the netfilter bugzilla system,
 available at <URL URL="http://bugzilla.netfilter.org/">.
