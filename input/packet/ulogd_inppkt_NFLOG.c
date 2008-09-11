@@ -52,12 +52,6 @@ static struct config_keyset libulog_kset = {
 			.u.value = NFLOG_GROUP_DEFAULT,
 		},
 		{
-			.key	 = "rmem",
-			.type	 = CONFIG_TYPE_INT,
-			.options = CONFIG_OPT_NONE,
-			.u.value = NFLOG_RMEM_DEFAULT,
-		},
-		{
 			.key 	 = "addressfamily",
 			.type	 = CONFIG_TYPE_INT,
 			.options = CONFIG_OPT_NONE,
@@ -104,14 +98,13 @@ static struct config_keyset libulog_kset = {
 
 #define bufsiz_ce(x)	(x->ces[0])
 #define group_ce(x)	(x->ces[1])
-#define rmem_ce(x)	(x->ces[2])
-#define af_ce(x)	(x->ces[3])
-#define unbind_ce(x)	(x->ces[4])
-#define seq_ce(x)	(x->ces[5])
-#define seq_global_ce(x)	(x->ces[6])
-#define label_ce(x)	(x->ces[7])
-#define nlsockbufsize_ce(x) (x->ces[8])
-#define nlsockbufmaxsize_ce(x) (x->ces[9])
+#define af_ce(x)	(x->ces[2])
+#define unbind_ce(x)	(x->ces[3])
+#define seq_ce(x)	(x->ces[4])
+#define seq_global_ce(x)	(x->ces[5])
+#define label_ce(x)	(x->ces[6])
+#define nlsockbufsize_ce(x) (x->ces[7])
+#define nlsockbufmaxsize_ce(x) (x->ces[8])
 
 enum nflog_keys {
 	NFLOG_KEY_RAW_MAC = 0,
