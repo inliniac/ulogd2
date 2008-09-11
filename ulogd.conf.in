@@ -14,13 +14,6 @@ logfile="/var/log/ulogd.log"
 # loglevel: debug(1), info(3), notice(5), error(7) or fatal(8)
 loglevel=1
 
-# socket receive buffer size (should be at least the size of the
-# in-kernel buffer (ipt_ULOG.o 'nlbufsiz' parameter)
-rmem=131071
-
-# libipulog/ulogd receive buffer size, should be > rmem
-bufsize=150000
-
 ######################################################################
 # PLUGIN OPTIONS
 ######################################################################
