@@ -463,6 +463,33 @@ static int configure(struct ulogd_pluginstance *upi,
 	return 0;
 }
 
+static int become_system_logging(struct ulogd_pluginstance *upi)
+{
+	struct nflog_input *ui = (struct nflog_input *) upi->private;
+
+	if (unbind_ce(upi->config_kset).u.value > 0) {
+		ulogd_log(ULOGD_NOTICE, "forcing unbind of existing log "
+				"handler for protocol %d\n",
+				af_ce(upi->config_kset).u.value);
+		if (nflog_unbind_pf(ui->nful_h,
+					af_ce(upi->config_kset).u.value) < 0) {
+			ulogd_log(ULOGD_ERROR, "unable to force-unbind "
+					"existing log handler for protocol %d\n",
+					af_ce(upi->config_kset).u.value);
+			return -1;
+		}
+	}
+
+	ulogd_log(ULOGD_DEBUG, "binding to protocol family %d\n",
+			af_ce(upi->config_kset).u.value);
+	if (nflog_bind_pf(ui->nful_h, af_ce(upi->config_kset).u.value) < 0) {
+		ulogd_log(ULOGD_ERROR, "unable to bind to protocol family %d\n",
+				af_ce(upi->config_kset).u.value);
+		return -1;
+	}
+	return 0;
+}
+
 static int start(struct ulogd_pluginstance *upi)
 {
 	struct nflog_input *ui = (struct nflog_input *) upi->private;
@@ -477,25 +504,10 @@ static int start(struct ulogd_pluginstance *upi)
 	if (!ui->nful_h)
 		goto out_handle;
 
-	if (unbind_ce(upi->config_kset).u.value > 0) {
-		ulogd_log(ULOGD_NOTICE, "forcing unbind of existing log "
-			  "handler for protocol %d\n",
-			  af_ce(upi->config_kset).u.value);
-		if (nflog_unbind_pf(ui->nful_h,
-				    af_ce(upi->config_kset).u.value) < 0) {
-			ulogd_log(ULOGD_ERROR, "unable to force-unbind "
-				  "existing log handler for protocol %d\n",
-				  af_ce(upi->config_kset).u.value);
+	/* This is the system logging (conntrack, ...) facility */
+	if (group_ce(upi->config_kset).u.value == 0) {
+		if (become_system_logging(upi) == -1)
 			goto out_handle;
-		}
-	}
-
-	ulogd_log(ULOGD_DEBUG, "binding to protocol family %d\n",
-		  af_ce(upi->config_kset).u.value);
-	if (nflog_bind_pf(ui->nful_h, af_ce(upi->config_kset).u.value) < 0) {
-		ulogd_log(ULOGD_ERROR, "unable to bind to protocol family %d\n",
-			  af_ce(upi->config_kset).u.value);
-		goto out_bind_pf;
 	}
 
 	ulogd_log(ULOGD_DEBUG, "binding to log group %d\n",
@@ -542,8 +554,8 @@ static int start(struct ulogd_pluginstance *upi)
 
 out_bind:
 	nflog_close(ui->nful_h);
-out_bind_pf:
-	nflog_unbind_pf(ui->nful_h, af_ce(upi->config_kset).u.value);
+	if (group_ce(upi->config_kset).u.value == 0)
+		nflog_unbind_pf(ui->nful_h, af_ce(upi->config_kset).u.value);
 out_handle:
 	free(ui->nfulog_buf);
 out_buf:
