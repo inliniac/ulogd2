@@ -174,7 +174,7 @@ static int interp_mac2str(struct ulogd_pluginstance *pi)
 			return fret;
 	}
 
-	if (!pp_is_valid(inp, KEY_RAW_MAC)) {
+	if (pp_is_valid(inp, KEY_RAW_MAC)) {
 		if (GET_VALUE(inp, KEY_RAW_MAC_ADDRLEN).ui16 == ETH_ALEN) {
 			ret[KEY_MAC_TYPE].u.value.ui16 = ARPHRD_ETHER;
 			ret[KEY_MAC_TYPE].flags |= ULOGD_RETF_VALID;
