@@ -1,4 +1,4 @@
-/* ulogd_filter_MAC2STR.c, Version $Revision: 1500 $
+/* ulogd_filter_HWHDR.c, Version $Revision: 1500 $
  *
  * ulogd interpreter plugin for HWMAC
  *
@@ -218,7 +218,7 @@ static int interp_mac2str(struct ulogd_pluginstance *pi)
 
 
 static struct ulogd_plugin mac2str_pluging = {
-	.name = "MAC2STR",
+	.name = "HWHDR",
 	.input = {
 		.keys = mac2str_inp,
 		.num_keys = ARRAY_SIZE(mac2str_inp),
