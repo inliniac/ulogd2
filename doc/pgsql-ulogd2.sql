@@ -109,9 +109,6 @@ CREATE TABLE tcp (
 CREATE INDEX tcp_sport ON tcp(tcp_sport);
 CREATE INDEX tcp_dport ON tcp(tcp_dport);
 
-ALTER TABLE tcp ADD CONSTRAINT tcp_sport_ok CHECK(tcp_sport >= 0 AND tcp_sport <= 65536);
-ALTER TABLE tcp ADD CONSTRAINT tcp_dport_ok CHECK(tcp_dport >= 0 AND tcp_dport <= 65536);
-
 CREATE TABLE udp (
   _udp_id bigint PRIMARY KEY UNIQUE NOT NULL,
   udp_sport integer default NULL,
@@ -121,9 +118,6 @@ CREATE TABLE udp (
 
 CREATE INDEX udp_sport ON udp(udp_sport);
 CREATE INDEX udp_dport ON udp(udp_dport);
-
-ALTER TABLE udp ADD CONSTRAINT udp_sport_ok CHECK(udp_sport >= 0 AND udp_sport <= 65536);
-ALTER TABLE udp ADD CONSTRAINT udp_dport_ok CHECK(udp_dport >= 0 AND udp_dport <= 65536);
 
 CREATE TABLE icmp (
   _icmp_id bigint PRIMARY KEY UNIQUE NOT NULL,
