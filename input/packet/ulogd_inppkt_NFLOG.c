@@ -16,12 +16,6 @@
 #define NFLOG_GROUP_DEFAULT	0
 #endif
 
-/* Size of the socket receive memory.  Should be at least the same size as the
- * 'nlbufsiz' parameter of nfnetlink_log.ko
- * If you have _big_ in-kernel queues, you may have to increase this number.  (
- * --qthreshold 100 * 1500 bytes/packet = 150kB  */
-#define NFLOG_RMEM_DEFAULT	131071
-
 /* Size of the receive buffer for the netlink socket.  Should be at least of
  * RMEM_DEFAULT size.  */
 #define NFLOG_BUFSIZE_DEFAULT	150000
