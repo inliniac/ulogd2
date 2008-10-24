@@ -113,6 +113,10 @@ enum output_keys {
 	KEY_ARP_SPA,
 	KEY_ARP_THA,
 	KEY_ARP_TPA,
+	KEY_SCTP_SPORT,
+	KEY_SCTP_DPORT,
+	KEY_SCTP_CSUM,
+
 };
 
 static struct ulogd_key iphdr_rets[] = {
@@ -507,6 +511,21 @@ static struct ulogd_key iphdr_rets[] = {
 		.flags = ULOGD_RETF_NONE,
 		.name = "arp.daddr",
 	},
+	[KEY_SCTP_SPORT] = {
+		.type = ULOGD_RET_UINT16,
+		.flags = ULOGD_RETF_NONE,
+		.name = "sctp.sport", 
+	},
+	[KEY_SCTP_DPORT] = {
+		.type = ULOGD_RET_UINT16,
+		.flags = ULOGD_RETF_NONE,
+		.name = "sctp.dport", 
+	},
+	[KEY_SCTP_CSUM] = {
+		.type = ULOGD_RET_UINT32,
+		.flags = ULOGD_RETF_NONE,
+		.name = "sctp.csum",
+	},
 };
 
 /***********************************************************************
@@ -561,6 +580,37 @@ static int _interp_udp(struct ulogd_pluginstance *pi, struct udphdr *udph,
 	okey_set_u16(&ret[KEY_UDP_DPORT], ntohs(udph->dest));
 	okey_set_u16(&ret[KEY_UDP_LEN], ntohs(udph->len));
 	okey_set_u16(&ret[KEY_UDP_CSUM], ntohs(udph->check));
+	
+	return ULOGD_IRET_OK;
+}
+
+/***********************************************************************
+ * 			SCTP HEADER
+ ***********************************************************************/
+
+/* Section 3.1.  SCTP Common Header Format */
+typedef struct sctphdr {
+	__be16 source;
+	__be16 dest;
+	__be32 vtag;
+	__be32 checksum;
+} __attribute__((packed)) sctp_sctphdr_t;
+
+static int _interp_sctp(struct ulogd_pluginstance *pi, struct sctphdr *sctph,
+		       u_int32_t len)
+		
+{
+	struct ulogd_key *ret = pi->output.keys;
+
+	if (len < sizeof(struct sctphdr))
+		return ULOGD_IRET_OK;
+
+	ret[KEY_SCTP_SPORT].u.value.ui16 = ntohs(sctph->source);
+	ret[KEY_SCTP_SPORT].flags |= ULOGD_RETF_VALID;
+	ret[KEY_SCTP_DPORT].u.value.ui16 = ntohs(sctph->dest);
+	ret[KEY_SCTP_DPORT].flags |= ULOGD_RETF_VALID;
+	ret[KEY_SCTP_CSUM].u.value.ui32 = ntohl(sctph->checksum);
+	ret[KEY_SCTP_CSUM].flags |= ULOGD_RETF_VALID;
 	
 	return ULOGD_IRET_OK;
 }
@@ -687,6 +737,9 @@ static int _interp_iphdr(struct ulogd_pluginstance *pi, u_int32_t len)
 		break;
 	case IPPROTO_ICMP:
 		_interp_icmp(pi, nexthdr, len);
+		break;
+	case IPPROTO_SCTP:
+		_interp_sctp(pi, nexthdr, len);
 		break;
 	case IPPROTO_AH:
 	case IPPROTO_ESP:
