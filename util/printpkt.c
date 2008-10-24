@@ -102,7 +102,8 @@ struct ulogd_key printpkt_keys[] = {
 	[KEY_ARP_SPA]           = { .name = "arp.saddr.str", },
 	[KEY_ARP_THA]           = { .name = "arp.dhwaddr", },
 	[KEY_ARP_TPA]           = { .name = "arp.daddr.str", },
-
+	[KEY_SCTP_SPORT]	= { .name = "sctp.sport", },
+	[KEY_SCTP_DPORT]	= { .name = "sctp.dport", },
 };
 
 static int printpkt_proto(struct ulogd_key *res, char *buf, int protocol)
@@ -167,6 +168,18 @@ static int printpkt_proto(struct ulogd_key *res, char *buf, int protocol)
 				   ikey_get_u16(&res[KEY_UDP_DPORT]), 
 				   ikey_get_u16(&res[KEY_UDP_LEN]));
 		break;
+	case IPPROTO_SCTP:
+		buf_cur += sprintf(buf_cur, "PROTO=SCTP ");
+
+		if (!pp_is_valid(res, KEY_SCTP_SPORT)) {
+			buf_cur += sprintf(buf_cur, "INCOMPLETE");
+			break;
+		}
+
+		buf_cur += sprintf(buf_cur, "SPT=%u DPT=%u ", 
+				   ikey_get_u16(&res[KEY_SCTP_SPORT]),
+				   ikey_get_u16(&res[KEY_SCTP_DPORT]));
+		break;
 	case IPPROTO_ESP:
 	case IPPROTO_AH:
 		buf_cur += sprintf(buf_cur, "PROTO=%s ",
@@ -223,6 +236,7 @@ static int printpkt_ipv4(struct ulogd_key *res, char *buf)
 	switch (ikey_get_u8(&res[KEY_IP_PROTOCOL])) {
 	case IPPROTO_TCP:
 	case IPPROTO_UDP:
+	case IPPROTO_SCTP:
 	case IPPROTO_ESP:
 	case IPPROTO_AH:
 		buf_cur += printpkt_proto(res, buf_cur,
@@ -311,6 +325,7 @@ static int printpkt_ipv6(struct ulogd_key *res, char *buf)
 	switch (ikey_get_u8(&res[KEY_IP6_NEXTHDR])) {
 	case IPPROTO_TCP:
 	case IPPROTO_UDP:
+	case IPPROTO_SCTP:
 	case IPPROTO_ESP:
 	case IPPROTO_AH:
 		buf_cur += printpkt_proto(res, buf_cur,
