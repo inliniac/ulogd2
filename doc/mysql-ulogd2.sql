@@ -31,6 +31,7 @@ DROP TABLE IF EXISTS `mac`;
 DROP TABLE IF EXISTS `hwhdr`;
 DROP TABLE IF EXISTS `tcp`;
 DROP TABLE IF EXISTS `udp`;
+DROP TABLE IF EXISTS `sctp`;
 DROP TABLE IF EXISTS `icmp`;
 DROP TABLE IF EXISTS `icmpv6`;
 DROP TABLE IF EXISTS `nufw`;
@@ -127,6 +128,19 @@ ALTER TABLE udp ADD UNIQUE KEY `_udp_id` (`_udp_id`);
 ALTER TABLE udp ADD KEY `index_udp_id` (`_udp_id`);
 ALTER TABLE udp ADD KEY `udp_sport` (`udp_sport`);
 ALTER TABLE udp ADD KEY `udp_dport` (`udp_dport`);
+
+CREATE TABLE `sctp` (
+  `_sctp_id` bigint unsigned NOT NULL,
+  `sctp_sport` int(5) unsigned default NULL,
+  `sctp_dport` int(5) unsigned default NULL,
+  `sctp_csum` int(5) unsigned default NULL
+) ENGINE=INNODB;
+
+ALTER TABLE sctp ADD UNIQUE KEY `_sctp_id` (`_sctp_id`);
+ALTER TABLE sctp ADD KEY `index_sctp_id` (`_sctp_id`);
+ALTER TABLE sctp ADD KEY `sctp_sport` (`sctp_sport`);
+ALTER TABLE sctp ADD KEY `sctp_dport` (`sctp_dport`);
+
 
 CREATE TABLE `icmp` (
   `_icmp_id` bigint unsigned NOT NULL,
@@ -231,10 +245,14 @@ CREATE SQL SECURITY INVOKER VIEW `ulog` AS
         mac_saddr as mac_saddr_str,
         mac_daddr as mac_daddr_str,
         mac_protocol as oob_protocol,
-        label as raw_label
+        label as raw_label,
+        sctp_sport,
+        sctp_dport,
+        sctp_csum
         FROM ulog2 LEFT JOIN tcp ON ulog2._id = tcp._tcp_id LEFT JOIN udp ON ulog2._id = udp._udp_id
                 LEFT JOIN icmp ON ulog2._id = icmp._icmp_id LEFT JOIN mac ON ulog2.mac_id = mac._mac_id
-		LEFT JOIN hwhdr ON ulog2._id = hwhdr._hw_id LEFT JOIN icmpv6 ON ulog2._id = icmpv6._icmpv6_id;
+		LEFT JOIN hwhdr ON ulog2._id = hwhdr._hw_id LEFT JOIN icmpv6 ON ulog2._id = icmpv6._icmpv6_id
+		LEFT JOIN sctp ON ulog2._id = sctp._sctp_id;
 
 
 -- shortcuts
@@ -579,6 +597,20 @@ END
 $$
 
 delimiter $$
+DROP PROCEDURE IF EXISTS PACKET_ADD_SCTP;
+CREATE PROCEDURE PACKET_ADD_SCTP(
+		IN `id` int(10) unsigned,
+		IN `_sport` smallint(5) unsigned,
+		IN `_dport` smallint(5) unsigned,
+		IN `_csum` smallint(5) unsigned
+		)
+BEGIN
+	INSERT INTO sctp (_sctp_id, sctp_sport, sctp_dport, sctp_csum) VALUES
+	(id, _sport, _dport, _csum);
+END
+$$
+
+delimiter $$
 DROP PROCEDURE IF EXISTS PACKET_ADD_ICMP;
 CREATE PROCEDURE PACKET_ADD_ICMP(
 		IN `id` int(10) unsigned,
@@ -699,7 +731,10 @@ CREATE FUNCTION INSERT_PACKET_FULL(
 		mac_saddr varchar(32),
 		mac_daddr varchar(32),
 		mac_protocol smallint(5),
-		_label tinyint(4) unsigned
+		_label tinyint(4) unsigned,
+		sctp_sport smallint(5) unsigned,
+		sctp_dport smallint(5) unsigned,
+		sctp_csum int(10) unsigned
 		) RETURNS bigint unsigned
 READS SQL DATA
 BEGIN
@@ -714,6 +749,8 @@ BEGIN
 					 tcp_rst, tcp_syn, tcp_fin);
 	ELSEIF _ip_protocol = 17 THEN
 		CALL PACKET_ADD_UDP(@lastid, udp_sport, udp_dport, udp_len);
+	ELSEIF _ip_protocol = 132 THEN
+		CALL PACKET_ADD_SCTP(@lastid, sctp_sport, sctp_dport, sctp_csum);
 	ELSEIF _ip_protocol = 1 THEN
 		CALL PACKET_ADD_ICMP(@lastid, icmp_type, icmp_code, icmp_echoid, icmp_echoseq, 
 				     icmp_gateway, icmp_fragmtu);
