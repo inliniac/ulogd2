@@ -521,43 +521,25 @@ static int _interp_tcp(struct ulogd_pluginstance *pi, struct tcphdr *tcph,
 	if (len < sizeof(struct tcphdr))
 		return ULOGD_IRET_OK;
 	
-	ret[KEY_TCP_SPORT].u.value.ui16 = ntohs(tcph->source);
-	ret[KEY_TCP_SPORT].flags |= ULOGD_RETF_VALID;
-	ret[KEY_TCP_DPORT].u.value.ui16 = ntohs(tcph->dest);
-	ret[KEY_TCP_DPORT].flags |= ULOGD_RETF_VALID;
-	ret[KEY_TCP_SEQ].u.value.ui32 = ntohl(tcph->seq);
-	ret[KEY_TCP_SEQ].flags |= ULOGD_RETF_VALID;
-	ret[KEY_TCP_ACKSEQ].u.value.ui32 = ntohl(tcph->ack_seq);
-	ret[KEY_TCP_ACKSEQ].flags |= ULOGD_RETF_VALID;
-	ret[KEY_TCP_OFFSET].u.value.ui8 = ntohs(tcph->doff);
-	ret[KEY_TCP_OFFSET].flags |= ULOGD_RETF_VALID;
-	ret[KEY_TCP_RESERVED].u.value.ui8 = ntohs(tcph->res1);
-	ret[KEY_TCP_RESERVED].flags |= ULOGD_RETF_VALID;
-	ret[KEY_TCP_WINDOW].u.value.ui16 = ntohs(tcph->window);
-	ret[KEY_TCP_WINDOW].flags |= ULOGD_RETF_VALID;
+	okey_set_u16(&ret[KEY_TCP_SPORT], ntohs(tcph->source));
+	okey_set_u16(&ret[KEY_TCP_DPORT], ntohs(tcph->dest));
+	okey_set_u32(&ret[KEY_TCP_SEQ], ntohl(tcph->seq));
+	okey_set_u32(&ret[KEY_TCP_ACKSEQ], ntohl(tcph->ack_seq));
+	okey_set_u8(&ret[KEY_TCP_OFFSET], ntohs(tcph->doff));
+	okey_set_u8(&ret[KEY_TCP_RESERVED], ntohs(tcph->res1));
+	okey_set_u16(&ret[KEY_TCP_WINDOW], ntohs(tcph->window));
 
-	ret[KEY_TCP_URG].u.value.b = tcph->urg;
-	ret[KEY_TCP_URG].flags |= ULOGD_RETF_VALID;
-	if (tcph->urg) {
-		ret[KEY_TCP_URGP].u.value.ui16 = ntohs(tcph->urg_ptr);
-		ret[KEY_TCP_URGP].flags |= ULOGD_RETF_VALID;
-	}
-	ret[KEY_TCP_ACK].u.value.b = tcph->ack;
-	ret[KEY_TCP_ACK].flags |= ULOGD_RETF_VALID;
-	ret[KEY_TCP_PSH].u.value.b = tcph->psh;
-	ret[KEY_TCP_PSH].flags |= ULOGD_RETF_VALID;
-	ret[KEY_TCP_RST].u.value.b = tcph->rst;
-	ret[KEY_TCP_RST].flags |= ULOGD_RETF_VALID;
-	ret[KEY_TCP_SYN].u.value.b = tcph->syn;
-	ret[KEY_TCP_SYN].flags |= ULOGD_RETF_VALID;
-	ret[KEY_TCP_FIN].u.value.b = tcph->fin;
-	ret[KEY_TCP_FIN].flags |= ULOGD_RETF_VALID;
-	ret[KEY_TCP_RES1].u.value.b = tcph->res1;
-	ret[KEY_TCP_RES1].flags |= ULOGD_RETF_VALID;
-	ret[KEY_TCP_RES2].u.value.b = tcph->res2;
-	ret[KEY_TCP_RES2].flags |= ULOGD_RETF_VALID;
-	ret[KEY_TCP_CSUM].u.value.ui16 = ntohs(tcph->check);
-	ret[KEY_TCP_CSUM].u.value.ui16 = ULOGD_RETF_VALID;
+	okey_set_b(&ret[KEY_TCP_URG], tcph->urg);
+	if (tcph->urg)
+		okey_set_u16(&ret[KEY_TCP_URGP], ntohs(tcph->urg_ptr));
+	okey_set_b(&ret[KEY_TCP_ACK], tcph->ack);
+	okey_set_b(&ret[KEY_TCP_PSH], tcph->psh);
+	okey_set_b(&ret[KEY_TCP_RST], tcph->rst);
+	okey_set_b(&ret[KEY_TCP_SYN], tcph->syn);
+	okey_set_b(&ret[KEY_TCP_FIN], tcph->fin);
+	okey_set_b(&ret[KEY_TCP_RES1], tcph->res1);
+	okey_set_b(&ret[KEY_TCP_RES2], tcph->res2);
+	okey_set_u16(&ret[KEY_TCP_CSUM], ntohs(tcph->check));
 	
 	return ULOGD_IRET_OK;
 }
@@ -575,14 +557,10 @@ static int _interp_udp(struct ulogd_pluginstance *pi, struct udphdr *udph,
 	if (len < sizeof(struct udphdr))
 		return ULOGD_IRET_OK;
 
-	ret[KEY_UDP_SPORT].u.value.ui16 = ntohs(udph->source);
-	ret[KEY_UDP_SPORT].flags |= ULOGD_RETF_VALID;
-	ret[KEY_UDP_DPORT].u.value.ui16 = ntohs(udph->dest);
-	ret[KEY_UDP_DPORT].flags |= ULOGD_RETF_VALID;
-	ret[KEY_UDP_LEN].u.value.ui16 = ntohs(udph->len);
-	ret[KEY_UDP_LEN].flags |= ULOGD_RETF_VALID;
-	ret[KEY_UDP_CSUM].u.value.ui16 = ntohs(udph->check);
-	ret[KEY_UDP_CSUM].flags |= ULOGD_RETF_VALID;
+	okey_set_u16(&ret[KEY_UDP_SPORT], ntohs(udph->source));
+	okey_set_u16(&ret[KEY_UDP_DPORT], ntohs(udph->dest));
+	okey_set_u16(&ret[KEY_UDP_LEN], ntohs(udph->len));
+	okey_set_u16(&ret[KEY_UDP_CSUM], ntohs(udph->check));
 	
 	return ULOGD_IRET_OK;
 }
@@ -599,33 +577,28 @@ static int _interp_icmp(struct ulogd_pluginstance *pi, struct icmphdr *icmph,
 	if (len < sizeof(struct icmphdr))
 		return ULOGD_IRET_OK;
 
-	ret[KEY_ICMP_TYPE].u.value.ui8 = icmph->type;
-	ret[KEY_ICMP_TYPE].flags |= ULOGD_RETF_VALID;
-	ret[KEY_ICMP_CODE].u.value.ui8 = icmph->code;
-	ret[KEY_ICMP_CODE].flags |= ULOGD_RETF_VALID;
+	okey_set_u8(&ret[KEY_ICMP_TYPE], icmph->type);
+	okey_set_u8(&ret[KEY_ICMP_CODE], icmph->code);
 
 	switch (icmph->type) {
 	case ICMP_ECHO:
 	case ICMP_ECHOREPLY:
-		ret[KEY_ICMP_ECHOID].u.value.ui16 = ntohs(icmph->un.echo.id);
-		ret[KEY_ICMP_ECHOID].flags |= ULOGD_RETF_VALID;
-		ret[KEY_ICMP_ECHOSEQ].u.value.ui16 = ntohs(icmph->un.echo.sequence);
-		ret[KEY_ICMP_ECHOSEQ].flags |= ULOGD_RETF_VALID;
+		okey_set_u16(&ret[KEY_ICMP_ECHOID], ntohs(icmph->un.echo.id));
+		okey_set_u16(&ret[KEY_ICMP_ECHOSEQ],
+			     ntohs(icmph->un.echo.sequence));
 		break;
 	case ICMP_REDIRECT:
 	case ICMP_PARAMETERPROB:
-		ret[KEY_ICMP_GATEWAY].u.value.ui32 = ntohl(icmph->un.gateway);
-		ret[KEY_ICMP_GATEWAY].flags |= ULOGD_RETF_VALID;
+		okey_set_u32(&ret[KEY_ICMP_GATEWAY], ntohl(icmph->un.gateway));
 		break;
 	case ICMP_DEST_UNREACH:
 		if (icmph->code == ICMP_FRAG_NEEDED) {
-			ret[KEY_ICMP_FRAGMTU].u.value.ui16 = ntohs(icmph->un.frag.mtu);
-			ret[KEY_ICMP_FRAGMTU].flags |= ULOGD_RETF_VALID;
+			okey_set_u16(&ret[KEY_ICMP_FRAGMTU],
+				     ntohs(icmph->un.frag.mtu));
 		}
 		break;
 	}
-	ret[KEY_ICMP_CSUM].u.value.ui16 = icmph->checksum;
-	ret[KEY_ICMP_CSUM].flags |= ULOGD_RETF_VALID;
+	okey_set_u16(&ret[KEY_ICMP_CSUM], icmph->checksum);
 
 	return ULOGD_IRET_OK;
 }
@@ -642,22 +615,18 @@ static int _interp_icmpv6(struct ulogd_pluginstance *pi, struct icmp6_hdr *icmph
 	if (len < sizeof(struct icmp6_hdr))
 		return ULOGD_IRET_OK;
 
-	ret[KEY_ICMPV6_TYPE].u.value.ui8 = icmph->icmp6_type;
-	ret[KEY_ICMPV6_TYPE].flags |= ULOGD_RETF_VALID;
-	ret[KEY_ICMPV6_CODE].u.value.ui8 = icmph->icmp6_code;
-	ret[KEY_ICMPV6_CODE].flags |= ULOGD_RETF_VALID;
+	okey_set_u8(&ret[KEY_ICMPV6_TYPE], icmph->icmp6_type);
+	okey_set_u8(&ret[KEY_ICMPV6_CODE], icmph->icmp6_code);
 
 	switch (icmph->icmp6_type) {
 	case ICMP6_ECHO_REQUEST:
 	case ICMP6_ECHO_REPLY:
-		ret[KEY_ICMPV6_ECHOID].u.value.ui16 = ntohs(icmph->icmp6_id);
-		ret[KEY_ICMPV6_ECHOID].flags |= ULOGD_RETF_VALID;
-		ret[KEY_ICMPV6_ECHOSEQ].u.value.ui16 = ntohs(icmph->icmp6_seq);
-		ret[KEY_ICMPV6_ECHOSEQ].flags |= ULOGD_RETF_VALID;
+		okey_set_u16(&ret[KEY_ICMPV6_ECHOID], ntohs(icmph->icmp6_id));
+		okey_set_u16(&ret[KEY_ICMPV6_ECHOSEQ],
+			      ntohs(icmph->icmp6_seq));
 		break;
 	}
-	ret[KEY_ICMPV6_CSUM].u.value.ui16 = icmph->icmp6_cksum;
-	ret[KEY_ICMPV6_CSUM].flags |= ULOGD_RETF_VALID;
+	okey_set_u16(&ret[KEY_ICMPV6_CSUM], icmph->icmp6_cksum);
 
 	return ULOGD_IRET_OK;
 }
@@ -691,33 +660,23 @@ static int _interp_iphdr(struct ulogd_pluginstance *pi, u_int32_t len)
 {
 	struct ulogd_key *ret = pi->output.keys;
 	struct iphdr *iph =
-		GET_VALUE(pi->input.keys, INKEY_RAW_PCKT).ptr;
+		ikey_get_ptr(&pi->input.keys[INKEY_RAW_PCKT]);
 	void *nexthdr = (u_int32_t *)iph + iph->ihl;
 
 	if (len < sizeof(struct iphdr) || len <= (u_int32_t)(iph->ihl * 4))
 		return ULOGD_IRET_OK;
 	len -= iph->ihl * 4;
 
-	ret[KEY_IP_SADDR].u.value.ui32 = iph->saddr;
-	ret[KEY_IP_SADDR].flags |= ULOGD_RETF_VALID;
-	ret[KEY_IP_DADDR].u.value.ui32 = iph->daddr;
-	ret[KEY_IP_DADDR].flags |= ULOGD_RETF_VALID;
-	ret[KEY_IP_PROTOCOL].u.value.ui8 = iph->protocol;
-	ret[KEY_IP_PROTOCOL].flags |= ULOGD_RETF_VALID;
-	ret[KEY_IP_TOS].u.value.ui8 = iph->tos;
-	ret[KEY_IP_TOS].flags |= ULOGD_RETF_VALID;
-	ret[KEY_IP_TTL].u.value.ui8 = iph->ttl;
-	ret[KEY_IP_TTL].flags |= ULOGD_RETF_VALID;
-	ret[KEY_IP_TOTLEN].u.value.ui16 = ntohs(iph->tot_len);
-	ret[KEY_IP_TOTLEN].flags |= ULOGD_RETF_VALID;
-	ret[KEY_IP_IHL].u.value.ui8 = iph->ihl;
-	ret[KEY_IP_IHL].flags |= ULOGD_RETF_VALID;
-	ret[KEY_IP_CSUM].u.value.ui16 = ntohs(iph->check);
-	ret[KEY_IP_CSUM].flags |= ULOGD_RETF_VALID;
-	ret[KEY_IP_ID].u.value.ui16 = ntohs(iph->id);
-	ret[KEY_IP_ID].flags |= ULOGD_RETF_VALID;
-	ret[KEY_IP_FRAGOFF].u.value.ui16 = ntohs(iph->frag_off);
-	ret[KEY_IP_FRAGOFF].flags |= ULOGD_RETF_VALID;
+	okey_set_u32(&ret[KEY_IP_SADDR], iph->saddr);
+	okey_set_u32(&ret[KEY_IP_DADDR], iph->daddr);
+	okey_set_u8(&ret[KEY_IP_PROTOCOL], iph->protocol);
+	okey_set_u8(&ret[KEY_IP_TOS], iph->tos);
+	okey_set_u8(&ret[KEY_IP_TTL], iph->ttl);
+	okey_set_u16(&ret[KEY_IP_TOTLEN], ntohs(iph->tot_len));
+	okey_set_u8(&ret[KEY_IP_IHL], iph->ihl);
+	okey_set_u16(&ret[KEY_IP_CSUM], ntohs(iph->check));
+	okey_set_u16(&ret[KEY_IP_ID], ntohs(iph->id));
+	okey_set_u16(&ret[KEY_IP_FRAGOFF], ntohs(iph->frag_off));
 
 	switch (iph->protocol) {
 	case IPPROTO_TCP:
@@ -760,8 +719,7 @@ static int ip6_ext_hdr(u_int8_t nexthdr)
 static int _interp_ipv6hdr(struct ulogd_pluginstance *pi, u_int32_t len)
 {
 	struct ulogd_key *ret = pi->output.keys;
-	struct ip6_hdr *ipv6h =
-		GET_VALUE(pi->input.keys, INKEY_RAW_PCKT).ptr;
+	struct ip6_hdr *ipv6h = ikey_get_ptr(&pi->input.keys[INKEY_RAW_PCKT]);
 	unsigned int ptr, hdrlen = 0;
 	u_int8_t curhdr;
 	int fragment = 0;
@@ -769,20 +727,14 @@ static int _interp_ipv6hdr(struct ulogd_pluginstance *pi, u_int32_t len)
 	if (len < sizeof(struct ip6_hdr))
 		return ULOGD_IRET_OK;
 
-	memcpy(ret[KEY_IP_SADDR].u.value.ui128, &ipv6h->ip6_src,
-	       sizeof(ipv6h->ip6_src));
-	ret[KEY_IP_SADDR].flags |= ULOGD_RETF_VALID;
-	memcpy(ret[KEY_IP_DADDR].u.value.ui128, &ipv6h->ip6_dst,
-	       sizeof(ipv6h->ip6_dst));
-	ret[KEY_IP_DADDR].flags |= ULOGD_RETF_VALID;
-	ret[KEY_IP6_PAYLOAD_LEN].u.value.ui16 = ntohs(ipv6h->ip6_plen);
-	ret[KEY_IP6_PAYLOAD_LEN].flags |= ULOGD_RETF_VALID;
-	ret[KEY_IP6_PRIORITY].u.value.ui8 = ntohl(ipv6h->ip6_flow & 0x0ff00000) >> 20;
-	ret[KEY_IP6_PRIORITY].flags |= ULOGD_RETF_VALID;
-	ret[KEY_IP6_FLOWLABEL].u.value.ui32 = ntohl(ipv6h->ip6_flow & 0x000fffff);
-	ret[KEY_IP6_FLOWLABEL].flags |= ULOGD_RETF_VALID;
-	ret[KEY_IP6_HOPLIMIT].u.value.ui8 = ipv6h->ip6_hlim;
-	ret[KEY_IP6_HOPLIMIT].flags |= ULOGD_RETF_VALID;
+	okey_set_u128(&ret[KEY_IP_SADDR], &ipv6h->ip6_src);
+	okey_set_u128(&ret[KEY_IP_DADDR], &ipv6h->ip6_dst);
+	okey_set_u16(&ret[KEY_IP6_PAYLOAD_LEN], ntohs(ipv6h->ip6_plen));
+	okey_set_u8(&ret[KEY_IP6_PRIORITY],
+		    ntohl(ipv6h->ip6_flow & 0x0ff00000) >> 20);
+	okey_set_u32(&ret[KEY_IP6_FLOWLABEL],
+		     ntohl(ipv6h->ip6_flow & 0x000fffff));
+	okey_set_u8(&ret[KEY_IP6_HOPLIMIT], ipv6h->ip6_hlim);
 
 	curhdr = ipv6h->ip6_nxt;
 	ptr = sizeof(struct ip6_hdr);
@@ -803,10 +755,10 @@ static int _interp_ipv6hdr(struct ulogd_pluginstance *pi, u_int32_t len)
 				return ULOGD_IRET_OK;
 			len -= hdrlen;
 
-			ret[KEY_IP6_FRAG_OFF].u.value.ui16 = ntohs(fh->ip6f_offlg & IP6F_OFF_MASK);
-			ret[KEY_IP6_FRAG_OFF].flags |= ULOGD_RETF_VALID;
-			ret[KEY_IP6_FRAG_ID].u.value.ui32 = ntohl(fh->ip6f_ident);
-			ret[KEY_IP6_FRAG_ID].flags |= ULOGD_RETF_VALID;
+			okey_set_u16(&ret[KEY_IP6_FRAG_OFF],
+				     ntohs(fh->ip6f_offlg & IP6F_OFF_MASK));
+			okey_set_u32(&ret[KEY_IP6_FRAG_ID],
+				     ntohl(fh->ip6f_ident));
 
 			if (ntohs(fh->ip6f_offlg & IP6F_OFF_MASK))
 				fragment = 1;
@@ -857,8 +809,7 @@ static int _interp_ipv6hdr(struct ulogd_pluginstance *pi, u_int32_t len)
 		goto out;
 
 
-	ret[KEY_IP_PROTOCOL].u.value.ui8 = curhdr;
-	ret[KEY_IP_PROTOCOL].flags |= ULOGD_RETF_VALID;
+	okey_set_u8(&ret[KEY_IP_PROTOCOL], curhdr);
 
 	switch (curhdr) {
 	case IPPROTO_TCP:
@@ -873,8 +824,7 @@ static int _interp_ipv6hdr(struct ulogd_pluginstance *pi, u_int32_t len)
 	}
 
 out:
-	ret[KEY_IP6_NEXTHDR].u.value.ui8 = curhdr;
-	ret[KEY_IP6_NEXTHDR].flags |= ULOGD_RETF_VALID;
+	okey_set_u8(&ret[KEY_IP6_NEXTHDR], curhdr);
 	return ULOGD_IRET_OK;
 }
 
@@ -885,31 +835,19 @@ static int _interp_arp(struct ulogd_pluginstance *pi, u_int32_t len)
 {
 	struct ulogd_key *ret = pi->output.keys;
 	const struct ether_arp *arph =
-		GET_VALUE(pi->input.keys, INKEY_RAW_PCKT).ptr;
+		ikey_get_ptr(&pi->input.keys[INKEY_RAW_PCKT]);
 
 	if (len < sizeof(struct ether_arp))
 		return ULOGD_IRET_OK;
 
-	ret[KEY_ARP_HTYPE].u.value.ui16 = ntohs(arph->arp_hrd);
-	SET_VALID(ret[KEY_ARP_HTYPE]);
-	ret[KEY_ARP_PTYPE].u.value.ui16 = ntohs(arph->arp_pro);
-	SET_VALID(ret[KEY_ARP_PTYPE]);
-	ret[KEY_ARP_OPCODE].u.value.ui16 = ntohs(arph->arp_op);
-	SET_VALID(ret[KEY_ARP_OPCODE]);
+	okey_set_u16(&ret[KEY_ARP_HTYPE], ntohs(arph->arp_hrd));
+	okey_set_u16(&ret[KEY_ARP_PTYPE], ntohs(arph->arp_pro));
+	okey_set_u16(&ret[KEY_ARP_OPCODE], ntohs(arph->arp_op));
 
-	ret[KEY_ARP_SHA].u.value.ptr = &arph->arp_sha;
-	SET_VALID(ret[KEY_ARP_SHA]);
-
-	memcpy(&ret[KEY_ARP_SPA].u.value.ui32, &arph->arp_spa,
-	       sizeof(u_int32_t));
-	SET_VALID(ret[KEY_ARP_SPA]);
-
-	ret[KEY_ARP_THA].u.value.ptr = &arph->arp_tha;
-	SET_VALID(ret[KEY_ARP_THA]);
-
-	memcpy(&ret[KEY_ARP_TPA].u.value.ui32, &arph->arp_tpa,
-	       sizeof(u_int32_t));
-	SET_VALID(ret[KEY_ARP_TPA]);
+	okey_set_ptr(&ret[KEY_ARP_SHA], &arph->arp_sha);
+	okey_set_ptr(&ret[KEY_ARP_SPA], &arph->arp_spa),
+	okey_set_ptr(&ret[KEY_ARP_THA], &arph->arp_tha);
+	okey_set_ptr(&ret[KEY_ARP_TPA], &arph->arp_tpa);
 
 	return ULOGD_IRET_OK;
 }
@@ -921,7 +859,7 @@ static int _interp_arp(struct ulogd_pluginstance *pi, u_int32_t len)
 static int _interp_bridge(struct ulogd_pluginstance *pi, u_int32_t len)
 {
 	const u_int16_t proto =
-		GET_VALUE(pi->input.keys, INKEY_OOB_PROTOCOL).ui16;
+		ikey_get_u16(&pi->input.keys[INKEY_OOB_PROTOCOL]);
 
 	switch (proto) {
 	case ETH_P_IP:
@@ -942,13 +880,12 @@ static int _interp_bridge(struct ulogd_pluginstance *pi, u_int32_t len)
 
 static int _interp_pkt(struct ulogd_pluginstance *pi)
 {
-	u_int32_t len = GET_VALUE(pi->input.keys, INKEY_RAW_PCKTLEN).ui32;
-	u_int8_t family = GET_VALUE(pi->input.keys, INKEY_OOB_FAMILY).ui8;
+	u_int32_t len = ikey_get_u32(&pi->input.keys[INKEY_RAW_PCKTLEN]);
+	u_int8_t family = ikey_get_u8(&pi->input.keys[INKEY_OOB_FAMILY]);
 	struct ulogd_key *ret = pi->output.keys;
 
-	ret[KEY_OOB_PROTOCOL].u.value.ui16 =
-		GET_VALUE(pi->input.keys, INKEY_OOB_PROTOCOL).ui16;
-	SET_VALID(ret[KEY_OOB_PROTOCOL]);
+	okey_set_u16(&ret[KEY_OOB_PROTOCOL],
+		     ikey_get_u16(&pi->input.keys[INKEY_OOB_PROTOCOL]));
 
 	switch (family) {
 	case AF_INET:

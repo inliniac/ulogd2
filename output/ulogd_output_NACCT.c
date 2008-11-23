@@ -125,28 +125,28 @@ nacct_interp(struct ulogd_pluginstance *pi)
 
 	/* try to be as close to nacct as possible.  Instead of nacct's
 	   'timestamp' value use 'flow.end.sec' */
-	if (GET_VALUE(inp, KEY_IP_PROTO).ui8 == IPPROTO_ICMP) {
+	if (ikey_get_u8(&inp[KEY_IP_PROTO]) == IPPROTO_ICMP) {
 		snprintf(buf, sizeof(buf),
 				 "%u\t%u\t%s\t%u\t%s\t%u\t%u\t%u",
-				 GET_VALUE(inp, KEY_FLOW_END).ui32,
-				 GET_VALUE(inp, KEY_IP_PROTO).ui8,
-				 (char *) GET_VALUE(inp, KEY_IP_SADDR).ptr,
-				 GET_VALUE(inp, KEY_ICMP_TYPE).ui8,
-				 (char *) GET_VALUE(inp, KEY_IP_DADDR).ptr,
-				 GET_VALUE(inp, KEY_ICMP_CODE).ui8,
-				 GET_VALUE(inp, KEY_RAW_PKTCNT).ui32,
-				 GET_VALUE(inp, KEY_RAW_PKTLEN).ui32);
+				 ikey_get_u32(&inp[KEY_FLOW_END]),
+				 ikey_get_u8(&inp[KEY_IP_PROTO]),
+				 (char *) ikey_get_ptr(&inp[KEY_IP_SADDR]),
+				 ikey_get_u8(&inp[KEY_ICMP_TYPE]),
+				 (char *) ikey_get_ptr(&inp[KEY_IP_DADDR]),
+				 ikey_get_u8(&inp[KEY_ICMP_CODE]),
+				 ikey_get_u32(&inp[KEY_RAW_PKTCNT]),
+				 ikey_get_u32(&inp[KEY_RAW_PKTLEN]));
 	} else {
 		snprintf(buf, sizeof(buf),
 				 "%u\t%u\t%s\t%u\t%s\t%u\t%u\t%u",
-				 GET_VALUE(inp, KEY_FLOW_END).ui32,
-				 GET_VALUE(inp, KEY_IP_PROTO).ui8,
-				 (char *) GET_VALUE(inp, KEY_IP_SADDR).ptr,
-				 GET_VALUE(inp, KEY_L4_SPORT).ui16,
-				 (char *) GET_VALUE(inp, KEY_IP_DADDR).ptr,
-				 GET_VALUE(inp, KEY_L4_DPORT).ui16,
-				 GET_VALUE(inp, KEY_RAW_PKTCNT).ui32,
-				 GET_VALUE(inp, KEY_RAW_PKTLEN).ui32);
+				 ikey_get_u32(&inp[KEY_FLOW_END]),
+				 ikey_get_u8(&inp[KEY_IP_PROTO]),
+				 (char *) ikey_get_ptr(&inp[KEY_IP_SADDR]),
+				 ikey_get_u16(&inp[KEY_L4_SPORT]),
+				 (char *) ikey_get_ptr(&inp[KEY_IP_DADDR]),
+				 ikey_get_u16(&inp[KEY_L4_DPORT]),
+				 ikey_get_u32(&inp[KEY_RAW_PKTCNT]),
+				 ikey_get_u32(&inp[KEY_RAW_PKTLEN]));
 	}
 
 	fprintf(priv->of, "%s\n", buf);

@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <signal.h>	/* need this because of extension-sighandler */
 #include <sys/types.h>
+#include <string.h>
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
@@ -126,6 +127,64 @@ struct ulogd_keyset {
 	unsigned int type;
 };
 
+static inline void okey_set_b(struct ulogd_key *key, u_int8_t value)
+{
+	key->u.value.b = value;
+	key->flags |= ULOGD_RETF_VALID;
+}
+
+static inline void okey_set_u8(struct ulogd_key *key, u_int8_t value)
+{
+	key->u.value.ui8 = value;
+	key->flags |= ULOGD_RETF_VALID;
+}
+
+static inline void okey_set_u16(struct ulogd_key *key, u_int16_t value)
+{
+	key->u.value.ui16 = value;
+	key->flags |= ULOGD_RETF_VALID;
+}
+
+static inline void okey_set_u32(struct ulogd_key *key, u_int32_t value)
+{
+	key->u.value.ui32 = value;
+	key->flags |= ULOGD_RETF_VALID;
+}
+
+static inline void okey_set_u128(struct ulogd_key *key, const void *value)
+{
+	memcpy(key->u.value.ui128, value, 16);
+	key->flags |= ULOGD_RETF_VALID;
+}
+
+static inline void okey_set_ptr(struct ulogd_key *key, void *value)
+{
+	key->u.value.ptr = value;
+	key->flags |= ULOGD_RETF_VALID;
+}
+
+static inline u_int8_t ikey_get_u8(struct ulogd_key *key)
+{
+	return key->u.source->u.value.ui8;
+}
+
+static inline u_int16_t ikey_get_u16(struct ulogd_key *key)
+{
+	return key->u.source->u.value.ui16;
+}
+
+static inline u_int32_t ikey_get_u32(struct ulogd_key *key)
+{
+	return key->u.source->u.value.ui32;
+}
+
+#define ikey_get_u128 ikey_get_ptr
+
+static inline void *ikey_get_ptr(struct ulogd_key *key)
+{
+	return key->u.source->u.value.ptr;
+}
+
 struct ulogd_pluginstance_stack;
 struct ulogd_pluginstance;
 struct ulogd_plugin {
@@ -221,7 +280,6 @@ void __ulogd_log(int level, char *file, int line, const char *message, ...);
 #define IS_NEEDED(x)	(x.flags & ULOGD_RETF_NEEDED)
 #define SET_NEEDED(x)	(x.flags |= ULOGD_RETF_NEEDED)
 
-#define GET_VALUE(res, x)	(res[x].u.source->u.value)
 #define GET_FLAGS(res, x)	(res[x].u.source->flags)
 #define pp_is_valid(res, x)	\
 	(res[x].u.source && (GET_FLAGS(res, x) & ULOGD_RETF_VALID))

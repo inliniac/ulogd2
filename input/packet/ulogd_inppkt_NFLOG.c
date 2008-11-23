@@ -310,59 +310,43 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 	u_int32_t uid;
 	u_int32_t gid;
 
-	ret[NFLOG_KEY_OOB_FAMILY].u.value.ui8 = af_ce(upi->config_kset).u.value;
-	ret[NFLOG_KEY_OOB_FAMILY].flags |= ULOGD_RETF_VALID;
-
-	ret[NFLOG_KEY_RAW_LABEL].u.value.ui8 =
-			label_ce(upi->config_kset).u.value;
-	ret[NFLOG_KEY_RAW_LABEL].flags |= ULOGD_RETF_VALID;
+	okey_set_u8(&ret[NFLOG_KEY_OOB_FAMILY], 
+		    af_ce(upi->config_kset).u.value);
+	okey_set_u8(&ret[NFLOG_KEY_RAW_LABEL],
+		    label_ce(upi->config_kset).u.value);
 
 	if (ph) {
 		/* FIXME */
-		ret[NFLOG_KEY_OOB_HOOK].u.value.ui8 = ph->hook;
-		ret[NFLOG_KEY_OOB_HOOK].flags |= ULOGD_RETF_VALID;
-		ret[NFLOG_KEY_OOB_PROTOCOL].u.value.ui16 =
-					ntohs(ph->hw_protocol);
-		ret[NFLOG_KEY_OOB_PROTOCOL].flags |= ULOGD_RETF_VALID;
+		okey_set_u8(&ret[NFLOG_KEY_OOB_HOOK], ph->hook);
+		okey_set_u16(&ret[NFLOG_KEY_OOB_PROTOCOL],
+			     ntohs(ph->hw_protocol));
 	}
 
 	if (nflog_get_msg_packet_hwhdrlen(ldata)) {
-		ret[NFLOG_KEY_RAW_MAC].u.value.ptr =
-			nflog_get_msg_packet_hwhdr(ldata);
-		ret[NFLOG_KEY_RAW_MAC].flags |= ULOGD_RETF_VALID;
-		ret[NFLOG_KEY_RAW_MAC_LEN].u.value.ui16 =
-			nflog_get_msg_packet_hwhdrlen(ldata);
-		ret[NFLOG_KEY_RAW_MAC_LEN].flags |= ULOGD_RETF_VALID;
-		ret[NFLOG_KEY_RAW_TYPE].u.value.ui16 =
-			nflog_get_hwtype(ldata);
-		ret[NFLOG_KEY_RAW_TYPE].flags |= ULOGD_RETF_VALID;
+		okey_set_ptr(&ret[NFLOG_KEY_RAW_MAC], 
+			     nflog_get_msg_packet_hwhdr(ldata));
+		okey_set_u16(&ret[NFLOG_KEY_RAW_MAC_LEN],
+			     nflog_get_msg_packet_hwhdrlen(ldata));
+		okey_set_u16(&ret[NFLOG_KEY_RAW_TYPE], nflog_get_hwtype(ldata));
 	}
 
 	if (hw) {
-		ret[NFLOG_KEY_RAW_MAC_SADDR].u.value.ptr = hw->hw_addr;
-		ret[NFLOG_KEY_RAW_MAC_SADDR].flags |= ULOGD_RETF_VALID;
-		ret[NFLOG_KEY_RAW_MAC_ADDRLEN].u.value.ui16 =
-						ntohs(hw->hw_addrlen);
-		ret[NFLOG_KEY_RAW_MAC_ADDRLEN].flags |= ULOGD_RETF_VALID;
+		okey_set_ptr(&ret[NFLOG_KEY_RAW_MAC_SADDR], hw->hw_addr);
+		okey_set_u16(&ret[NFLOG_KEY_RAW_MAC_ADDRLEN], 
+			     ntohs(hw->hw_addrlen));
 	}
 
 	if (payload_len >= 0) {
 		/* include pointer to raw packet */
-		ret[NFLOG_KEY_RAW_PCKT].u.value.ptr = payload;
-		ret[NFLOG_KEY_RAW_PCKT].flags |= ULOGD_RETF_VALID;
-
-		ret[NFLOG_KEY_RAW_PCKTLEN].u.value.ui32 = payload_len;
-		ret[NFLOG_KEY_RAW_PCKTLEN].flags |= ULOGD_RETF_VALID;
+		okey_set_ptr(&ret[NFLOG_KEY_RAW_PCKT], payload);
+		okey_set_u32(&ret[NFLOG_KEY_RAW_PCKTLEN], payload_len);
 	}
 
 	/* number of packets */
-	ret[NFLOG_KEY_RAW_PCKTCOUNT].u.value.ui32 = 1;
-	ret[NFLOG_KEY_RAW_PCKTCOUNT].flags |= ULOGD_RETF_VALID;
+	okey_set_u32(&ret[NFLOG_KEY_RAW_PCKTCOUNT], 1);
 
-	if (prefix) {
-		ret[NFLOG_KEY_OOB_PREFIX].u.value.ptr = prefix;
-		ret[NFLOG_KEY_OOB_PREFIX].flags |= ULOGD_RETF_VALID;
-	}
+	if (prefix)
+		okey_set_ptr(&ret[NFLOG_KEY_OOB_PREFIX], prefix);
 
 	/* god knows why timestamp_usec contains crap if timestamp_sec
 	 * == 0 if (pkt->timestamp_sec || pkt->timestamp_usec) { */
@@ -370,41 +354,26 @@ interp_packet(struct ulogd_pluginstance *upi, struct nflog_data *ldata)
 		gettimeofday(&ts, NULL);
 
 	/* FIXME: convert endianness */
-	ret[NFLOG_KEY_OOB_TIME_SEC].u.value.ui32 = ts.tv_sec & 0xffffffff;
-	ret[NFLOG_KEY_OOB_TIME_SEC].flags |= ULOGD_RETF_VALID;
-	ret[NFLOG_KEY_OOB_TIME_USEC].u.value.ui32 = ts.tv_usec & 0xffffffff;
-	ret[NFLOG_KEY_OOB_TIME_USEC].flags |= ULOGD_RETF_VALID;
+	okey_set_u32(&ret[NFLOG_KEY_OOB_TIME_SEC], ts.tv_sec & 0xffffffff);
+	okey_set_u32(&ret[NFLOG_KEY_OOB_TIME_USEC], ts.tv_usec & 0xffffffff);
 
-	ret[NFLOG_KEY_OOB_MARK].u.value.ui32 = mark;
-	ret[NFLOG_KEY_OOB_MARK].flags |= ULOGD_RETF_VALID;
+	okey_set_u32(&ret[NFLOG_KEY_OOB_MARK], mark);
 
-	if (indev > 0) {
-		ret[NFLOG_KEY_OOB_IFINDEX_IN].u.value.ui32 = indev;
-		ret[NFLOG_KEY_OOB_IFINDEX_IN].flags |= ULOGD_RETF_VALID;
-	}
+	if (indev > 0)
+		okey_set_u32(&ret[NFLOG_KEY_OOB_IFINDEX_IN], indev);
 
-	if (outdev > 0) {
-		ret[NFLOG_KEY_OOB_IFINDEX_OUT].u.value.ui32 = outdev;
-		ret[NFLOG_KEY_OOB_IFINDEX_OUT].flags |= ULOGD_RETF_VALID;
-	}
+	if (outdev > 0)
+		okey_set_u32(&ret[NFLOG_KEY_OOB_IFINDEX_OUT], outdev);
 
-	if (nflog_get_uid(ldata, &uid) == 0) {
-		ret[NFLOG_KEY_OOB_UID].u.value.ui32 = uid;
-		ret[NFLOG_KEY_OOB_UID].flags |= ULOGD_RETF_VALID;
-	}
-	if (nflog_get_gid(ldata, &gid) == 0) {
-		ret[NFLOG_KEY_OOB_GID].u.value.ui32 = gid;
-		ret[NFLOG_KEY_OOB_GID].flags |= ULOGD_RETF_VALID;
-	}
+	if (nflog_get_uid(ldata, &uid) == 0)
+		okey_set_u32(&ret[NFLOG_KEY_OOB_UID], uid);
+	if (nflog_get_gid(ldata, &gid) == 0)
+		okey_set_u32(&ret[NFLOG_KEY_OOB_GID], gid);
+	if (nflog_get_seq(ldata, &seq) == 0)
+		okey_set_u32(&ret[NFLOG_KEY_OOB_SEQ_LOCAL], seq);
+	if (nflog_get_seq_global(ldata, &seq) == 0)
+		okey_set_u32(&ret[NFLOG_KEY_OOB_SEQ_GLOBAL], seq);
 
-	if (nflog_get_seq(ldata, &seq) == 0) {
-		ret[NFLOG_KEY_OOB_SEQ_LOCAL].u.value.ui32 = seq;
-		ret[NFLOG_KEY_OOB_SEQ_LOCAL].flags |= ULOGD_RETF_VALID;
-	}
-	if (nflog_get_seq_global(ldata, &seq) == 0) {
-		ret[NFLOG_KEY_OOB_SEQ_GLOBAL].u.value.ui32 = seq;
-		ret[NFLOG_KEY_OOB_SEQ_GLOBAL].flags |= ULOGD_RETF_VALID;
-	}
 	ulogd_propagate_results(upi);
 	return 0;
 }

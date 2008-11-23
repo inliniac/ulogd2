@@ -116,25 +116,22 @@ static int interp_pwsniff(struct ulogd_pluginstance *pi)
 	}
 
 	if (len) {
-		ret[0].u.value.ptr = (char *) malloc(len+1);
-		ret[0].flags |= ULOGD_RETF_VALID;
-		if (!ret[0].u.value.ptr) {
-			ulogd_log(ULOGD_ERROR, "OOM (size=%u)\n", len);
+		char *ptr;
+		ptr = (char *) malloc(len+1);
+		if (!ptr)
 			return ULOGD_IRET_ERR;
-		}
-		strncpy((char *) ret[0].u.value.ptr, (char *)begp, len);
-		*((char *)ret[0].u.value.ptr + len) = '\0';
+		strncpy(ptr, (char *)begp, len);
+		ptr[len] = '\0';
+		okey_set_ptr(&ret[0], ptr);
 	}
 	if (pw_len) {
-		ret[1].u.value.ptr = (char *) malloc(pw_len+1);
-		ret[1].flags |= ULOGD_RETF_VALID;
-		if (!ret[1].u.value.ptr){
-			ulogd_log(ULOGD_ERROR, "OOM (size=%u)\n", pw_len);
+		char *ptr;
+		ptr = (char *) malloc(pw_len+1);
+		if (!ptr)
 			return ULOGD_IRET_ERR;
-		}
-		strncpy((char *)ret[1].u.value.ptr, (char *)pw_begp, pw_len);
-		*((char *)ret[1].u.value.ptr + pw_len) = '\0';
-
+		strncpy(ptr, (char *)pw_begp, pw_len);
+		ptr[pw_len] = '\0';
+		okey_set_ptr(&ret[1], ptr);
 	}
 	return ULOGD_IRET_OK;
 }

@@ -3,6 +3,7 @@
  * ulogd interpreter plugin for ifindex to ifname conversion
  *
  * (C) 2005 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2008 by Pablo Neira Ayuso <pablo@netfilter.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 
@@ -61,20 +62,25 @@ static int interp_ifindex(struct ulogd_pluginstance *pi)
 {
 	struct ulogd_key *ret = pi->output.keys;
 	struct ulogd_key *inp = pi->input.keys;
+	void *ptr;
 
-	ret[0].u.value.ptr = calloc(IFNAMSIZ, sizeof(char)); 
-	nlif_index2name(nlif_inst, inp[0].u.source->u.value.ui32,
-			ret[0].u.value.ptr);
-	if (((char *)ret[0].u.value.ptr)[0] == '*')
-		((char *)(ret[0].u.value.ptr))[0] = 0; 
-	ret[0].flags |= ULOGD_RETF_VALID;
+	ptr = calloc(IFNAMSIZ, sizeof(char));
+	if (!ptr)
+		return ULOGD_IRET_ERR;
 
-	ret[1].u.value.ptr = calloc(IFNAMSIZ, sizeof(char)); 
-	nlif_index2name(nlif_inst, inp[1].u.source->u.value.ui32,
-			ret[1].u.value.ptr);
-	if (((char *)ret[1].u.value.ptr)[0] == '*')
-		((char *)(ret[1].u.value.ptr))[0] = 0; 
-	ret[1].flags |= ULOGD_RETF_VALID;
+	nlif_index2name(nlif_inst, ikey_get_u32(&inp[0]), ptr);
+	if (((char *)ptr)[0] == '*')
+		((char *)(ptr))[0] = 0;
+	okey_set_ptr(&ret[0], ptr);
+
+	ptr = calloc(IFNAMSIZ, sizeof(char));
+	if (!ptr)
+		return ULOGD_IRET_ERR;
+
+	nlif_index2name(nlif_inst, ikey_get_u32(&inp[1]), ptr);
+	if (((char *)ptr)[0] == '*')
+		((char *)(ptr))[0] = 0; 
+	okey_set_ptr(&ret[1], ptr);
 
 	return ULOGD_IRET_OK;
 }

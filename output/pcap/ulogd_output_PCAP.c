@@ -126,7 +126,6 @@ static struct ulogd_key pcap_keys[INTR_IDS] = {
 	{ .name = "oob.time.usec" },
 };
 
-#define GET_VALUE(res, x)	(res[x].u.source->u.value)
 #define GET_FLAGS(res, x)	(res[x].u.source->flags)
 
 static int interp_pcap(struct ulogd_pluginstance *upi)
@@ -135,13 +134,13 @@ static int interp_pcap(struct ulogd_pluginstance *upi)
 	struct ulogd_key *res = upi->input.keys;
 	struct pcap_sf_pkthdr pchdr;
 
-	pchdr.caplen = GET_VALUE(res, 2).ui32;
-	pchdr.len = GET_VALUE(res, 2).ui32;
+	pchdr.caplen = ikey_get_u32(&res[2]);
+	pchdr.len = ikey_get_u32(&res[2]);
 
 	if (GET_FLAGS(res, 3) & ULOGD_RETF_VALID
 	    && GET_FLAGS(res, 4) & ULOGD_RETF_VALID) {
-		pchdr.ts.tv_sec = GET_VALUE(res, 3).ui32;
-		pchdr.ts.tv_usec = GET_VALUE(res, 4).ui32;
+		pchdr.ts.tv_sec = ikey_get_u32(&res[3]);
+		pchdr.ts.tv_usec = ikey_get_u32(&res[4]);
 	} else {
 		/* use current system time */
 		struct timeval tv;
@@ -156,7 +155,7 @@ static int interp_pcap(struct ulogd_pluginstance *upi)
 			  strerror(errno));
 		return ULOGD_IRET_ERR;
 	}
-	if (fwrite(GET_VALUE(res, 0).ptr, pchdr.caplen, 1, pi->of) != 1) {
+	if (fwrite(ikey_get_ptr(&res[0]), pchdr.caplen, 1, pi->of) != 1) {
 		ulogd_log(ULOGD_ERROR, "Error during write: %s\n",
 			  strerror(errno));
 		return ULOGD_IRET_ERR;

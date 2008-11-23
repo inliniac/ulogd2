@@ -37,8 +37,7 @@ static int printflow_interp(struct ulogd_pluginstance *upi)
 	static char buf[4096];
 
 	printflow_print(inp, buf);
-	ret[0].u.value.ptr = buf;
-	ret[0].flags |= ULOGD_RETF_VALID;
+	okey_set_ptr(&ret[0], buf);
 	return ULOGD_IRET_OK;
 }
 

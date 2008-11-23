@@ -51,11 +51,8 @@ static ulog_iret_t *_interp_local(ulog_interpreter_t *ip,
     gettimeofday(&tv, NULL);
 
     /* put date */
-    ret[0].value.ui32 = (unsigned long) tv.tv_sec;
-    ret[0].flags |= ULOGD_RETF_VALID;
-
-    ret[1].value.ptr = hostname;
-    ret[1].flags |= ULOGD_RETF_VALID;
+    okey_set_ui32(&ret[0], (unsigned long) tv.tv_sec);
+    okey_set_ptr(&ret[1], hostname);
 
     return ret;
 }

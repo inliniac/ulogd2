@@ -137,12 +137,12 @@ static char *ip2bin(struct ulogd_key* inp, int index, char family)
 
 	switch (family) {
 		case AF_INET6:
-			addr = (struct in6_addr *) GET_VALUE(inp, index).ui128;
+			addr = (struct in6_addr *)ikey_get_u128(&inp[index]);
 			break;
 		case AF_INET:
 			/* Convert IPv4 to IPv4 in IPv6 */
 			addr = &ip4_addr;
-			uint32_to_ipv6(GET_VALUE(inp, index).ui32, addr);
+			uint32_to_ipv6(ikey_get_u32(&inp[index]), addr);
 			break;
 		default:
 			/* TODO handle error */
@@ -176,13 +176,12 @@ static int interp_ip2bin(struct ulogd_pluginstance *pi)
 	struct ulogd_key *ret = pi->output.keys;
 	struct ulogd_key *inp = pi->input.keys;
 	int i;
-	int oob_family = GET_VALUE(inp, KEY_OOB_FAMILY).ui8;
+	int oob_family = ikey_get_u8(&inp[KEY_OOB_FAMILY]);
 
 	/* Iter on all addr fields */
 	for(i = START_KEY; i < MAX_KEY; i++) {
 		if (pp_is_valid(inp, i)) {
-			ret[i-1].u.value.ptr = ip2bin(inp, i, oob_family);
-			ret[i-1].flags |= ULOGD_RETF_VALID;
+			okey_set_ptr(&ret[i-1], ip2bin(inp, i, oob_family));
 		}
 	}
 

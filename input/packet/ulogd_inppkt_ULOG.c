@@ -190,54 +190,39 @@ static int interp_packet(struct ulogd_pluginstance *ip, ulog_packet_msg_t *pkt)
 	struct ulogd_key *ret = ip->output.keys;
 
 	if (pkt->mac_len) {
-		ret[ULOG_KEY_RAW_MAC].u.value.ptr = pkt->mac;
-		ret[ULOG_KEY_RAW_MAC].flags |= ULOGD_RETF_VALID;
-		ret[ULOG_KEY_RAW_MAC_LEN].u.value.ui16 = pkt->mac_len;
-		ret[ULOG_KEY_RAW_MAC_LEN].flags |= ULOGD_RETF_VALID;
+		okey_set_ptr(&ret[ULOG_KEY_RAW_MAC], pkt->mac);
+		okey_set_u16(&ret[ULOG_KEY_RAW_MAC_LEN], pkt->mac_len);
 	}
 
-	ret[ULOG_KEY_RAW_LABEL].u.value.ui8 = ip->config_kset->ces[3].u.value;
-	ret[ULOG_KEY_RAW_LABEL].flags |= ULOGD_RETF_VALID;
+	okey_set_u8(&ret[ULOG_KEY_RAW_LABEL], ip->config_kset->ces[3].u.value);
 
 	/* include pointer to raw ipv4 packet */
-	ret[ULOG_KEY_RAW_PCKT].u.value.ptr = pkt->payload;
-	ret[ULOG_KEY_RAW_PCKT].flags |= ULOGD_RETF_VALID;
-	ret[ULOG_KEY_RAW_PCKTLEN].u.value.ui32 = pkt->data_len;
-	ret[ULOG_KEY_RAW_PCKTLEN].flags |= ULOGD_RETF_VALID;
-	ret[ULOG_KEY_RAW_PCKTCOUNT].u.value.ui32 = 1;
-	ret[ULOG_KEY_RAW_PCKTCOUNT].flags |= ULOGD_RETF_VALID;
+	okey_set_ptr(&ret[ULOG_KEY_RAW_PCKT], pkt->payload);
+	okey_set_u32(&ret[ULOG_KEY_RAW_PCKTLEN], pkt->data_len);
+	okey_set_u32(&ret[ULOG_KEY_RAW_PCKTCOUNT], 1);
 
-	ret[ULOG_KEY_OOB_PREFIX].u.value.ptr = pkt->prefix;
-	ret[ULOG_KEY_OOB_PREFIX].flags |= ULOGD_RETF_VALID;
+	okey_set_ptr(&ret[ULOG_KEY_OOB_PREFIX], pkt->prefix);
 
 	/* god knows why timestamp_usec contains crap if timestamp_sec == 0
 	 * if (pkt->timestamp_sec || pkt->timestamp_usec) { */
 	if (pkt->timestamp_sec) {
-		ret[ULOG_KEY_OOB_TIME_SEC].u.value.ui32 = pkt->timestamp_sec;
-		ret[ULOG_KEY_OOB_TIME_SEC].flags |= ULOGD_RETF_VALID;
-		ret[ULOG_KEY_OOB_TIME_USEC].u.value.ui32 = pkt->timestamp_usec;
-		ret[ULOG_KEY_OOB_TIME_USEC].flags |= ULOGD_RETF_VALID;
+		okey_set_u32(&ret[ULOG_KEY_OOB_TIME_SEC], pkt->timestamp_sec);
+		okey_set_u32(&ret[ULOG_KEY_OOB_TIME_USEC], pkt->timestamp_usec);
 	} else {
 		ret[ULOG_KEY_OOB_TIME_SEC].flags &= ~ULOGD_RETF_VALID;
 		ret[ULOG_KEY_OOB_TIME_USEC].flags &= ~ULOGD_RETF_VALID;
 	}
 
-	ret[ULOG_KEY_OOB_MARK].u.value.ui32 = pkt->mark;
-	ret[ULOG_KEY_OOB_MARK].flags |= ULOGD_RETF_VALID;
-	ret[ULOG_KEY_OOB_IN].u.value.ptr = pkt->indev_name;
-	ret[ULOG_KEY_OOB_IN].flags |= ULOGD_RETF_VALID;
-	ret[ULOG_KEY_OOB_OUT].u.value.ptr = pkt->outdev_name;
-	ret[ULOG_KEY_OOB_OUT].flags |= ULOGD_RETF_VALID;
+	okey_set_u32(&ret[ULOG_KEY_OOB_MARK], pkt->mark);
+	okey_set_ptr(&ret[ULOG_KEY_OOB_IN], pkt->indev_name);
+	okey_set_ptr(&ret[ULOG_KEY_OOB_OUT], pkt->outdev_name);
 
-	ret[ULOG_KEY_OOB_HOOK].u.value.ui8 = pkt->hook;
-	ret[ULOG_KEY_OOB_HOOK].flags |= ULOGD_RETF_VALID;
+	okey_set_u8(&ret[ULOG_KEY_OOB_HOOK], pkt->hook);
 
 	/* ULOG is IPv4 only */
-	ret[ULOG_KEY_OOB_FAMILY].u.value.ui8 = AF_INET;
-	ret[ULOG_KEY_OOB_FAMILY].flags |= ULOGD_RETF_VALID;
+	okey_set_u8(&ret[ULOG_KEY_OOB_FAMILY], AF_INET);
 	/* Undef in ULOG but necessary */
-	ret[ULOG_KEY_OOB_PROTOCOL].u.value.ui16 = 0;
-	ret[ULOG_KEY_OOB_PROTOCOL].flags |= ULOGD_RETF_VALID;
+	okey_set_u16(&ret[ULOG_KEY_OOB_PROTOCOL], 0);
 
 	ulogd_propagate_results(ip);
 	return 0;

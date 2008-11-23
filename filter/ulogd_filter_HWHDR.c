@@ -3,6 +3,7 @@
  * ulogd interpreter plugin for HWMAC
  *
  * (C) 2008 by Eric Leblond <eric@inl.fr>
+ * (C) 2008 by Pablo Neira Ayuso <pablo@netfilter.org>
  *
  * Based on ulogd_filter_IFINDEX.c Harald Welte <laforge@gnumonks.org>
  *
@@ -128,32 +129,41 @@ static int parse_mac2str(struct ulogd_key *ret, unsigned char *mac,
 		buf_cur += sprintf(buf_cur, "%02x%c", mac[i],
 				i == len - 1 ? 0 : ':');
 
-	ret[okey].u.value.ptr = mac_str;
-	ret[okey].flags |= ULOGD_RETF_VALID;
+	okey_set_ptr(&ret[okey], mac_str);
 
 	return ULOGD_IRET_OK;
 }
 
+static void *hwhdr_get_saddr(struct ulogd_key *inp)
+{
+	return ikey_get_ptr(&inp[KEY_RAW_MAC]) + ETH_ALEN;
+}
+
+static void *hwhdr_get_daddr(struct ulogd_key *inp)
+{
+	return ikey_get_ptr(&inp[KEY_RAW_MAC]);
+}
+
+static u_int16_t hwhdr_get_len(struct ulogd_key *inp)
+{
+	void *len = ikey_get_ptr(&inp[KEY_RAW_MAC]) + 2 * ETH_ALEN;
+	return ntohs(*(u_int16_t *) len);
+}
 static int parse_ethernet(struct ulogd_key *ret, struct ulogd_key *inp)
 {
 	int fret;
 	if (!pp_is_valid(inp, KEY_RAW_MAC_SADDR)) {
-		fret = parse_mac2str(ret, 
-				     GET_VALUE(inp, KEY_RAW_MAC).ptr
-					+ ETH_ALEN,
+		fret = parse_mac2str(ret, hwhdr_get_saddr(inp),
 				     KEY_MAC_SADDR, ETH_ALEN);
 		if (fret != ULOGD_IRET_OK)
 			return fret;
 	}
-	fret = parse_mac2str(ret, GET_VALUE(inp, KEY_RAW_MAC).ptr,
+	fret = parse_mac2str(ret, hwhdr_get_daddr(inp),
 			     KEY_MAC_DADDR, ETH_ALEN);
 	if (fret != ULOGD_IRET_OK)
 		return fret;
 
-	ret[KEY_MAC_PROTOCOL].u.value.ui16 =
-		ntohs(*(u_int16_t *) (GET_VALUE(inp, KEY_RAW_MAC).ptr
-					+ 2 * ETH_ALEN));
-	ret[KEY_MAC_PROTOCOL].flags |= ULOGD_RETF_VALID;
+	okey_set_u16(&ret[KEY_MAC_PROTOCOL], hwhdr_get_len(inp));
 
 	return ULOGD_IRET_OK;
 }
@@ -164,46 +174,41 @@ static int interp_mac2str(struct ulogd_pluginstance *pi)
 	struct ulogd_key *inp = pi->input.keys;
 	u_int16_t type = 0;
 
-	if (pp_is_valid(inp, KEY_OOB_PROTOCOL)) {
-		ret[KEY_MAC_PROTOCOL].u.value.ui16 =
-			GET_VALUE(inp, KEY_OOB_PROTOCOL).ui16;
-		ret[KEY_MAC_PROTOCOL].flags |= ULOGD_RETF_VALID;
-	}
+	if (pp_is_valid(inp, KEY_OOB_PROTOCOL))
+		okey_set_u16(&ret[KEY_MAC_PROTOCOL],
+			     ikey_get_u16(&inp[KEY_OOB_PROTOCOL]));
 
 	if (pp_is_valid(inp, KEY_RAW_MAC_SADDR)) {
 		int fret;
 		fret = parse_mac2str(ret,
-				     GET_VALUE(inp, KEY_RAW_MAC_SADDR).ptr,
+				     ikey_get_ptr(&inp[KEY_RAW_MAC_SADDR]),
 				     KEY_MAC_SADDR,
-				     GET_VALUE(inp, KEY_RAW_MAC_ADDRLEN).ui16);
+				     ikey_get_u16(&inp[KEY_RAW_MAC_ADDRLEN]));
 		if (fret != ULOGD_IRET_OK)
 			return fret;
 	}
 
 	if (pp_is_valid(inp, KEY_RAW_MAC)) {
-		if (GET_VALUE(inp, KEY_RAW_MAC_ADDRLEN).ui16 == ETH_ALEN) {
-			ret[KEY_MAC_TYPE].u.value.ui16 = ARPHRD_ETHER;
-			ret[KEY_MAC_TYPE].flags |= ULOGD_RETF_VALID;
-		} else {
-			ret[KEY_MAC_TYPE].u.value.ui16 = ARPHRD_VOID;
-			ret[KEY_MAC_TYPE].flags |= ULOGD_RETF_VALID;
-		}
+		if (ikey_get_u16(&inp[KEY_RAW_MAC_ADDRLEN]) == ETH_ALEN)
+			okey_set_u16(&ret[KEY_MAC_TYPE], ARPHRD_ETHER);
+		else
+			okey_set_u16(&ret[KEY_MAC_TYPE], ARPHRD_VOID);
+
 		return ULOGD_IRET_OK;
 	}
 
 	if (pp_is_valid(inp, KEY_RAW_TYPE)) {
 		/* NFLOG with Linux >= 2.6.27 case */
-		ret[KEY_MAC_TYPE].u.value.ui16 = type =
-			GET_VALUE(inp, KEY_RAW_TYPE).ui16;
-		ret[KEY_MAC_TYPE].flags |= ULOGD_RETF_VALID;
+		type = ikey_get_u16(&inp[KEY_RAW_TYPE]);
+		okey_set_u16(&ret[KEY_MAC_TYPE], type);
 	} else {
 		/* ULOG case, treat ethernet encapsulation */
-		if (GET_VALUE(inp, KEY_RAW_MACLEN).ui16 == ETH_HLEN) {
-			ret[KEY_MAC_TYPE].u.value.ui16 = type = ARPHRD_ETHER;
-			ret[KEY_MAC_TYPE].flags |= ULOGD_RETF_VALID;
+		if (ikey_get_u16(&inp[KEY_RAW_MACLEN]) == ETH_HLEN) {
+			type = ARPHRD_ETHER;
+			okey_set_u16(&ret[KEY_MAC_TYPE], type);
 		} else {
-			ret[KEY_MAC_TYPE].u.value.ui16 = type = ARPHRD_VOID;
-			ret[KEY_MAC_TYPE].flags |= ULOGD_RETF_VALID;
+			type = ARPHRD_VOID;
+			okey_set_u16(&ret[KEY_MAC_TYPE], type);
 		}
 	}
 
@@ -213,10 +218,9 @@ static int interp_mac2str(struct ulogd_pluginstance *pi)
 		default:
 			/* convert raw header to string */
 			return parse_mac2str(ret,
-					     GET_VALUE(inp, KEY_RAW_MAC).ptr,
-					     KEY_MAC_ADDR,
-					     GET_VALUE(inp,
-						     KEY_RAW_MACLEN).ui16);
+					    ikey_get_ptr(&inp[KEY_RAW_MAC]),
+					    KEY_MAC_ADDR,
+					    ikey_get_u16(&inp[KEY_RAW_MACLEN]));
 	}
 	return ULOGD_IRET_OK;
 }

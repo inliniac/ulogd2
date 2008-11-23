@@ -145,7 +145,7 @@ static struct ulogd_key ip2str_keys[] = {
 static char *ip2str(struct ulogd_key *inp, int index)
 {
 	char tmp[IPADDR_LENGTH];
-	char family = GET_VALUE(inp, KEY_OOB_FAMILY).ui8;
+	char family = ikey_get_u8(&inp[KEY_OOB_FAMILY]);
 	char convfamily = family;
 
 	if (family == AF_BRIDGE) {
@@ -154,7 +154,7 @@ static char *ip2str(struct ulogd_key *inp, int index)
 				  "No protocol inside AF_BRIDGE packet\n");
 			return NULL;
 		}
-		switch (GET_VALUE(inp, KEY_OOB_PROTOCOL).ui16) {
+		switch (ikey_get_u16(&inp[KEY_OOB_PROTOCOL])) {
 		case ETH_P_IPV6:
 			convfamily = AF_INET6;
 			break;
@@ -172,15 +172,15 @@ static char *ip2str(struct ulogd_key *inp, int index)
 	}
 
 	switch (convfamily) {
+		u_int32_t ip;
 	case AF_INET6:
 		inet_ntop(AF_INET6,
-			  GET_VALUE(inp, index).ui128,
+			  ikey_get_u128(&inp[index]),
 			  tmp, sizeof(tmp));
 		break;
 	case AF_INET:
-		inet_ntop(AF_INET,
-			  &GET_VALUE(inp, index).ui32,
-			  tmp, sizeof(tmp));
+		ip = ikey_get_u32(&inp[index]);
+		inet_ntop(AF_INET, &ip, tmp, sizeof(tmp));
 		break;
 	default:
 		/* TODO error handling */
@@ -199,8 +199,7 @@ static int interp_ip2str(struct ulogd_pluginstance *pi)
 	/* Iter on all addr fields */
 	for (i = START_KEY; i <= MAX_KEY; i++) {
 		if (pp_is_valid(inp, i)) {
-			ret[i-START_KEY].u.value.ptr = ip2str(inp, i);
-			ret[i-START_KEY].flags |= ULOGD_RETF_VALID;
+			okey_set_ptr(&ret[i-START_KEY], ip2str(inp, i));
 		}
 	}
 
