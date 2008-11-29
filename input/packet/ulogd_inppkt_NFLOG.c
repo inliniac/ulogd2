@@ -569,8 +569,6 @@ static int stop(struct ulogd_pluginstance *pi)
 	nflog_unbind_group(ui->nful_gh);
 	nflog_close(ui->nful_h);
 
-	free(pi);
-
 	return 0;
 }
 

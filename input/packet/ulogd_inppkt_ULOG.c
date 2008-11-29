@@ -309,7 +309,6 @@ static int fini(struct ulogd_pluginstance *pi)
 	struct ulog_input *ui = (struct ulog_input *)pi->private;
 
 	ulogd_unregister_fd(&ui->ulog_fd);
-	free(pi);
 
 	return 0;
 }
