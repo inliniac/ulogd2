@@ -884,7 +884,7 @@ static int constructor_nfct(struct ulogd_pluginstance *upi)
 
 static int destructor_nfct(struct ulogd_pluginstance *pi)
 {
-	struct nfct_pluginstance *cpi = (void *) pi;
+	struct nfct_pluginstance *cpi = (void *) pi->private;
 	int rc;
 
 	hashtable_destroy(cpi->ct_active);

@@ -75,8 +75,10 @@ hashtable_create(int hashsize, int limit, int datasize,
 
 void hashtable_destroy(struct hashtable *h)
 {
-	hashtable_flush(h);
-	free(h);
+	if (h) {
+		hashtable_flush(h);
+		free(h);
+	}
 }
 
 void *hashtable_add(struct hashtable *table, void *data)
