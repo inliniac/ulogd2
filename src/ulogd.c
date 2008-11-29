@@ -958,17 +958,41 @@ static void deliver_signal_pluginstances(int signal)
 	}
 }
 
+static void stop_pluginstances()
+{
+	struct ulogd_pluginstance_stack *stack;
+	struct ulogd_pluginstance *pi, *npi;
+
+	llist_for_each_entry(stack, &ulogd_pi_stacks, stack_list) {
+		llist_for_each_entry_safe(pi, npi, &stack->list, list) {
+			if (((pi->plugin->priv_size == 0) || pi->private[0])
+					&& *pi->plugin->stop) {
+				ulogd_log(ULOGD_DEBUG, "calling stop for %s\n",
+					  pi->plugin->name);
+				(*pi->plugin->stop)(pi);
+				pi->private[0] = 0;
+			}
+			free(pi);
+		}
+	}
+}
+
 static void sigterm_handler(int signal)
 {
-	
+
 	ulogd_log(ULOGD_NOTICE, "sigterm received, exiting\n");
 
 	deliver_signal_pluginstances(signal);
+
+	stop_pluginstances();
 
 	if (logfile != NULL  && logfile != stdout) {
 		fclose(logfile);
 		logfile = NULL;
 	}
+
+	if (ulogd_logfile)
+		free(ulogd_logfile);
 
 	exit(0);
 }
