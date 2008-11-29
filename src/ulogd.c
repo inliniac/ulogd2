@@ -1129,7 +1129,13 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	nice(-1);
+	errno = 0;
+	if (nice(-1) == -1) {
+		if (errno != 0)
+			ulogd_log(ULOGD_ERROR, "Could not nice process: %s\n",
+				  strerror(errno));
+	}
+
 
 	if (daemonize){
 		if (fork()) {
