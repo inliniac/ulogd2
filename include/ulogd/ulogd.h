@@ -187,6 +187,14 @@ static inline void *ikey_get_ptr(struct ulogd_key *key)
 
 struct ulogd_pluginstance_stack;
 struct ulogd_pluginstance;
+
+struct ulogd_plugin_handle {
+	/* global list of plugins */
+	struct llist_head list;
+	void *handle;
+};
+
+
 struct ulogd_plugin {
 	/* global list of plugins */
 	struct llist_head list;

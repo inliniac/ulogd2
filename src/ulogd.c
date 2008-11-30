@@ -83,6 +83,8 @@ static int info_mode = 0;
 
 /* linked list for all registered plugins */
 static LLIST_HEAD(ulogd_plugins);
+/* linked list for all plugins handle */
+static LLIST_HEAD(ulogd_plugins_handle);
 static LLIST_HEAD(ulogd_pi_stacks);
 
 
@@ -580,11 +582,17 @@ pluginstance_alloc_init(struct ulogd_plugin *pl, char *pi_id,
 /* plugin loader to dlopen() a plugins */
 static int load_plugin(const char *file)
 {
-	if (!dlopen(file, RTLD_NOW)) {
+	void * handle;
+	struct ulogd_plugin_handle *ph;
+	if ((handle = dlopen(file, RTLD_NOW)) == NULL) {
 		ulogd_log(ULOGD_ERROR, "load_plugin: '%s': %s\n", file,
 			  dlerror());
 		return -1;
 	}
+
+	ph = (struct ulogd_plugin_handle *) calloc(1, sizeof(*ph));
+	ph->handle = handle;
+	llist_add(&ph->list, &ulogd_plugins_handle);
 	return 0;
 }
 
@@ -977,6 +985,15 @@ static void stop_pluginstances()
 	}
 }
 
+static void unload_plugins()
+{
+	struct ulogd_plugin_handle *ph, *nph;
+	llist_for_each_entry_safe(ph, nph, &ulogd_plugins_handle, list) {
+		dlclose(ph->handle);
+		free(ph);
+	}
+}
+
 static void sigterm_handler(int signal)
 {
 
@@ -985,6 +1002,8 @@ static void sigterm_handler(int signal)
 	deliver_signal_pluginstances(signal);
 
 	stop_pluginstances();
+
+	unload_plugins();
 
 	if (logfile != NULL  && logfile != stdout) {
 		fclose(logfile);
