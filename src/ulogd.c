@@ -985,6 +985,7 @@ static void stop_pluginstances()
 	}
 }
 
+#ifndef DEBUG_VALGRIND
 static void unload_plugins()
 {
 	struct ulogd_plugin_handle *ph, *nph;
@@ -993,6 +994,7 @@ static void unload_plugins()
 		free(ph);
 	}
 }
+#endif
 
 static void stop_stack()
 {
@@ -1015,7 +1017,9 @@ static void sigterm_handler(int signal)
 
 	stop_stack();
 
+#ifndef DEBUG_VALGRIND
 	unload_plugins();
+#endif
 
 	if (logfile != NULL  && logfile != stdout) {
 		fclose(logfile);
