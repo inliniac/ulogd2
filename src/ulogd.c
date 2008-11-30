@@ -994,6 +994,16 @@ static void unload_plugins()
 	}
 }
 
+static void stop_stack()
+{
+	struct ulogd_pluginstance_stack *stack, *nstack;
+
+	llist_for_each_entry_safe(stack, nstack, &ulogd_pi_stacks, stack_list) {
+		free(stack);
+	}
+}
+
+
 static void sigterm_handler(int signal)
 {
 
@@ -1002,6 +1012,8 @@ static void sigterm_handler(int signal)
 	deliver_signal_pluginstances(signal);
 
 	stop_pluginstances();
+
+	stop_stack();
 
 	unload_plugins();
 
