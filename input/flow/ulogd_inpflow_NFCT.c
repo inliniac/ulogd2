@@ -692,6 +692,14 @@ static int read_cb_nfct(int fd, unsigned int what, void *param)
 	return 0;
 }
 
+static int do_free(void *data1, void *data2)
+{
+	struct ct_timestamp *ts = data2;
+	free(ts->ct);
+	return 0;
+}
+
+
 static int do_purge(void *data1, void *data2)
 {
 	int ret;
@@ -886,6 +894,9 @@ static int destructor_nfct(struct ulogd_pluginstance *pi)
 {
 	struct nfct_pluginstance *cpi = (void *) pi->private;
 	int rc;
+
+	/* free existent entries */
+	hashtable_iterate(cpi->ct_active, NULL, do_free);
 
 	hashtable_destroy(cpi->ct_active);
 
