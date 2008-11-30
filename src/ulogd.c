@@ -980,7 +980,7 @@ static void stop_pluginstances()
 static void sigterm_handler(int signal)
 {
 
-	ulogd_log(ULOGD_NOTICE, "sigterm received, exiting\n");
+	ulogd_log(ULOGD_NOTICE, "Terminal signal received, exiting\n");
 
 	deliver_signal_pluginstances(signal);
 
@@ -1173,6 +1173,7 @@ int main(int argc, char* argv[])
 	}
 
 	signal(SIGTERM, &sigterm_handler);
+	signal(SIGINT, &sigterm_handler);
 	signal(SIGHUP, &signal_handler);
 	signal(SIGALRM, &signal_handler);
 	signal(SIGUSR1, &signal_handler);
