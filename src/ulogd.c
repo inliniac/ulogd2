@@ -1013,6 +1013,8 @@ static void sigterm_handler(int signal)
 	if (ulogd_logfile)
 		free(ulogd_logfile);
 
+	config_stop();
+
 	exit(0);
 }
 

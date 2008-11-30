@@ -222,3 +222,7 @@ cpf_error:
 	return err;
 }
 
+void config_stop()
+{
+	free(fname);
+}
