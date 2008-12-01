@@ -42,6 +42,7 @@ plugin="@libdir@/ulogd/ulogd_output_SYSLOG.so"
 #plugin="@libdir@/ulogd/ulogd_output_PCAP.so"
 #plugin="@libdir@/ulogd/ulogd_output_PGSQL.so"
 #plugin="@libdir@/ulogd/ulogd_output_MYSQL.so"
+#plugin="@libdir@/ulogd/ulogd_output_DBI.so"
 plugin="@libdir@/ulogd/ulogd_raw2packet_BASE.so"
 
 # this is a stack for IPv4 packet-based logging via LOGEMU
@@ -172,6 +173,15 @@ user="nupik"
 table="ulog2_ct"
 pass="changeme"
 procedure="INSERT_OR_REPLACE_CT"
+
+[dbi1]
+db="ulog2"
+dbtype="pgsql"
+host="localhost"
+user="ulog2"
+table="ulog"
+pass="ulog2"
+procedure="INSERT_PACKET_FULL"
 
 [sys2]
 facility=LOG_LOCAL2

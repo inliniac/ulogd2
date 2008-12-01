@@ -78,4 +78,5 @@ AC_OUTPUT(include/Makefile include/ulogd/Makefile include/libipulog/Makefile \
 	  input/Makefile input/packet/Makefile input/flow/Makefile \
 	  filter/Makefile filter/raw2packet/Makefile filter/packet2flow/Makefile \
 	  output/Makefile output/pcap/Makefile output/mysql/Makefile output/pgsql/Makefile output/sqlite3/Makefile \
+	  output/dbi/Makefile \
 	  src/Makefile Makefile Rules.make)
