@@ -111,13 +111,19 @@ static struct ulogd_key mac2str_keys[] = {
 static int parse_mac2str(struct ulogd_key *ret, unsigned char *mac,
 			 int okey, int len)
 {
-	char *mac_str = calloc(len/sizeof(char)*3, sizeof(char));
-	char *buf_cur = mac_str;
+	char *mac_str;
+	char *buf_cur;
 	int i;
+
+	if (len > 0)
+		mac_str = calloc(len/sizeof(char)*3, sizeof(char));
+	else
+		mac_str = strdup("");
 
 	if (mac_str == NULL)
 		return ULOGD_IRET_ERR;
 
+	buf_cur = mac_str;
 	for (i = 0; i < len; i++)
 		buf_cur += sprintf(buf_cur, "%02x%c", mac[i],
 				i == len - 1 ? 0 : ':');
