@@ -367,3 +367,89 @@ fi
 fi
 
 ])
+
+
+dnl @synopsis CT_CHECK_DBI
+dnl
+dnl This macro tries to find the headers and libraries for libdbi.
+dnl
+dnl If includes are found, the variable DBI_INC will be set. If
+dnl libraries are found, the variable DBI_LIB will be set. if no check
+dnl was successful, the script exits with a error message.
+dnl
+dnl @category InstalledPackages
+dnl @author Pierre Chifflier <chifflier@inl.fr>
+dnl @version 2008-10-30
+dnl @license AllPermissive
+
+AC_DEFUN([CT_CHECK_DBI], [
+
+AC_ARG_WITH(dbi,
+	[  --with-dbi=PREFIX		Prefix of your libdbi installation],
+	[dbi=$withval], [dbi_prefix=])
+AC_ARG_WITH(dbi-inc,
+	[  --with-dbi-inc=PATH		Path to the include directory of dbi],
+	[dbi_inc=$withval], [dbi_inc=/usr/include])
+AC_ARG_WITH(dbi-lib,
+	[  --with-dbi-lib=PATH		Path to the libraries of dbi],
+	[dbi_lib=$withval], [dbi_lib=/usr/lib])
+
+
+AC_SUBST(DBI_INC)
+AC_SUBST(DBI_LIB)
+
+if test "$dbi_prefix" != "no"; then
+
+if test "$dbi_prefix" != ""; then
+   AC_MSG_CHECKING([for libdbi includes in $dbi_prefix/include])
+   if test -f "$dbi_prefix/include/dbi.h" ; then
+      DBI_INC="-I$dbi_prefix/include"
+      AC_MSG_RESULT([yes])
+   elif test -f "$dbi_prefix/include/dbi/dbi.h" ; then
+      DBI_INC="-I$dbi_prefix/include/dbi"
+      AC_MSG_RESULT([yes])
+   else
+      AC_MSG_WARN(dbi.h not found)
+   fi
+   AC_MSG_CHECKING([for libdbi in $dbi_prefix/lib])
+   if test -f "$dbi_prefix/lib/libdbi.so" ; then
+      DBI_LIB="-L$dbi_prefix/lib -ldbi";
+      AC_MSG_RESULT([yes])
+   else
+      AC_MSG_WARN(libdbi.so not found)
+   fi
+else
+  if test "$dbi_inc" != ""; then
+    AC_MSG_CHECKING([for libdbi includes in $dbi_inc])
+    if test -f "$dbi_inc/dbi.h" ; then
+      DBI_INC="-I$dbi_inc"
+      AC_MSG_RESULT([yes])
+    elif test -f "$dbi_inc/dbi/dbi.h" ; then
+      DBI_INC="-I$dbi_inc/dbi"
+      AC_MSG_RESULT([yes])
+    else
+      AC_MSG_WARN(dbi.h not found)
+    fi
+  fi
+  if test "$dbi_lib" != ""; then
+    AC_MSG_CHECKING([for libdbi in $dbi_lib])
+    if test -f "$dbi_lib/libdbi.so" ; then
+      DBI_LIB="-L$dbi_lib -ldbi";
+      AC_MSG_RESULT([yes])
+    else
+      AC_MSG_WARN(libdbi.so not found)
+    fi
+  fi
+fi
+
+if test "$DBI_INC" = "" ; then
+  AC_CHECK_HEADER([dbi.h], [], AC_MSG_WARN(dbi.h not found))
+fi
+if test "$DBI_LIB" = "" ; then
+  AC_CHECK_LIB(dbi, dbi_close, [], AC_MSG_WARN(libdbi.so not found))
+fi
+
+fi
+
+])
+
