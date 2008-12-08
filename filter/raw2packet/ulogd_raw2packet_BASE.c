@@ -763,9 +763,9 @@ static int ip6_ext_hdr(u_int8_t nexthdr)
 	case IPPROTO_ESP:
 	case IPPROTO_AH:
 	case IPPROTO_DSTOPTS:
-		return ULOGD_IRET_OK;
+		return 1;
 	default:
-		return ULOGD_IRET_STOP;
+		return 0;
 	}
 }
 
