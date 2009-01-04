@@ -31,7 +31,7 @@ struct nflog_input {
 /* configuration entries */
 
 static struct config_keyset libulog_kset = {
-	.num_ces = 10,
+	.num_ces = 9,
 	.ces = {
 		{
 			.key 	 = "bufsize",
@@ -51,6 +51,13 @@ static struct config_keyset libulog_kset = {
 			.options = CONFIG_OPT_NONE,
 			.u.value = 1,
 		},
+		{
+			.key	 = "bind",
+			.type	 = CONFIG_TYPE_INT,
+			.options = CONFIG_OPT_NONE,
+			.u.value = 0,
+		},
+
 		{
 			.key	 = "seq_local",
 			.type	 = CONFIG_TYPE_INT,
@@ -87,11 +94,12 @@ static struct config_keyset libulog_kset = {
 #define bufsiz_ce(x)	(x->ces[0])
 #define group_ce(x)	(x->ces[1])
 #define unbind_ce(x)	(x->ces[2])
-#define seq_ce(x)	(x->ces[3])
-#define seq_global_ce(x)	(x->ces[4])
-#define label_ce(x)	(x->ces[5])
-#define nlsockbufsize_ce(x) (x->ces[6])
-#define nlsockbufmaxsize_ce(x) (x->ces[7])
+#define bind_ce(x)	(x->ces[3])
+#define seq_ce(x)	(x->ces[4])
+#define seq_global_ce(x)	(x->ces[5])
+#define label_ce(x)	(x->ces[6])
+#define nlsockbufsize_ce(x) (x->ces[7])
+#define nlsockbufmaxsize_ce(x) (x->ces[8])
 
 enum nflog_keys {
 	NFLOG_KEY_RAW_MAC = 0,
@@ -497,7 +505,8 @@ static int start(struct ulogd_pluginstance *upi)
 		goto out_handle;
 
 	/* This is the system logging (conntrack, ...) facility */
-	if (group_ce(upi->config_kset).u.value == 0) {
+	if ((group_ce(upi->config_kset).u.value == 0) ||
+			(bind_ce(upi->config_kset).u.value > 0)) {
 		if (become_system_logging(upi, AF_INET) == -1)
 			goto out_handle;
 		if (become_system_logging(upi, AF_INET6) == -1)

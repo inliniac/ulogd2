@@ -111,6 +111,11 @@ group=0
 group=1 # Group has to be different from the one use in log1
 #netlink_socket_buffer_size=217088
 #netlink_socket_buffer_maxsize=1085440
+# If your kernel is older than 2.6.29 and if a NFLOG input plugin with
+# group 0 is not used by any stack, you need to have at least one NFLOG
+# input plugin with bind set to 1. If you don't do that you may not
+# receive any message from the kernel.
+#bind=1
 
 # packet logging through NFLOG for group 2, numeric_label is
 # set to 1
@@ -120,6 +125,7 @@ group=2 # Group has to be different from the one use in log1/log2
 numeric_label=1 # you can label the log info based on the packet verdict
 #netlink_socket_buffer_size=217088
 #netlink_socket_buffer_maxsize=1085440
+#bind=1
 
 [ulog1]
 # netlink multicast group (the same as the iptables --ulog-nlgroup param)
