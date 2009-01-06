@@ -21,6 +21,8 @@
 
 #include <dbi.h>
 
+#include <ctype.h>
+
 #ifdef DEBUG_DBI
 #define DEBUGP(x, args...)	fprintf(stderr, x, ## args)
 #else
@@ -86,6 +88,16 @@ static struct config_keyset dbi_kset = {
 #define schema_ce(x)	(x->ces[DB_CE_NUM+5])
 #define dbtype_ce(x)	(x->ces[DB_CE_NUM+6])
 
+
+/* lower-cases s in place */
+static void str_tolower(char *s)
+{
+	while(*s) {
+		*s = tolower(*s);
+		s++;
+	}
+}
+
 /* find out which columns the table has */
 static int get_columns_dbi(struct ulogd_pluginstance *upi)
 {
@@ -138,6 +150,8 @@ static int get_columns_dbi(struct ulogd_pluginstance *upi)
 		strncpy(buf, field_name, ULOGD_MAX_KEYLEN);
 		while ((underscore = strchr(buf, '_')))
 			*underscore = '.';
+
+		str_tolower(buf);
 
 		DEBUGP("field '%s' found: ", buf);
 
