@@ -91,8 +91,33 @@ static int sql_createstmt(struct ulogd_pluginstance *upi)
 		return -ENOMEM;
 	}
 
-	sprintf(mi->stmt, "SELECT %s(", procedure);
+	if (strcasecmp(procedure,"INSERT") == 0) {
+		char buf[ULOGD_MAX_KEYLEN];
+		char *underscore;
 
+		if (mi->schema)
+			sprintf(mi->stmt, "insert into %s.%s (", mi->schema, table);
+		else
+			sprintf(mi->stmt, "insert into %s (", table);
+		mi->stmt_val = mi->stmt + strlen(mi->stmt);
+
+		for (i = 0; i < upi->input.num_keys; i++) {
+			if (upi->input.keys[i].flags & ULOGD_KEYF_INACTIVE)
+				continue;
+
+			strncpy(buf, upi->input.keys[i].name, ULOGD_MAX_KEYLEN);	
+			while ((underscore = strchr(buf, '.')))
+				*underscore = '_';
+			sprintf(mi->stmt_val, "%s,", buf);
+			mi->stmt_val = mi->stmt + strlen(mi->stmt);
+		}
+		*(mi->stmt_val - 1) = ')';
+
+		sprintf(mi->stmt_val, " values (");
+	} else {
+		sprintf(mi->stmt, "SELECT %s(", procedure);
+
+	}
 	mi->stmt_val = mi->stmt + strlen(mi->stmt);
 
 	ulogd_log(ULOGD_DEBUG, "stmt='%s'\n", mi->stmt);
