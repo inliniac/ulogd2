@@ -237,8 +237,9 @@ static int open_db_pgsql(struct ulogd_pluginstance *upi)
 	connstr = (char *) malloc(len);
 	if (!connstr) 
 		return -ENOMEM;
+	connstr[0] = '\0';
 
-	if (server) {
+	if (server && strlen(server) > 0) {
 		strcpy(connstr, " host=");
 		strcat(connstr, server);
 	}
