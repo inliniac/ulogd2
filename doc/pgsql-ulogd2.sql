@@ -278,11 +278,6 @@ CREATE INDEX ulog2_ct_reply_l4_sport ON ulog2_ct(reply_l4_sport);
 CREATE INDEX ulog2_ct_reply_l4_dport ON ulog2_ct(reply_l4_dport);
 CREATE INDEX ulog2_ct_event ON ulog2_ct(ct_event);
 
-ALTER TABLE ulog2_ct ADD CONSTRAINT orig_l4_sport CHECK(orig_l4_sport >= 0 AND orig_l4_sport <= 65536);
-ALTER TABLE ulog2_ct ADD CONSTRAINT orig_l4_dport CHECK(orig_l4_dport >= 0 AND orig_l4_dport <= 65536);
-ALTER TABLE ulog2_ct ADD CONSTRAINT reply_l4_sport CHECK(reply_l4_sport >= 0 AND reply_l4_sport <= 65536);
-ALTER TABLE ulog2_ct ADD CONSTRAINT reply_l4_dport CHECK(reply_l4_dport >= 0 AND reply_l4_dport <= 65536);
-
 -- 
 -- Helper table
 -- 
