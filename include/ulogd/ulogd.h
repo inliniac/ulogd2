@@ -178,7 +178,10 @@ static inline u_int32_t ikey_get_u32(struct ulogd_key *key)
 	return key->u.source->u.value.ui32;
 }
 
-#define ikey_get_u128 ikey_get_ptr
+static inline void *ikey_get_u128(struct ulogd_key *key)
+{
+	return &key->u.source->u.value.ui128;
+}
 
 static inline void *ikey_get_ptr(struct ulogd_key *key)
 {
