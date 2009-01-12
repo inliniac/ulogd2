@@ -440,8 +440,13 @@ void __ulogd_log(int level, char *file, int line, const char *format, ...)
 
 static void warn_and_exit(int daemonize)
 {
-	if (!daemonize)
-		fprintf(stderr, "Fatal error, check logfile.\n");
+	if (!daemonize) {
+		if (logfile)
+			fprintf(stderr, "Fatal error, check logfile \"%s\".\n",
+				ulogd_logfile);
+		else
+			fprintf(stderr, "Fatal error.\n");
+	}
 	exit(1);
 }
 
