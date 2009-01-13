@@ -117,7 +117,7 @@ static int parse_mac2str(struct ulogd_key *ret, unsigned char *mac,
 	int i;
 
 	if (len > 0)
-		mac_str = calloc(len/sizeof(char)*3, sizeof(char));
+		mac_str = calloc(len/sizeof(char)*3 + 1, sizeof(char));
 	else
 		mac_str = strdup("");
 
