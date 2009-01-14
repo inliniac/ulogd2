@@ -901,6 +901,8 @@ static int destructor_nfct(struct ulogd_pluginstance *pi)
 
 	hashtable_destroy(cpi->ct_active);
 
+	ulogd_del_timer(&cpi->ov_timer);
+
 	rc = nfct_close(cpi->cth);
 	if (rc < 0)
 		return rc;
