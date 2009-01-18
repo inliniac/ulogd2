@@ -35,6 +35,7 @@
 
 #include <sys/time.h>
 #include <time.h>
+#include <netinet/in.h>
 #include <ulogd/linuxlist.h>
 #include <ulogd/jhash.h>
 #include <ulogd/hash.h>
