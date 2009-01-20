@@ -8,25 +8,25 @@ pkglib_LTLIBRARIES = ulogd_filter_IFINDEX.la ulogd_filter_PWSNIFF.la \
 		     ulogd_filter_HWHDR.la ulogd_filter_MARK.la
 
 ulogd_filter_IFINDEX_la_SOURCES = ulogd_filter_IFINDEX.c
-ulogd_filter_IFINDEX_la_LDFLAGS = -module -lnfnetlink
+ulogd_filter_IFINDEX_la_LDFLAGS = -avoid-version -module -lnfnetlink
 
 ulogd_filter_PWSNIFF_la_SOURCES = ulogd_filter_PWSNIFF.c
-ulogd_filter_PWSNIFF_la_LDFLAGS = -module
+ulogd_filter_PWSNIFF_la_LDFLAGS = -avoid-version -module
 
 ulogd_filter_IP2STR_la_SOURCES = ulogd_filter_IP2STR.c
-ulogd_filter_IP2STR_la_LDFLAGS = -module
+ulogd_filter_IP2STR_la_LDFLAGS = -avoid-version -module
 
 ulogd_filter_IP2BIN_la_SOURCES = ulogd_filter_IP2BIN.c
-ulogd_filter_IP2BIN_la_LDFLAGS = -module
+ulogd_filter_IP2BIN_la_LDFLAGS = -avoid-version -module
 
 ulogd_filter_HWHDR_la_SOURCES = ulogd_filter_HWHDR.c
-ulogd_filter_HWHDR_la_LDFLAGS = -module
+ulogd_filter_HWHDR_la_LDFLAGS = -avoid-version -module
 
 ulogd_filter_MARK_la_SOURCES = ulogd_filter_MARK.c
-ulogd_filter_MARK_la_LDFLAGS = -module
+ulogd_filter_MARK_la_LDFLAGS = -avoid-version -module
 
 ulogd_filter_PRINTPKT_la_SOURCES = ulogd_filter_PRINTPKT.c ../util/printpkt.c
-ulogd_filter_PRINTPKT_la_LDFLAGS = -module
+ulogd_filter_PRINTPKT_la_LDFLAGS = -avoid-version -module
 
 ulogd_filter_PRINTFLOW_la_SOURCES = ulogd_filter_PRINTFLOW.c ../util/printflow.c
-ulogd_filter_PRINTFLOW_la_LDFLAGS = -module
+ulogd_filter_PRINTFLOW_la_LDFLAGS = -avoid-version -module
