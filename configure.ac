@@ -1,16 +1,16 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_PREQ(2.50)
-AC_INIT
+AC_PREREQ([2.50])
+AC_INIT([ulogd], [2.0.0beta2])
 
-AM_INIT_AUTOMAKE(ulogd, 2.0.0beta2)
-AM_CONFIG_HEADER(config.h)
+AM_INIT_AUTOMAKE([-Wall])
+AC_CONFIG_HEADER([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
 dnl Checks for programs.
 AC_PROG_MAKE_SET
 AC_PROG_CC
 AC_PROG_INSTALL
-AM_PROG_LIBTOOL
+AC_PROG_LIBTOOL
 
 dnl Checks for libraries.
 AC_CHECK_LIB(dl, dlopen)
@@ -74,10 +74,11 @@ dnl AC_SUBST(HAVE_PCAP_H)
 dnl AM_CONDITIONAL(HAVE_MYSQL, test x$mysqldir != x)
 dnl AM_CONDITIONAL(HAVE_PGSQL, test x$pgsqldir != x)
 
-AC_OUTPUT(include/Makefile include/ulogd/Makefile include/libipulog/Makefile \
+AC_CONFIG_FILES(include/Makefile include/ulogd/Makefile include/libipulog/Makefile \
 	  libipulog/Makefile \
 	  input/Makefile input/packet/Makefile input/flow/Makefile \
 	  filter/Makefile filter/raw2packet/Makefile filter/packet2flow/Makefile \
 	  output/Makefile output/pcap/Makefile output/mysql/Makefile output/pgsql/Makefile output/sqlite3/Makefile \
 	  output/dbi/Makefile \
 	  src/Makefile Makefile Rules.make)
+AC_OUTPUT
