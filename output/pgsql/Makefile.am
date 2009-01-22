@@ -1,5 +1,5 @@
 
-INCLUDES = $(all_includes) -I$(top_srcdir)/include -I$(PQINCPATH)
+AM_CPPFLAGS = $(all_includes) -I$(top_srcdir)/include -I$(PQINCPATH)
 LIBS=$(PQLIBS)
 
 if HAVE_PGSQL

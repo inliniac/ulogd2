@@ -6,7 +6,7 @@ man_MANS = ulogd.8
 
 EXTRA_DIST = $(man_MANS) debian ulogd.logrotate ulogd.spec ulogd.conf.in doc
 
-INCLUDES = $(all_includes) -I$(top_srcdir)/include
+AM_CPPFLAGS = $(all_includes) -I$(top_srcdir)/include
 SUBDIRS = include libipulog src input filter output
 
 noinst_DATA = ulogd.conf

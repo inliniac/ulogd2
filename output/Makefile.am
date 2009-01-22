@@ -1,4 +1,4 @@
-INCLUDES = $(all_includes) -I$(top_srcdir)/include
+AM_CPPFLAGS = $(all_includes) -I$(top_srcdir)/include
 LIBS=""
 
 SUBDIRS= pcap mysql pgsql sqlite3 dbi

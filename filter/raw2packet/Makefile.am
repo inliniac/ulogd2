@@ -1,5 +1,5 @@
 
-INCLUDES = $(all_includes) -I$(top_srcdir)/include
+AM_CPPFLAGS = $(all_includes) -I$(top_srcdir)/include
 
 pkglib_LTLIBRARIES = ulogd_raw2packet_BASE.la 
 

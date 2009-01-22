@@ -1,4 +1,4 @@
-INCLUDES = $(all_includes) -I$(top_srcdir)/include $(MYSQL_INC)
+AM_CPPFLAGS = $(all_includes) -I$(top_srcdir)/include $(MYSQL_INC)
 LIBS=$(MYSQL_LIB)
 
 if HAVE_MYSQL
