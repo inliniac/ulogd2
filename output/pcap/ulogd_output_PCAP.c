@@ -119,11 +119,21 @@ struct intr_id {
 
 #define INTR_IDS 	5
 static struct ulogd_key pcap_keys[INTR_IDS] = {
-	{ .name = "raw.pkt" },
-	{ .name = "raw.pktlen" },
-	{ .name = "ip.totlen" },
-	{ .name = "oob.time.sec" },
-	{ .name = "oob.time.usec" },
+	{ .type = ULOGD_RET_UINT32,
+	  .flags = ULOGD_RETF_NONE,
+	  .name = "raw.pkt" },
+	{ .type = ULOGD_RET_UINT32,
+	  .flags = ULOGD_RETF_NONE,
+	  .name = "raw.pktlen" },
+	{ .type = ULOGD_RET_UINT16,
+	  .flags = ULOGD_RETF_NONE,
+	  .name = "ip.totlen" },
+	{ .type = ULOGD_RET_UINT32,
+	  .flags = ULOGD_RETF_NONE,
+	  .name = "oob.time.sec" },
+	{ .type = ULOGD_RET_UINT32,
+	  .flags = ULOGD_RETF_NONE,
+	  .name = "oob.time.usec" },
 };
 
 #define GET_FLAGS(res, x)	(res[x].u.source->flags)
