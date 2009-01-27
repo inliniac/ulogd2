@@ -320,9 +320,14 @@ void get_plugin_infos(struct ulogd_plugin *me)
 			for(i = 0; i < me->input.num_keys; i++) {
 				char *tstring = 
 					type_to_string(me->input.keys[i].type);
-				printf("\tKey: %s (%s)\n",
+				printf("\tKey: %s (%s",
 				       me->input.keys[i].name,
 				       tstring);
+				if (me->input.keys[i].flags
+						& ULOGD_KEYF_OPTIONAL)
+					printf(", optional)\n");
+				else
+					printf(")\n");
 				free(tstring);
 			}
 		}
