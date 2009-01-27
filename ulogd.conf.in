@@ -104,6 +104,10 @@ hash_enable=0
 group=0
 #netlink_socket_buffer_size=217088
 #netlink_socket_buffer_maxsize=1085440
+# set number of packet to queue inside kernel
+#netlink_qthreshold=1
+# set the delay before flushing packet in the queue inside kernel (in ms)
+#netlink_qtimeout=1000
 
 # packet logging through NFLOG for group 1
 [log2]

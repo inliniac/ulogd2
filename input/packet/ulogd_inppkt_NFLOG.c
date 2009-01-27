@@ -31,7 +31,7 @@ struct nflog_input {
 /* configuration entries */
 
 static struct config_keyset libulog_kset = {
-	.num_ces = 9,
+	.num_ces = 11,
 	.ces = {
 		{
 			.key 	 = "bufsize",
@@ -88,6 +88,18 @@ static struct config_keyset libulog_kset = {
 			.options = CONFIG_OPT_NONE,
 			.u.value = 0,
 		},
+		{
+			.key     = "netlink_qthreshold",
+			.type    = CONFIG_TYPE_INT,
+			.options = CONFIG_OPT_NONE,
+			.u.value = 0,
+		},
+		{
+			.key     = "netlink_qtimeout",
+			.type    = CONFIG_TYPE_INT,
+			.options = CONFIG_OPT_NONE,
+			.u.value = 0,
+		},
 	}
 };
 
@@ -100,6 +112,8 @@ static struct config_keyset libulog_kset = {
 #define label_ce(x)	(x->ces[6])
 #define nlsockbufsize_ce(x) (x->ces[7])
 #define nlsockbufmaxsize_ce(x) (x->ces[8])
+#define nlthreshold_ce(x) (x->ces[9])
+#define nltimeout_ce(x) (x->ces[10])
 
 enum nflog_keys {
 	NFLOG_KEY_RAW_MAC = 0,
@@ -531,6 +545,36 @@ static int start(struct ulogd_pluginstance *upi)
 		setnlbufsiz(upi, nlsockbufsize_ce(upi->config_kset).u.value);
 		ulogd_log(ULOGD_NOTICE, "NFLOG netlink buffer size has been "
 					"set to %d\n", ui->nlbufsiz);
+	}
+
+	if (nlthreshold_ce(upi->config_kset).u.value) {
+		if (nflog_set_qthresh(ui->nful_gh,
+				  nlthreshold_ce(upi->config_kset).u.value)
+				>= 0)
+			ulogd_log(ULOGD_NOTICE,
+				  "NFLOG netlink queue threshold has "
+					"been set to %d\n",
+				  nlthreshold_ce(upi->config_kset).u.value);
+		else
+			ulogd_log(ULOGD_NOTICE,
+				  "NFLOG netlink queue threshold can't "
+				  "be set to %d\n",
+				  nlthreshold_ce(upi->config_kset).u.value);
+	}
+
+	if (nltimeout_ce(upi->config_kset).u.value) {
+		if (nflog_set_timeout(ui->nful_gh,
+				      nltimeout_ce(upi->config_kset).u.value)
+			>= 0)
+			ulogd_log(ULOGD_NOTICE,
+				  "NFLOG netlink queue timeout has "
+					"been set to %d\n",
+				  nltimeout_ce(upi->config_kset).u.value);
+		else
+			ulogd_log(ULOGD_NOTICE,
+				  "NFLOG netlink queue timeout can't "
+				  "be set to %d\n",
+				  nltimeout_ce(upi->config_kset).u.value);
 	}
 
 	/* set log flags based on configuration */
