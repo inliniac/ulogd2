@@ -52,7 +52,7 @@ CREATE TABLE ulog2 (
   -- timestamp timestamp NOT NULL default 'now',
   mac_saddr_str macaddr default NULL,
   mac_daddr_str macaddr default NULL,
-  oob_protocol smallint default NULL,
+  oob_protocol integer default NULL,
   raw_type integer default NULL,
   mac_str varchar(256) default NULL,
   tcp_sport integer default NULL,

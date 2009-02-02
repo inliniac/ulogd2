@@ -75,7 +75,7 @@ CREATE TABLE mac (
   _mac_id bigint PRIMARY KEY UNIQUE NOT NULL DEFAULT nextval('mac__id_seq'),
   mac_saddr macaddr NOT NULL,
   mac_daddr macaddr default NULL,
-  mac_protocol smallint default NULL
+  mac_protocol integer default NULL
 ) WITH (OIDS=FALSE);
 
 CREATE INDEX mac_saddr ON mac(mac_saddr);
