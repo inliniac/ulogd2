@@ -31,6 +31,8 @@
 #include <linux/if_ether.h>
 #include <ulogd/ulogd.h>
 
+#define HWADDR_LENGTH 128
+
 enum input_keys {
 	KEY_RAW_TYPE,
 	KEY_OOB_PROTOCOL,
@@ -44,8 +46,10 @@ enum output_keys {
 	KEY_MAC_TYPE,
 	KEY_MAC_PROTOCOL,
 	KEY_MAC_SADDR,
+	START_KEY = KEY_MAC_SADDR,
 	KEY_MAC_DADDR,
 	KEY_MAC_ADDR,
+	MAX_KEY = KEY_MAC_ADDR,
 };
 
 static struct ulogd_key mac2str_inp[] = {
@@ -94,42 +98,38 @@ static struct ulogd_key mac2str_keys[] = {
 	},
 	[KEY_MAC_SADDR] = {
 		.type = ULOGD_RET_STRING,
-		.flags = ULOGD_RETF_FREE,
 		.name = "mac.saddr.str",
 	},
 	[KEY_MAC_DADDR] = {
 		.type = ULOGD_RET_STRING,
-		.flags = ULOGD_RETF_FREE,
 		.name = "mac.daddr.str",
 	},
 	[KEY_MAC_ADDR] = {
 		.type = ULOGD_RET_STRING,
-		.flags = ULOGD_RETF_FREE,
 		.name = "mac.str",
 	},
 };
 
+static char hwmac_str[MAX_KEY - START_KEY][HWADDR_LENGTH];
+
 static int parse_mac2str(struct ulogd_key *ret, unsigned char *mac,
 			 int okey, int len)
 {
-	char *mac_str;
 	char *buf_cur;
 	int i;
 
-	if (len > 0)
-		mac_str = calloc(len/sizeof(char)*3 + 1, sizeof(char));
-	else
-		mac_str = strdup("");
-
-	if (mac_str == NULL)
+	if (len/sizeof(char)*3 + 1 > HWADDR_LENGTH)
 		return ULOGD_IRET_ERR;
 
-	buf_cur = mac_str;
+	if (len == 0)
+		hwmac_str[okey - START_KEY][0] = 0;
+
+	buf_cur = hwmac_str[okey - START_KEY];
 	for (i = 0; i < len; i++)
 		buf_cur += sprintf(buf_cur, "%02x%c", mac[i],
 				i == len - 1 ? 0 : ':');
 
-	okey_set_ptr(&ret[okey], mac_str);
+	okey_set_ptr(&ret[okey], hwmac_str[okey - START_KEY]);
 
 	return ULOGD_IRET_OK;
 }
