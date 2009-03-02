@@ -83,36 +83,32 @@ static struct ulogd_key ip2bin_inp[] = {
 static struct ulogd_key ip2bin_keys[] = {
 	{
 		.type = ULOGD_RET_RAWSTR,
-		.flags = ULOGD_RETF_FREE,
 		.name = "ip.saddr.bin",
 	},
 	{
 		.type = ULOGD_RET_RAWSTR,
-		.flags = ULOGD_RETF_FREE,
 		.name = "ip.daddr.bin",
 	},
 	{
 		.type = ULOGD_RET_RAWSTR,
-		.flags = ULOGD_RETF_FREE,
 		.name = "orig.ip.saddr.bin",
 	},
 	{
 		.type = ULOGD_RET_RAWSTR,
-		.flags = ULOGD_RETF_FREE,
 		.name = "orig.ip.daddr.bin",
 	},
 	{
 		.type = ULOGD_RET_RAWSTR,
-		.flags = ULOGD_RETF_FREE,
 		.name = "reply.ip.saddr.bin",
 	},
 	{
 		.type = ULOGD_RET_RAWSTR,
-		.flags = ULOGD_RETF_FREE,
 		.name = "reply.ip.daddr.bin",
 	},
 
 };
+
+static char ipbin_array[MAX_KEY-START_KEY][IPADDR_LENGTH];
 
 /**
  * Convert IPv4 address (as 32-bit unsigned integer) to IPv6 address:
@@ -126,9 +122,9 @@ inline void uint32_to_ipv6(const uint32_t ipv4, struct in6_addr *ipv6)
 	ipv6->s6_addr32[3] = ipv4;
 }
 
-static char *ip2bin(struct ulogd_key* inp, int index, char family)
+static int ip2bin(struct ulogd_key* inp, int index, int oindex)
 {
-	char tmp[IPADDR_LENGTH];
+	char family = ikey_get_u8(&inp[KEY_OOB_FAMILY]);
 	unsigned char *addr8;
 	struct in6_addr *addr;
 	struct in6_addr ip4_addr;
@@ -147,10 +143,10 @@ static char *ip2bin(struct ulogd_key* inp, int index, char family)
 		default:
 			/* TODO handle error */
 			ulogd_log(ULOGD_NOTICE, "Unknown protocol family\n");
-			return NULL;
+			return ULOGD_IRET_ERR;
 	}
 
-	buffer = tmp;
+	buffer = ipbin_array[oindex];
 	/* format IPv6 to BINARY(16) as "0x..." */
 	buffer[0] = '0';
 	buffer[1] = 'x';
@@ -161,14 +157,14 @@ static char *ip2bin(struct ulogd_key* inp, int index, char family)
 				addr8[0], addr8[1], addr8[2], addr8[3]);
 		if (written != 2 * 4) {
 			buffer[0] = 0;
-			return NULL;
+			return ULOGD_IRET_ERR;
 		}
 		buffer += written;
 		addr8 += 4;
 	}
 	buffer[0] = 0;
 
-	return strdup(tmp);
+	return ULOGD_IRET_OK;
 }
 
 static int interp_ip2bin(struct ulogd_pluginstance *pi)
@@ -176,12 +172,16 @@ static int interp_ip2bin(struct ulogd_pluginstance *pi)
 	struct ulogd_key *ret = pi->output.keys;
 	struct ulogd_key *inp = pi->input.keys;
 	int i;
-	int oob_family = ikey_get_u8(&inp[KEY_OOB_FAMILY]);
+	int fret;
 
 	/* Iter on all addr fields */
 	for(i = START_KEY; i < MAX_KEY; i++) {
 		if (pp_is_valid(inp, i)) {
-			okey_set_ptr(&ret[i-1], ip2bin(inp, i, oob_family));
+			fret = ip2bin(inp, i, i-START_KEY);
+			if (fret != ULOGD_IRET_OK)
+				return fret;
+			okey_set_ptr(&ret[i-START_KEY],
+				     ipbin_array[i-START_KEY]);
 		}
 	}
 
