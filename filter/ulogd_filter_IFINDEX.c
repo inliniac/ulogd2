@@ -30,12 +30,14 @@
 static struct ulogd_key ifindex_keys[] = {
 	{ 
 		.type = ULOGD_RET_STRING,
-		.flags = ULOGD_RETF_NONE | ULOGD_RETF_FREE,
+		.len = IFNAMSIZ,
+		.flags = ULOGD_RETF_NONE,
 		.name = "oob.in", 
 	},
 	{ 
 		.type = ULOGD_RET_STRING,
-		.flags = ULOGD_RETF_NONE | ULOGD_RETF_FREE,
+		.len = IFNAMSIZ,
+		.flags = ULOGD_RETF_NONE,
 		.name = "oob.out", 
 	},
 };
@@ -62,25 +64,18 @@ static int interp_ifindex(struct ulogd_pluginstance *pi)
 {
 	struct ulogd_key *ret = pi->output.keys;
 	struct ulogd_key *inp = pi->input.keys;
-	void *ptr;
+	static char indev[IFNAMSIZ];
+	static char outdev[IFNAMSIZ];
 
-	ptr = calloc(IFNAMSIZ, sizeof(char));
-	if (!ptr)
-		return ULOGD_IRET_ERR;
+	nlif_index2name(nlif_inst, ikey_get_u32(&inp[0]), indev);
+	if (indev[0] == '*')
+		indev[0] = 0;
+	okey_set_ptr(&ret[0], indev);
 
-	nlif_index2name(nlif_inst, ikey_get_u32(&inp[0]), ptr);
-	if (((char *)ptr)[0] == '*')
-		((char *)(ptr))[0] = 0;
-	okey_set_ptr(&ret[0], ptr);
-
-	ptr = calloc(IFNAMSIZ, sizeof(char));
-	if (!ptr)
-		return ULOGD_IRET_ERR;
-
-	nlif_index2name(nlif_inst, ikey_get_u32(&inp[1]), ptr);
-	if (((char *)ptr)[0] == '*')
-		((char *)(ptr))[0] = 0; 
-	okey_set_ptr(&ret[1], ptr);
+	nlif_index2name(nlif_inst, ikey_get_u32(&inp[1]), outdev);
+	if (outdev[0] == '*')
+		outdev[0] = 0;
+	okey_set_ptr(&ret[1], outdev);
 
 	return ULOGD_IRET_OK;
 }
