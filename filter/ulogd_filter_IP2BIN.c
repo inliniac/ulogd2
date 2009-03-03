@@ -27,11 +27,13 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <ulogd/ulogd.h>
+#include <netinet/if_ether.h>
 
 #define IPADDR_LENGTH 128
 
 enum input_keys {
 	KEY_OOB_FAMILY,
+	KEY_OOB_PROTOCOL,
 	KEY_IP_SADDR,
 	START_KEY = KEY_IP_SADDR,
 	KEY_IP_DADDR,
@@ -125,13 +127,37 @@ inline void uint32_to_ipv6(const uint32_t ipv4, struct in6_addr *ipv6)
 static int ip2bin(struct ulogd_key* inp, int index, int oindex)
 {
 	char family = ikey_get_u8(&inp[KEY_OOB_FAMILY]);
+	char convfamily = family;
 	unsigned char *addr8;
 	struct in6_addr *addr;
 	struct in6_addr ip4_addr;
 	char *buffer;
 	int i, written;
 
-	switch (family) {
+	if (family == AF_BRIDGE) {
+		if (!pp_is_valid(inp, KEY_OOB_PROTOCOL)) {
+			ulogd_log(ULOGD_NOTICE,
+				  "No protocol inside AF_BRIDGE packet\n");
+			return ULOGD_IRET_ERR;
+		}
+		switch (ikey_get_u16(&inp[KEY_OOB_PROTOCOL])) {
+		case ETH_P_IPV6:
+			convfamily = AF_INET6;
+			break;
+		case ETH_P_IP:
+			convfamily = AF_INET;
+			break;
+		case ETH_P_ARP:
+			convfamily = AF_INET;
+			break;
+		default:
+			ulogd_log(ULOGD_NOTICE,
+				  "Unknown protocol inside AF_BRIDGE packet\n");
+			return ULOGD_IRET_ERR;
+		}
+	}
+
+	switch (convfamily) {
 		case AF_INET6:
 			addr = (struct in6_addr *)ikey_get_u128(&inp[index]);
 			break;
