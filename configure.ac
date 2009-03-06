@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ([2.50])
-AC_INIT([ulogd], [2.0.0beta2])
+AC_INIT([ulogd], [2.0.0beta3])
 
 AM_INIT_AUTOMAKE([-Wall])
 AC_CONFIG_HEADER([config.h])
