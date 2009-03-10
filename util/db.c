@@ -193,6 +193,13 @@ int ulogd_db_stop(struct ulogd_pluginstance *upi)
 		free(upi->input.keys);
 		upi->input.keys = NULL;
 	}
+
+	/* try to free the buffer for insert statement */
+	if (di->stmt) {
+		free(di->stmt);
+		di->stmt = NULL;
+	}
+
 	return 0;
 }
 
