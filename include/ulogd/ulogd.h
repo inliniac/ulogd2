@@ -19,6 +19,7 @@
 #include <signal.h>	/* need this because of extension-sighandler */
 #include <sys/types.h>
 #include <string.h>
+#include <config.h>
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
