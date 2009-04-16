@@ -640,14 +640,8 @@ create_stack_resolve_keys(struct ulogd_pluginstance_stack *stack)
 	int i = 0;
 	struct ulogd_pluginstance *pi_cur;
 
-	/* PASS 2: */
-	ulogd_log(ULOGD_DEBUG, "connecting input/output keys of stack:\n");
+	/* pre-configuration pass */
 	llist_for_each_entry_reverse(pi_cur, &stack->list, list) {
-		struct ulogd_pluginstance *pi_prev = 
-					llist_entry(pi_cur->list.prev,
-						   struct ulogd_pluginstance,
-						   list);
-		i++;
 		ulogd_log(ULOGD_DEBUG, "traversing plugin `%s'\n", 
 			  pi_cur->plugin->name);
 		/* call plugin to tell us which keys it requires in
@@ -662,6 +656,18 @@ create_stack_resolve_keys(struct ulogd_pluginstance_stack *stack)
 				return ret;
 			}
 		}
+	}
+
+	/* PASS 2: */
+	ulogd_log(ULOGD_DEBUG, "connecting input/output keys of stack:\n");
+	llist_for_each_entry_reverse(pi_cur, &stack->list, list) {
+		struct ulogd_pluginstance *pi_prev =
+					llist_entry(pi_cur->list.prev,
+						   struct ulogd_pluginstance,
+						   list);
+		i++;
+		ulogd_log(ULOGD_DEBUG, "traversing plugin `%s'\n",
+			  pi_cur->plugin->name);
 
 		if (i == 1) {
 			/* first round: output plugin */
