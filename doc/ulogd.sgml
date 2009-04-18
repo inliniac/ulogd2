@@ -6,7 +6,7 @@
 
 <title>ULOGD 2.x - the Netfilter Userspace Logging Daemon</title>
 <author>Harald Welte &lt;laforge@netfilter.org&gt, Eric Leblond &lt;eric@inl.fr&gt</author>
-<date>Revision 2008/09/03</date>
+<date>Revision 2009/04/18</date>
 
 <abstract>
 This is the documentation for <tt>ulogd-2.x</tt>, the second generation
@@ -464,6 +464,14 @@ Name of the table which ulogd will use to build arguments list.
 <tag>procedure</tag> 
 Stored procedure that will be run with the argument specified in the
 table variable.
+Behaviour of the procedure option can be twitted by using specific name.
+If procedure name is:
+<itemize>
+<item>"INSERT": A classic INSERT SQL query is done in the table pointed by the
+  "table" variable.</item>
+<item>start with "INSERT ": Configuration has to specify the start of the INSERT query that will be used. For example,
+a typical value is "INSERT INTO ulog2".</item>
+</itemize>
 <tag>db</tag>
 Name of the mysql database.
 <tag>host</tag>
