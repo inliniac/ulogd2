@@ -596,6 +596,9 @@ static int event_handler(enum nf_conntrack_msg_type type,
 	switch(type) {
 	case NFCT_T_NEW:
 		ts = hashtable_add(cpi->ct_active, &tmp);
+		if (ts == NULL)
+			return NFCT_CB_CONTINUE;
+
 		gettimeofday(&ts->time[START], NULL);
 		return NFCT_CB_STOLEN;
 	case NFCT_T_UPDATE:
@@ -604,6 +607,9 @@ static int event_handler(enum nf_conntrack_msg_type type,
 			nfct_copy(ts->ct, ct, NFCT_CP_META);
 		else {
 			ts = hashtable_add(cpi->ct_active, &tmp);
+			if (ts == NULL)
+				return NFCT_CB_CONTINUE;
+
 			gettimeofday(&ts->time[START], NULL);
 			return NFCT_CB_STOLEN;
 		}
@@ -734,6 +740,9 @@ static int overrun_handler(enum nf_conntrack_msg_type type,
 	/* if it does not exist, add it */
 	if (!hashtable_get(cpi->ct_active, &tmp)) {
 		ts = hashtable_add(cpi->ct_active, &tmp);
+		if (ts == NULL)
+			return NFCT_CB_CONTINUE;
+
 		gettimeofday(&ts->time[START], NULL); /* do our best here */
 		return NFCT_CB_STOLEN;
 	}
