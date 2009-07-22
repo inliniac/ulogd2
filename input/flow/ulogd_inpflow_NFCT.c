@@ -114,6 +114,12 @@ static struct config_keyset nfct_kset = {
 			.options = CONFIG_OPT_NONE,
 			.u.value = 0,
 		},
+		{
+			.key	 = "netlink_resync_timeout",
+			.type	 = CONFIG_TYPE_INT,
+			.options = CONFIG_OPT_NONE,
+			.u.value = 60,
+		},
 	},
 };
 #define pollint_ce(x)	(x->ces[0])
@@ -123,6 +129,7 @@ static struct config_keyset nfct_kset = {
 #define eventmask_ce(x) (x->ces[4])
 #define nlsockbufsize_ce(x) (x->ces[5])
 #define nlsockbufmaxsize_ce(x) (x->ces[6])
+#define nlresynctimeout_ce(x) (x->ces[7])
 
 enum nfct_keys {
 	NFCT_ORIG_IP_SADDR = 0,
@@ -687,13 +694,13 @@ static int read_cb_nfct(int fd, unsigned int what, void *param)
 
 			/* internal hash can deal with refresh */
 			if (usehash_ce(upi->config_kset).u.value != 0) {
-				/* TODO: schedule a resynchronization in
-				 * two seconds, this parameter should be
-				 * configurable via config. Note that we
-				 * don't re-schedule a resync if it's
-				 * already in progress. */
+				/* schedule a resynchronization in N
+				 * seconds, this parameter is configurable
+				 * via config. Note that we don't re-schedule
+				 * a resync if it's already in progress. */
 				if (!ulogd_timer_pending(&cpi->ov_timer)) {
-					ulogd_add_timer(&cpi->ov_timer, 2);
+					ulogd_add_timer(&cpi->ov_timer,
+							nlresynctimeout_ce(upi->config_kset).u.value);
 				}
 			}
 		}
@@ -767,9 +774,9 @@ static int read_cb_ovh(int fd, unsigned int what, void *param)
 	if (nfct_catch(cpi->ovh) == -1) {
 		/* enobufs in the overrun buffer? very rare */
 		if (errno == ENOBUFS) {
-			/* TODO: configurable resync timer */
 			if (!ulogd_timer_pending(&cpi->ov_timer)) {
-				ulogd_add_timer(&cpi->ov_timer, 2);
+				ulogd_add_timer(&cpi->ov_timer,
+						nlresynctimeout_ce(upi->config_kset).u.value);
 			}
 		}
 	}
