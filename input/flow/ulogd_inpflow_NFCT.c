@@ -650,12 +650,18 @@ static int setnlbufsiz(struct ulogd_pluginstance *upi, int size)
 {
 	struct nfct_pluginstance *cpi =
 			(struct nfct_pluginstance *)upi->private;
+	static int warned = 0;
 
 	if (size < nlsockbufmaxsize_ce(upi->config_kset).u.value) {
 		cpi->nlbufsiz = nfnl_rcvbufsiz(nfct_nfnlh(cpi->cth), size);
 		return 1;
 	}
 
+	/* we have already warned the user, do not keep spamming */
+	if (warned)
+		return 0;
+
+	warned = 1;
 	ulogd_log(ULOGD_NOTICE, "Maximum buffer size (%d) in NFCT has been "
 				"reached. Please, consider rising "
 				"`netlink_socket_buffer_size` and "
@@ -670,6 +676,7 @@ static int read_cb_nfct(int fd, unsigned int what, void *param)
 	struct ulogd_pluginstance *upi = container_of(param,
 						      struct ulogd_pluginstance,
 						      private);
+	static int warned = 0;
 
 	if (!(what & ULOGD_FD_READ))
 		return 0;
@@ -684,7 +691,8 @@ static int read_cb_nfct(int fd, unsigned int what, void *param)
 						  "increasing buffer size "
 						  "to %d\n", cpi->nlbufsiz);
 				}
-			} else {
+			} else if (!warned) {
+				warned = 1;
 				ulogd_log(ULOGD_NOTICE,
 					  "We are losing events. Please, "
 					  "consider using the clauses "
