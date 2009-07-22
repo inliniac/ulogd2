@@ -669,8 +669,6 @@ static int read_cb_nfct(int fd, unsigned int what, void *param)
 
 	if (nfct_catch(cpi->cth) == -1) {
 		if (errno == ENOBUFS) {
-			int family = AF_UNSPEC;
-
 			if (nlsockbufmaxsize_ce(upi->config_kset).u.value) {
 				int s = cpi->nlbufsiz * 2;
 				if (setnlbufsiz(upi, s)) {
@@ -689,9 +687,14 @@ static int read_cb_nfct(int fd, unsigned int what, void *param)
 
 			/* internal hash can deal with refresh */
 			if (usehash_ce(upi->config_kset).u.value != 0) {
-				nfct_send(cpi->ovh, NFCT_Q_DUMP, &family);
-				/* TODO: configurable retry timer */
-				ulogd_add_timer(&cpi->ov_timer, 2);
+				/* TODO: schedule a resynchronization in
+				 * two seconds, this parameter should be
+				 * configurable via config. Note that we
+				 * don't re-schedule a resync if it's
+				 * already in progress. */
+				if (!ulogd_timer_pending(&cpi->ov_timer)) {
+					ulogd_add_timer(&cpi->ov_timer, 2);
+				}
 			}
 		}
 	}
@@ -764,11 +767,10 @@ static int read_cb_ovh(int fd, unsigned int what, void *param)
 	if (nfct_catch(cpi->ovh) == -1) {
 		/* enobufs in the overrun buffer? very rare */
 		if (errno == ENOBUFS) {
-			int family = AF_UNSPEC;
-
-			nfct_send(cpi->ovh, NFCT_Q_DUMP, &family);
-			/* TODO: configurable retry timer */
-			ulogd_add_timer(&cpi->ov_timer, 2);
+			/* TODO: configurable resync timer */
+			if (!ulogd_timer_pending(&cpi->ov_timer)) {
+				ulogd_add_timer(&cpi->ov_timer, 2);
+			}
 		}
 	}
 
@@ -824,8 +826,6 @@ static void overrun_timeout(struct ulogd_timer *a, void *data)
 			(struct nfct_pluginstance *)upi->private;
 
 	nfct_send(cpi->ovh, NFCT_Q_DUMP, &family);
-	/* TODO: configurable retry timer */
-	ulogd_add_timer(&cpi->ov_timer, 2);
 }
 
 static int constructor_nfct(struct ulogd_pluginstance *upi)
