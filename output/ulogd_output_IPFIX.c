@@ -93,6 +93,7 @@ struct bitmask *bitmask_alloc(unsigned int num_bits)
 		return NULL;
 
 	bm->size_bits = num_bits;
+	bm->buf = (void *)bm + sizeof(*bm);
 
 	bitmask_clear(bm);
 
@@ -240,7 +241,7 @@ build_template_for_bitmask(struct ulogd_pluginstance *upi,
 
 	tmpl->total_length = 0;
 
-	for (i = 0; i < upi->input.num_keys; i++) {
+	for (i = 0, j = 0; i < upi->input.num_keys; i++) {
 		struct ulogd_key *key = &upi->input.keys[i];
 		int length = ulogd_key_size(key);
 
@@ -332,8 +333,7 @@ static int output_ipfix(struct ulogd_pluginstance *upi)
 			ulogd_log(ULOGD_ERROR, "can't build new template!\n");
 			return ULOGD_IRET_ERR;
 		}
-		/* FIXME: prepend? */
-		list_add(&ii->template_list, &template->list);
+		llist_add(&template->list, &ii->template_list);
 	}
 	
 	total_size = template->total_length;
@@ -435,18 +435,14 @@ static int start_ipfix(struct ulogd_pluginstance *pi)
 	if (!ii->valid_bitmask)
 		return -ENOMEM;
 
+	INIT_LLIST_HEAD(&ii->template_list);
+
 	ret = open_connect_socket(pi);
 	if (ret < 0)
 		goto out_bm_free;
 
-	ret = build_template(pi);
-	if (ret < 0)
-		goto out_sock_close;
-
 	return 0;
 
-out_sock_close:
-	close(ii->fd);
 out_bm_free:
 	bitmask_free(ii->valid_bitmask);
 	ii->valid_bitmask = NULL;
