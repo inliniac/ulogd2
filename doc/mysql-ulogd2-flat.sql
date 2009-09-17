@@ -107,19 +107,19 @@ ALTER TABLE ulog2 ADD KEY `sctp_dport` (`sctp_dport`);
 
 DROP VIEW IF EXISTS `view_tcp`;
 CREATE SQL SECURITY INVOKER VIEW `view_tcp` AS
-        SELECT * FROM ulog2 WHERE ulog2.oob_family = 6;
+        SELECT * FROM ulog2 WHERE ulog2.ip_protocol = 6;
 
 DROP VIEW IF EXISTS `view_udp`;
 CREATE SQL SECURITY INVOKER VIEW `view_udp` AS
-        SELECT * FROM ulog2 WHERE ulog2.oob_family = 17;
+        SELECT * FROM ulog2 WHERE ulog2.ip_protocol = 17;
 
 DROP VIEW IF EXISTS `view_icmp`;
 CREATE SQL SECURITY INVOKER VIEW `view_icmp` AS
-        SELECT * FROM ulog2 WHERE ulog2.oob_family = 1;
+        SELECT * FROM ulog2 WHERE ulog2.ip_protocol = 1;
 
 DROP VIEW IF EXISTS `view_icmpv6`;
 CREATE SQL SECURITY INVOKER VIEW `view_icmpv6` AS
-        SELECT * FROM ulog2 WHERE ulog2.oob_family = 58;
+        SELECT * FROM ulog2 WHERE ulog2.ip_protocol = 58;
 
 -- ulog view
 DROP VIEW IF EXISTS `ulog`;
@@ -222,11 +222,11 @@ delimiter ;
 
 DROP VIEW IF EXISTS `view_tcp_quad`;
 CREATE SQL SECURITY INVOKER VIEW `view_tcp_quad` AS
-	SELECT _id,BIN_TO_IPV6(ip_saddr_bin) AS ip_saddr_str,tcp_sport,BIN_TO_IPV6(ip_daddr_bin) AS ip_daddr_str,tcp_dport FROM ulog2 WHERE ulog2.oob_family = 6;
+	SELECT _id,BIN_TO_IPV6(ip_saddr_bin) AS ip_saddr_str,tcp_sport,BIN_TO_IPV6(ip_daddr_bin) AS ip_daddr_str,tcp_dport FROM ulog2 WHERE ulog2.ip_protocol = 6;
 
 DROP VIEW IF EXISTS `view_udp_quad`;
 CREATE SQL SECURITY INVOKER VIEW `view_udp_quad` AS
-	SELECT _id,BIN_TO_IPV6(ip_saddr_bin) AS ip_saddr_str,udp_sport,BIN_TO_IPV6(ip_daddr_bin) AS ip_daddr_str,udp_dport FROM ulog2 WHERE ulog2.oob_family = 17;
+	SELECT _id,BIN_TO_IPV6(ip_saddr_bin) AS ip_saddr_str,udp_sport,BIN_TO_IPV6(ip_daddr_bin) AS ip_daddr_str,udp_dport FROM ulog2 WHERE ulog2.ip_protocol = 17;
 
 
 

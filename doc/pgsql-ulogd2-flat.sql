@@ -108,16 +108,16 @@ CREATE INDEX sctp_dport ON ulog2(sctp_dport);
 --
 
 CREATE OR REPLACE VIEW view_tcp AS
-        SELECT * FROM ulog2 WHERE ulog2.oob_family = 6;
+        SELECT * FROM ulog2 WHERE ulog2.ip_protocol = 6;
 
 CREATE OR REPLACE VIEW view_udp AS
-        SELECT * FROM ulog2 WHERE ulog2.oob_family = 17;
+        SELECT * FROM ulog2 WHERE ulog2.ip_protocol = 17;
 
 CREATE OR REPLACE VIEW view_icmp AS
-        SELECT * FROM ulog2 WHERE ulog2.oob_family = 1;
+        SELECT * FROM ulog2 WHERE ulog2.ip_protocol = 1;
 
 CREATE OR REPLACE VIEW view_icmpv6 AS
-        SELECT * FROM ulog2 WHERE ulog2.oob_family = 58;
+        SELECT * FROM ulog2 WHERE ulog2.ip_protocol = 58;
 
 -- complete view
 CREATE OR REPLACE VIEW ulog AS
@@ -179,10 +179,10 @@ CREATE OR REPLACE VIEW ulog AS
 
 -- shortcuts
 CREATE OR REPLACE VIEW view_tcp_quad AS
-        SELECT _id,ip_saddr_str,tcp_sport,ip_daddr_str,tcp_dport FROM ulog2 WHERE ulog2.oob_family = 6;
+        SELECT _id,ip_saddr_str,tcp_sport,ip_daddr_str,tcp_dport FROM ulog2 WHERE ulog2.ip_protocol = 6;
 
 CREATE OR REPLACE VIEW view_udp_quad AS
-        SELECT _id,ip_saddr_str,udp_sport,ip_daddr_str,udp_dport FROM ulog2 WHERE ulog2.oob_family = 17;
+        SELECT _id,ip_saddr_str,udp_sport,ip_daddr_str,udp_dport FROM ulog2 WHERE ulog2.ip_protocol = 17;
 
 --
 -- conntrack
