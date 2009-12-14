@@ -288,10 +288,10 @@ AC_ARG_WITH(sqlite3,
 	[  --with-sqlite3=PREFIX		Prefix of your SQLITE3 installation],
 	[sqlite3_prefix=$withval], [sqlite3_prefix=])
 AC_ARG_WITH(sqlite3-inc,
-	[  --with-sqlite3-inc=PATH		Path to the include directory of MySQL],
+	[  --with-sqlite3-inc=PATH		Path to the include directory of SQLITE3],
 	[sqlite3_inc=$withval], [sqlite3_inc=/usr/include])
 AC_ARG_WITH(sqlite3-lib,
-	[  --with-sqlite3-lib=PATH		Path to the libraries of MySQL],
+	[  --with-sqlite3-lib=PATH		Path to the libraries of SQLITE3],
 	[sqlite3_lib=$withval], [sqlite3_lib=/usr/lib])
 
 
