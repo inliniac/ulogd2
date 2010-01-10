@@ -3,7 +3,7 @@
  * ulogd input plugin for ctnetlink
  *
  * (C) 2005 by Harald Welte <laforge@netfilter.org>
- * (C) 2008 by Pablo Neira Ayuso <pablo@netfilter.org>
+ * (C) 2008-2010 by Pablo Neira Ayuso <pablo@netfilter.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2
@@ -852,7 +852,7 @@ static int constructor_nfct(struct ulogd_pluginstance *upi)
 			     eventmask_ce(upi->config_kset).u.value);
 	if (!cpi->cth) {
 		ulogd_log(ULOGD_FATAL, "error opening ctnetlink\n");
-		return -1;
+		goto err_cth;
 	}
 
 	nfct_callback_register(cpi->cth, NFCT_T_ALL, &event_handler, upi);
@@ -863,25 +863,6 @@ static int constructor_nfct(struct ulogd_pluginstance *upi)
 					"set to %d\n", cpi->nlbufsiz);
 	}
 
-	if (usehash_ce(upi->config_kset).u.value != 0) {
-		cpi->ovh = nfct_open(NFNL_SUBSYS_CTNETLINK, 0);
-		if (!cpi->ovh) {
-			ulogd_log(ULOGD_FATAL, "error opening ctnetlink\n");
-			return -1;
-		}
-
-		nfct_callback_register(cpi->ovh, NFCT_T_ALL,
-				       &overrun_handler, upi);
-	}
-
-	cpi->pgh = nfct_open(NFNL_SUBSYS_CTNETLINK, 0);
-	if (!cpi->pgh) {
-		ulogd_log(ULOGD_FATAL, "error opening ctnetlink\n");
-		return -1;
-	}
-
-	ulogd_init_timer(&cpi->ov_timer, upi, overrun_timeout);
-
 	cpi->nfct_fd.fd = nfct_fd(cpi->cth);
 	cpi->nfct_fd.cb = &read_cb_nfct;
 	cpi->nfct_fd.data = cpi;
@@ -890,13 +871,10 @@ static int constructor_nfct(struct ulogd_pluginstance *upi)
 	ulogd_register_fd(&cpi->nfct_fd);
 
 	if (usehash_ce(upi->config_kset).u.value != 0) {
-		cpi->nfct_ov.fd = nfct_fd(cpi->ovh);
-		cpi->nfct_ov.cb = &read_cb_ovh;
-		cpi->nfct_ov.data = cpi;
-		cpi->nfct_ov.when = ULOGD_FD_READ;
+		int family = AF_UNSPEC;
+		struct nfct_handle *h;
 
-		ulogd_register_fd(&cpi->nfct_ov);
-
+		/* we use a hashtable to cache entries in userspace. */
 		cpi->ct_active =
 		     hashtable_create(buckets_ce(upi->config_kset).u.value,
 				      maxentries_ce(upi->config_kset).u.value,
@@ -905,14 +883,62 @@ static int constructor_nfct(struct ulogd_pluginstance *upi)
 				      compare);
 		if (!cpi->ct_active) {
 			ulogd_log(ULOGD_FATAL, "error allocating hash\n");
-			nfct_close(cpi->cth);
-			nfct_close(cpi->ovh);
-			nfct_close(cpi->pgh);
-			return -1;
+			goto err_hashtable;
+		}
+
+		/* populate the hashtable: we use a disposable handler, we
+		 * may hit overrun if we use cpi->cth. This ensures that the
+		 * initial dump is successful. */
+		h = nfct_open(CONNTRACK, 0);
+		if (!h) {
+			ulogd_log(ULOGD_FATAL, "error opening ctnetlink\n");
+			goto err_ovh;
+		}
+		nfct_callback_register(cpi->cth, NFCT_T_ALL,
+				       &event_handler, upi);
+		nfct_query(h, NFCT_Q_DUMP, &family);
+		nfct_close(h);
+
+		/* the overrun handler only make sense with the hashtable,
+		 * if we hit overrun, we resync with ther kernel table. */
+		cpi->ovh = nfct_open(NFNL_SUBSYS_CTNETLINK, 0);
+		if (!cpi->ovh) {
+			ulogd_log(ULOGD_FATAL, "error opening ctnetlink\n");
+			goto err_ovh;
+		}
+
+		nfct_callback_register(cpi->ovh, NFCT_T_ALL,
+				       &overrun_handler, upi);
+
+		ulogd_init_timer(&cpi->ov_timer, upi, overrun_timeout);
+
+		cpi->nfct_ov.fd = nfct_fd(cpi->ovh);
+		cpi->nfct_ov.cb = &read_cb_ovh;
+		cpi->nfct_ov.data = cpi;
+		cpi->nfct_ov.when = ULOGD_FD_READ;
+
+		ulogd_register_fd(&cpi->nfct_ov);
+
+		/* we use this to purge old entries during overruns.*/
+		cpi->pgh = nfct_open(NFNL_SUBSYS_CTNETLINK, 0);
+		if (!cpi->pgh) {
+			ulogd_log(ULOGD_FATAL, "error opening ctnetlink\n");
+			goto err_pgh;
 		}
 	}
 
 	return 0;
+
+err_pgh:
+	ulogd_unregister_fd(&cpi->nfct_ov);
+	nfct_close(cpi->ovh);
+err_ovh:
+	hashtable_destroy(cpi->ct_active);
+err_hashtable:
+	ulogd_unregister_fd(&cpi->nfct_fd);
+	nfct_close(cpi->cth);
+err_cth:
+	return -1;
 }
 
 static int destructor_nfct(struct ulogd_pluginstance *pi)
@@ -920,12 +946,7 @@ static int destructor_nfct(struct ulogd_pluginstance *pi)
 	struct nfct_pluginstance *cpi = (void *) pi->private;
 	int rc;
 
-	/* free existent entries */
-	hashtable_iterate(cpi->ct_active, NULL, do_free);
-
-	hashtable_destroy(cpi->ct_active);
-
-	ulogd_del_timer(&cpi->ov_timer);
+	ulogd_unregister_fd(&cpi->nfct_fd);
 
 	rc = nfct_close(cpi->cth);
 	if (rc < 0)
@@ -933,15 +954,20 @@ static int destructor_nfct(struct ulogd_pluginstance *pi)
 
 
 	if (usehash_ce(pi->config_kset).u.value != 0) {
+		ulogd_del_timer(&cpi->ov_timer);
+		ulogd_unregister_fd(&cpi->nfct_ov);
+
 		rc = nfct_close(cpi->ovh);
 		if (rc < 0)
 			return rc;
+
+		rc = nfct_close(cpi->pgh);
+		if (rc < 0)
+			return rc;
+
+		hashtable_iterate(cpi->ct_active, NULL, do_free);
+		hashtable_destroy(cpi->ct_active);
 	}
-
-	rc = nfct_close(cpi->pgh);
-	if (rc < 0)
-		return rc;
-
 	return 0;
 }
 
