@@ -92,6 +92,7 @@ plugin="@libdir@/ulogd/ulogd_raw2packet_BASE.so"
 #netlink_socket_buffer_size=217088
 #netlink_socket_buffer_maxsize=1085440
 #netlink_resync_timeout=60 # seconds to wait to perform resynchronization
+#pollinterval=10 # use poll-based logging instead of event-driven
 
 [ct2]
 #netlink_socket_buffer_size=217088
