@@ -1,6 +1,6 @@
 /*
- * (C) 2006-2007 by Pablo Neira Ayuso <pablo@netfilter.org>
- *
+ * (C) 2006-2009 by Pablo Neira Ayuso <pablo@netfilter.org>
+ * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -18,55 +18,35 @@
  * Description: generic hash table implementation
  */
 
-#include <ulogd/hash.h>
-#include <ulogd/slist.h>
+#include "ulogd/hash.h"
 
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-
-struct hashtable_node *hashtable_alloc_node(int datasize, void *data)
-{
-	struct hashtable_node *n;
-	int size = sizeof(struct hashtable_node) + datasize;
-
-	n = malloc(size);
-	if (!n)
-		return NULL;
-	memset(n, 0, size);
-	memcpy(n->data, data, datasize);
-
-	return n;
-}
-
-void hashtable_destroy_node(struct hashtable_node *h)
-{
-	free(h);
-}
+#include <limits.h>
 
 struct hashtable *
-hashtable_create(int hashsize, int limit, int datasize,
-		 uint32_t (*hash)(const void *data, struct hashtable *table),
+hashtable_create(int hashsize, int limit,
+		 uint32_t (*hash)(const void *data,
+		 		  const struct hashtable *table),
 		 int (*compare)(const void *data1, const void *data2))
 {
 	int i;
 	struct hashtable *h;
 	int size = sizeof(struct hashtable)
-		   + hashsize * sizeof(struct slist_head);
+		   + hashsize * sizeof(struct llist_head);
 
-	h = (struct hashtable *) malloc(size);
-	if (!h) {
+	h = (struct hashtable *) calloc(size, 1);
+	if (h == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	memset(h, 0, size);
 	for (i=0; i<hashsize; i++)
-		INIT_SLIST_HEAD(h->members[i]);
+		INIT_LLIST_HEAD(&h->members[i]);
 
 	h->hashsize = hashsize;
 	h->limit = limit;
-	h->datasize = datasize;
 	h->hash = hash;
 	h->compare = compare;
 
@@ -75,118 +55,86 @@ hashtable_create(int hashsize, int limit, int datasize,
 
 void hashtable_destroy(struct hashtable *h)
 {
-	if (h) {
-		hashtable_flush(h);
-		free(h);
-	}
+	free(h);
 }
 
-void *hashtable_add(struct hashtable *table, void *data)
+int hashtable_hash(const struct hashtable *table, const void *data)
 {
-	uint32_t id;
-	struct slist_head *e;
+	return table->hash(data, table);
+}
+
+struct hashtable_node *
+hashtable_find(const struct hashtable *table, const void *data, int id)
+{
+	struct llist_head *e;
 	struct hashtable_node *n;
 
-	/* hash table is full */
-	if (table->count >= table->limit) {
-		errno = ENOSPC;
-		return 0;
-	}
-
-	id = table->hash(data, table);
-
-	slist_for_each(e, &table->members[id]) {
-		n = slist_entry(e, struct hashtable_node, head);
-		if (table->compare(n->data, data)) {
-			errno = EEXIST;
-			return 0;
+	llist_for_each(e, &table->members[id]) {
+		n = llist_entry(e, struct hashtable_node, head);
+		if (table->compare(n, data)) {
+			return n;
 		}
 	}
-
-	n = hashtable_alloc_node(table->datasize, data);
-	if (n == NULL) {
-		errno = ENOMEM;
-		return NULL;
-	}
-
-	slist_add(&table->members[id], &n->head);
-	table->count++;
-
-	return n->data;
-}
-
-void *hashtable_get(struct hashtable *table, const void *data)
-{
-	struct slist_head *e;
-	uint32_t id;
-	struct hashtable_node *n;
-
-	id = table->hash(data, table);
-
-	slist_for_each(e, &table->members[id]) {
-		n = slist_entry(e, struct hashtable_node, head);
-		if (table->compare(n->data, data))
-			return n->data;
-	}
-
 	errno = ENOENT;
 	return NULL;
 }
 
-int hashtable_del(struct hashtable *table, void *data)
+int hashtable_add(struct hashtable *table, struct hashtable_node *n, int id)
 {
-	struct slist_head *e, *next, *prev;
-	uint32_t id;
-	struct hashtable_node *n;
-
-	id = table->hash(data, table);
-
-	slist_for_each_safe(e, prev, next, &table->members[id]) {
-		n = slist_entry(e, struct hashtable_node, head);
-		if (table->compare(n->data, data)) {
-			slist_del(e, prev);
-			hashtable_destroy_node(n);
-			table->count--;
-			return 0;
-		}
+	/* hash table is full */
+	if (table->count >= table->limit) {
+		errno = ENOSPC;
+		return -1;
 	}
-	errno = ENOENT;
-	return -1;
+	llist_add(&n->head, &table->members[id]);
+	table->count++;
+	return 0;
+}
+
+void hashtable_del(struct hashtable *table, struct hashtable_node *n)
+{
+	llist_del(&n->head);
+	table->count--;
 }
 
 int hashtable_flush(struct hashtable *table)
 {
 	uint32_t i;
-	struct slist_head *e, *next, *prev;
-	struct hashtable_node *n;
-
-	for (i=0; i < table->hashsize; i++)
-		slist_for_each_safe(e, prev, next, &table->members[i]) {
-			n = slist_entry(e, struct hashtable_node, head);
-			slist_del(e, prev);
-			hashtable_destroy_node(n);
-		}
-
-	table->count = 0;
-
-	return 0;
-}
-
-int hashtable_iterate(struct hashtable *table, void *data,
-		      int (*iterate)(void *data1, void *data2))
-{
-	uint32_t i;
-	struct slist_head *e, *next, *prev;
+	struct llist_head *e, *tmp;
 	struct hashtable_node *n;
 
 	for (i=0; i < table->hashsize; i++) {
-		slist_for_each_safe(e, prev, next, &table->members[i]) {
-			n = slist_entry(e, struct hashtable_node, head);
-			if (iterate(data, n->data) == -1)
-				return -1;
+		llist_for_each_safe(e, tmp, &table->members[i]) {
+			n = llist_entry(e, struct hashtable_node, head);
+			free(n);
 		}
 	}
 	return 0;
+}
+
+int
+hashtable_iterate_limit(struct hashtable *table, void *data,
+			uint32_t from, uint32_t steps,
+		        int (*iterate)(void *data1, void *n))
+{
+	uint32_t i;
+	struct llist_head *e, *tmp;
+	struct hashtable_node *n;
+
+	for (i=from; i < table->hashsize && i < from+steps; i++) {
+		llist_for_each_safe(e, tmp, &table->members[i]) {
+			n = llist_entry(e, struct hashtable_node, head);
+			if (iterate(data, n) == -1)
+				return -1;
+		}
+	}
+	return i;
+}
+
+int hashtable_iterate(struct hashtable *table, void *data,
+		      int (*iterate)(void *data1, void *n))
+{
+	return hashtable_iterate_limit(table, data, 0, UINT_MAX, iterate);
 }
 
 unsigned int hashtable_counter(const struct hashtable *table)

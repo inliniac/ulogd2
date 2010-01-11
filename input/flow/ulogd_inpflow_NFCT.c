@@ -49,6 +49,7 @@
 typedef enum TIMES_ { START, STOP, __TIME_MAX } TIMES;
 
 struct ct_timestamp {
+	struct hashtable_node hashnode;
 	struct timeval time[__TIME_MAX];
 	struct nf_conntrack *ct;
 };
@@ -380,7 +381,8 @@ static struct ulogd_key nfct_okeys[] = {
 	},
 };
 
-static uint32_t __hash4(const struct nf_conntrack *ct, struct hashtable *table)
+static uint32_t
+__hash4(const struct nf_conntrack *ct, const struct hashtable *table)
 {
 	unsigned int a, b;
 
@@ -402,7 +404,8 @@ static uint32_t __hash4(const struct nf_conntrack *ct, struct hashtable *table)
 	return ((uint64_t)jhash_2words(a, b, 0) * table->hashsize) >> 32;
 }
 
-static uint32_t __hash6(const struct nf_conntrack *ct, struct hashtable *table)
+static uint32_t
+__hash6(const struct nf_conntrack *ct, const struct hashtable *table)
 {
 	unsigned int a, b;
 
@@ -417,17 +420,17 @@ static uint32_t __hash6(const struct nf_conntrack *ct, struct hashtable *table)
 	return ((uint64_t)jhash_2words(a, b, 0) * table->hashsize) >> 32;
 }
 
-static uint32_t hash(const void *data, struct hashtable *table)
+static uint32_t hash(const void *data, const struct hashtable *table)
 {
 	int ret = 0;
-	const struct ct_timestamp *ts = data;
+	const struct nf_conntrack *ct = data;
 
-	switch(nfct_get_attr_u8(ts->ct, ATTR_L3PROTO)) {
+	switch(nfct_get_attr_u8(ct, ATTR_L3PROTO)) {
 		case AF_INET:
-			ret = __hash4(ts->ct, table);
+			ret = __hash4(ct, table);
 			break;
 		case AF_INET6:
-			ret = __hash6(ts->ct, table);
+			ret = __hash6(ct, table);
 			break;
 		default:
 			break;
@@ -439,9 +442,9 @@ static uint32_t hash(const void *data, struct hashtable *table)
 static int compare(const void *data1, const void *data2)
 {
 	const struct ct_timestamp *u1 = data1;
-	const struct ct_timestamp *u2 = data2;
+	const struct nf_conntrack *ct = data2;
 
-	return nfct_cmp(u1->ct, u2->ct, NFCT_CMP_ORIG | NFCT_CMP_REPL);
+	return nfct_cmp(u1->ct, ct, NFCT_CMP_ORIG | NFCT_CMP_REPL);
 }
 
 static int propagate_ct(struct ulogd_pluginstance *upi,
@@ -574,12 +577,13 @@ static int event_handler(enum nf_conntrack_msg_type type,
 	struct ulogd_pluginstance *upi = data;
 	struct nfct_pluginstance *cpi =
 				(struct nfct_pluginstance *) upi->private;
-	struct ct_timestamp *ts = NULL;
-	struct ct_timestamp tmp = {
-		.ct = ct,
-	};
+	struct ct_timestamp *ts;
+	int ret, id;
 
 	if (!usehash_ce(upi->config_kset).u.value) {
+		struct ct_timestamp tmp = {
+			.ct = ct,
+		};
 		switch(type) {
 		case NFCT_T_NEW:
 			gettimeofday(&tmp.time[START], NULL);
@@ -601,40 +605,60 @@ static int event_handler(enum nf_conntrack_msg_type type,
 
 	switch(type) {
 	case NFCT_T_NEW:
-		ts = hashtable_add(cpi->ct_active, &tmp);
+		ts = calloc(sizeof(struct ct_timestamp), 1);
 		if (ts == NULL)
 			return NFCT_CB_CONTINUE;
 
+		ts->ct = ct;
 		gettimeofday(&ts->time[START], NULL);
+
+		id = hashtable_hash(cpi->ct_active, ct);
+		ret = hashtable_add(cpi->ct_active, &ts->hashnode, id);
+		if (ret < 0) {
+			free(ts);
+			return NFCT_CB_CONTINUE;
+		}
 		return NFCT_CB_STOLEN;
 	case NFCT_T_UPDATE:
-		ts = hashtable_get(cpi->ct_active, &tmp);
+		id = hashtable_hash(cpi->ct_active, ct);
+		ts = (struct ct_timestamp *)
+			hashtable_find(cpi->ct_active, ct, id);
 		if (ts)
 			nfct_copy(ts->ct, ct, NFCT_CP_META);
 		else {
-			ts = hashtable_add(cpi->ct_active, &tmp);
+			ts = calloc(sizeof(struct ct_timestamp), 1);
 			if (ts == NULL)
 				return NFCT_CB_CONTINUE;
 
+			ts->ct = ct;
 			gettimeofday(&ts->time[START], NULL);
+
+			ret = hashtable_add(cpi->ct_active, &ts->hashnode, id);
+			if (ret < 0) {
+				free(ts);
+				return NFCT_CB_CONTINUE;
+			}
 			return NFCT_CB_STOLEN;
 		}
 		break;
 	case NFCT_T_DESTROY:
-		ts = hashtable_get(cpi->ct_active, &tmp);
+		id = hashtable_hash(cpi->ct_active, ct);
+		ts = (struct ct_timestamp *)
+			hashtable_find(cpi->ct_active, ct, id);
 		if (ts) {
 			gettimeofday(&ts->time[STOP], NULL);
 			do_propagate_ct(upi, ct, type, ts);
+			hashtable_del(cpi->ct_active, &ts->hashnode);
+			nfct_destroy(ts->ct);
+			free(ts);
 		} else {
+			struct ct_timestamp tmp = {
+				.ct = ct,
+			};
 			gettimeofday(&tmp.time[STOP], NULL);
 			tmp.time[START].tv_sec = 0;
 			tmp.time[START].tv_usec = 0;
 			do_propagate_ct(upi, ct, type, &tmp);
-		}
-
-		if (ts) {
-			hashtable_del(cpi->ct_active, ts);
-			free(ts->ct);
 		}
 		break;
 	default:
@@ -652,22 +676,29 @@ polling_handler(enum nf_conntrack_msg_type type,
 	struct ulogd_pluginstance *upi = data;
 	struct nfct_pluginstance *cpi =
 				(struct nfct_pluginstance *) upi->private;
-	struct ct_timestamp *ts = NULL;
-	struct ct_timestamp tmp = {
-		.ct = ct,
-	};
+	struct ct_timestamp *ts;
+	int ret, id;
 
 	switch(type) {
 	case NFCT_T_UPDATE:
-		ts = hashtable_get(cpi->ct_active, &tmp);
+		id = hashtable_hash(cpi->ct_active, ct);
+		ts = (struct ct_timestamp *)
+			hashtable_find(cpi->ct_active, ct, id);
 		if (ts)
 			nfct_copy(ts->ct, ct, NFCT_CP_META);
 		else {
-			ts = hashtable_add(cpi->ct_active, &tmp);
+			ts = calloc(sizeof(struct ct_timestamp), 1);
 			if (ts == NULL)
 				return NFCT_CB_CONTINUE;
 
+			ts->ct = ct;
 			gettimeofday(&ts->time[START], NULL);
+
+			ret = hashtable_add(cpi->ct_active, &ts->hashnode, id);
+			if (ret < 0) {
+				free(ts);
+				return NFCT_CB_CONTINUE;
+			}
 			return NFCT_CB_STOLEN;
 		}
 		break;
@@ -753,7 +784,8 @@ static int read_cb_nfct(int fd, unsigned int what, void *param)
 static int do_free(void *data1, void *data2)
 {
 	struct ct_timestamp *ts = data2;
-	free(ts->ct);
+	nfct_destroy(ts->ct);
+	free(ts);
 	return 0;
 }
 
@@ -770,8 +802,9 @@ static int do_purge(void *data1, void *data2)
 	ret = nfct_query(cpi->pgh, NFCT_Q_GET, ts->ct);
 	if (ret == -1 && errno == ENOENT) {
 		do_propagate_ct(upi, ts->ct, NFCT_T_DESTROY, ts);
-		hashtable_del(cpi->ct_active, ts);
-		free(ts->ct);
+		hashtable_del(cpi->ct_active, &ts->hashnode);
+		nfct_destroy(ts->ct);
+		free(ts);
 	}
 
 	return 0;
@@ -784,17 +817,25 @@ static int overrun_handler(enum nf_conntrack_msg_type type,
 	struct ulogd_pluginstance *upi = data;
 	struct nfct_pluginstance *cpi =
 				(struct nfct_pluginstance *) upi->private;
-	struct ct_timestamp *ts, tmp = {
-		.ct = ct,
-	};
+	struct ct_timestamp *ts;
+	int id, ret;
 
-	/* if it does not exist, add it */
-	if (!hashtable_get(cpi->ct_active, &tmp)) {
-		ts = hashtable_add(cpi->ct_active, &tmp);
+	id = hashtable_hash(cpi->ct_active, ct);
+	ts = (struct ct_timestamp *)
+		hashtable_find(cpi->ct_active, ct, id);
+	if (ts == NULL) {
+		ts = calloc(sizeof(struct ct_timestamp), 1);
 		if (ts == NULL)
 			return NFCT_CB_CONTINUE;
 
+		ts->ct = ct;
 		gettimeofday(&ts->time[START], NULL); /* do our best here */
+
+		ret = hashtable_add(cpi->ct_active, &ts->hashnode, id);
+		if (ret < 0) {
+			free(ts);
+			return NFCT_CB_CONTINUE;
+		}
 		return NFCT_CB_STOLEN;
 	}
 
@@ -913,7 +954,6 @@ static int constructor_nfct_events(struct ulogd_pluginstance *upi)
 		cpi->ct_active =
 		     hashtable_create(buckets_ce(upi->config_kset).u.value,
 				      maxentries_ce(upi->config_kset).u.value,
-				      sizeof(struct ct_timestamp),
 				      hash,
 				      compare);
 		if (!cpi->ct_active) {
@@ -998,7 +1038,6 @@ static int constructor_nfct_polling(struct ulogd_pluginstance *upi)
 	cpi->ct_active =
 	     hashtable_create(buckets_ce(upi->config_kset).u.value,
 			      maxentries_ce(upi->config_kset).u.value,
-			      sizeof(struct ct_timestamp),
 			      hash,
 			      compare);
 	if (!cpi->ct_active) {
