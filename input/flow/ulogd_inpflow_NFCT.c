@@ -71,7 +71,7 @@ struct nfct_pluginstance {
 #define EVENT_MASK	NF_NETLINK_CONNTRACK_NEW | NF_NETLINK_CONNTRACK_DESTROY
 
 static struct config_keyset nfct_kset = {
-	.num_ces = 7,
+	.num_ces = 8,
 	.ces = {
 		{
 			.key	 = "pollinterval",
