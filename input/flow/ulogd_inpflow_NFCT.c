@@ -570,38 +570,15 @@ do_propagate_ct(struct ulogd_pluginstance *upi,
 	propagate_ct(upi, ct, type, ts);
 }
 
-static int event_handler(enum nf_conntrack_msg_type type,
-			 struct nf_conntrack *ct,
-			 void *data)
+static int
+event_handler_hashtable(enum nf_conntrack_msg_type type,
+			struct nf_conntrack *ct, void *data)
 {
 	struct ulogd_pluginstance *upi = data;
 	struct nfct_pluginstance *cpi =
 				(struct nfct_pluginstance *) upi->private;
 	struct ct_timestamp *ts;
 	int ret, id;
-
-	if (!usehash_ce(upi->config_kset).u.value) {
-		struct ct_timestamp tmp = {
-			.ct = ct,
-		};
-		switch(type) {
-		case NFCT_T_NEW:
-			gettimeofday(&tmp.time[START], NULL);
-			tmp.time[STOP].tv_sec = 0;
-			tmp.time[STOP].tv_usec = 0;
-			break;
-		case NFCT_T_DESTROY:
-			gettimeofday(&tmp.time[STOP], NULL);
-			tmp.time[START].tv_sec = 0;
-			tmp.time[START].tv_usec = 0;
-			break;
-		default:
-			ulogd_log(ULOGD_NOTICE, "unsupported message type\n");
-			break;
-		}
-		do_propagate_ct(upi, ct, type, &tmp);
-		return NFCT_CB_CONTINUE;
-	}
 
 	switch(type) {
 	case NFCT_T_NEW:
@@ -666,6 +643,34 @@ static int event_handler(enum nf_conntrack_msg_type type,
 		break;
 	}
 
+	return NFCT_CB_CONTINUE;
+}
+
+static int
+event_handler_no_hashtable(enum nf_conntrack_msg_type type,
+			   struct nf_conntrack *ct, void *data)
+{
+	struct ulogd_pluginstance *upi = data;
+	struct ct_timestamp tmp = {
+		.ct = ct,
+	};
+
+	switch(type) {
+	case NFCT_T_NEW:
+		gettimeofday(&tmp.time[START], NULL);
+		tmp.time[STOP].tv_sec = 0;
+		tmp.time[STOP].tv_usec = 0;
+		break;
+	case NFCT_T_DESTROY:
+		gettimeofday(&tmp.time[STOP], NULL);
+		tmp.time[START].tv_sec = 0;
+		tmp.time[START].tv_usec = 0;
+		break;
+	default:
+		ulogd_log(ULOGD_NOTICE, "unsupported message type\n");
+		return NFCT_CB_CONTINUE;
+	}
+	do_propagate_ct(upi, ct, type, &tmp);
 	return NFCT_CB_CONTINUE;
 }
 
@@ -931,7 +936,13 @@ static int constructor_nfct_events(struct ulogd_pluginstance *upi)
 		goto err_cth;
 	}
 
-	nfct_callback_register(cpi->cth, NFCT_T_ALL, &event_handler, upi);
+	if (usehash_ce(upi->config_kset).u.value != 0) {
+		nfct_callback_register(cpi->cth, NFCT_T_ALL,
+				       &event_handler_hashtable, upi);
+	} else {
+		nfct_callback_register(cpi->cth, NFCT_T_ALL,
+				       &event_handler_no_hashtable, upi);
+	}
 
 	if (nlsockbufsize_ce(upi->config_kset).u.value) {
 		setnlbufsiz(upi, nlsockbufsize_ce(upi->config_kset).u.value);
@@ -970,7 +981,7 @@ static int constructor_nfct_events(struct ulogd_pluginstance *upi)
 			goto err_ovh;
 		}
 		nfct_callback_register(cpi->cth, NFCT_T_ALL,
-				       &event_handler, upi);
+				       &event_handler_hashtable, upi);
 		nfct_query(h, NFCT_Q_DUMP, &family);
 		nfct_close(h);
 
