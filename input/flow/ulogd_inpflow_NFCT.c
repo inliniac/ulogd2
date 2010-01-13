@@ -874,13 +874,62 @@ static int read_cb_ovh(int fd, unsigned int what, void *param)
 	return 0;
 }
 
-static int get_ctr_zero(struct ulogd_pluginstance *upi)
+static int
+dump_reset_handler(enum nf_conntrack_msg_type type,
+		   struct nf_conntrack *ct, void *data)
 {
-	int family = 0; /* any */
+	struct ulogd_pluginstance *upi = data;
 	struct nfct_pluginstance *cpi =
 			(struct nfct_pluginstance *)upi->private;
+	int ret = NFCT_CB_CONTINUE, rc, id;
+	struct ct_timestamp *ts;
 
-	return nfct_query(cpi->cth, NFCT_Q_DUMP_RESET, &family);
+	switch(type) {
+	case NFCT_T_UPDATE:
+		id = hashtable_hash(cpi->ct_active, ct);
+		ts = (struct ct_timestamp *)
+			hashtable_find(cpi->ct_active, ct, id);
+		if (ts)
+			nfct_copy(ts->ct, ct, NFCT_CP_META);
+		else {
+			ts = calloc(sizeof(struct ct_timestamp), 1);
+			if (ts == NULL)
+				return NFCT_CB_CONTINUE;
+
+			ts->ct = ct;
+			gettimeofday(&ts->time[START], NULL);
+
+			rc = hashtable_add(cpi->ct_active, &ts->hashnode, id);
+			if (rc < 0) {
+				free(ts);
+				return NFCT_CB_CONTINUE;
+			}
+			ret = NFCT_CB_STOLEN;
+		}
+		do_propagate_ct(upi, ct, type, ts);
+		break;
+	default:
+		ulogd_log(ULOGD_NOTICE, "unknown netlink message type\n");
+		break;
+	}
+	return ret;
+}
+
+static void get_ctr_zero(struct ulogd_pluginstance *upi)
+{
+	struct nfct_handle *h;
+	int family = AF_UNSPEC;
+
+	h = nfct_open(CONNTRACK, 0);
+	if (h == NULL) {
+		ulogd_log(ULOGD_FATAL, "Cannot dump and reset counters\n");
+		return;
+	}
+	nfct_callback_register(h, NFCT_T_ALL, &dump_reset_handler, upi);
+	if (nfct_query(h, NFCT_Q_DUMP_RESET, &family) == -1)
+		ulogd_log(ULOGD_FATAL, "Cannot dump and reset counters\n");
+
+	nfct_close(h);
 }
 
 static void polling_timer_cb(struct ulogd_timer *t, void *data)
