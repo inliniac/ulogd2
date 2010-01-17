@@ -138,6 +138,7 @@ enum nflog_keys {
 	NFLOG_KEY_RAW_TYPE,
 	NFLOG_KEY_RAW_MAC_SADDR,
 	NFLOG_KEY_RAW_MAC_ADDRLEN,
+	NFLOG_KEY_RAW,
 };
 
 static struct ulogd_key output_keys[] = {
@@ -304,7 +305,11 @@ static struct ulogd_key output_keys[] = {
 		.flags = ULOGD_RETF_NONE,
 		.name = "raw.type",
 	},
-
+	[NFLOG_KEY_RAW] = {
+		.type = ULOGD_RET_RAW,
+		.flags = ULOGD_RETF_NONE,
+		.name = "raw",
+	},
 };
 
 static inline int
@@ -389,6 +394,8 @@ interp_packet(struct ulogd_pluginstance *upi, u_int8_t pf_family,
 		okey_set_u32(&ret[NFLOG_KEY_OOB_SEQ_LOCAL], seq);
 	if (nflog_get_seq_global(ldata, &seq) == 0)
 		okey_set_u32(&ret[NFLOG_KEY_OOB_SEQ_GLOBAL], seq);
+
+	okey_set_ptr(&ret[NFLOG_KEY_RAW], ldata);
 
 	ulogd_propagate_results(upi);
 	return 0;

@@ -64,6 +64,7 @@ struct nfct_pluginstance {
 	struct ulogd_timer ov_timer;	/* overrun retry timer */
 	struct hashtable *ct_active;
 	int nlbufsiz;			/* current netlink buffer size */
+	struct nf_conntrack *ct;
 };
 
 #define HTABLE_SIZE	(8192)
@@ -158,6 +159,7 @@ enum nfct_keys {
 	NFCT_FLOW_END_USEC,
 	NFCT_OOB_FAMILY,
 	NFCT_OOB_PROTOCOL,
+	NFCT_CT,
 };
 
 static struct ulogd_key nfct_okeys[] = {
@@ -379,6 +381,11 @@ static struct ulogd_key nfct_okeys[] = {
 		.flags	= ULOGD_RETF_NONE,
 		.name	= "oob.protocol",
 	},
+	{
+		.type	= ULOGD_RET_RAW,
+		.flags	= ULOGD_RETF_NONE,
+		.name	= "ct",
+	},
 };
 
 static uint32_t
@@ -453,6 +460,8 @@ static int propagate_ct(struct ulogd_pluginstance *upi,
 			struct ct_timestamp *ts)
 {
 	struct ulogd_key *ret = upi->output.keys;
+	struct nfct_pluginstance *cpi =
+			(struct nfct_pluginstance *) upi->private;
 
 	okey_set_u32(&ret[NFCT_CT_EVENT], type);
 	okey_set_u8(&ret[NFCT_OOB_FAMILY], nfct_get_attr_u8(ct, ATTR_L3PROTO));
@@ -545,6 +554,8 @@ static int propagate_ct(struct ulogd_pluginstance *upi,
 				     ts->time[STOP].tv_usec);
 		}
 	}
+	memcpy(cpi->ct, ct, nfct_sizeof(ct));
+	okey_set_ptr(&ret[NFCT_CT], cpi->ct);
 
 	ulogd_propagate_results(upi);
 
@@ -1006,6 +1017,10 @@ static int constructor_nfct_events(struct ulogd_pluginstance *upi)
 
 	ulogd_register_fd(&cpi->nfct_fd);
 
+	cpi->ct = nfct_new();
+	if (cpi->ct == NULL)
+		goto err_nfctobj;
+
 	if (usehash_ce(upi->config_kset).u.value != 0) {
 		int family = AF_UNSPEC;
 		struct nfct_handle *h;
@@ -1071,6 +1086,8 @@ err_pgh:
 err_ovh:
 	hashtable_destroy(cpi->ct_active);
 err_hashtable:
+	nfct_destroy(cpi->ct);
+err_nfctobj:
 	ulogd_unregister_fd(&cpi->nfct_fd);
 	nfct_close(cpi->cth);
 err_cth:
@@ -1139,6 +1156,7 @@ static int destructor_nfct_events(struct ulogd_pluginstance *upi)
 	if (rc < 0)
 		return rc;
 
+	nfct_destroy(cpi->ct);
 
 	if (usehash_ce(upi->config_kset).u.value != 0) {
 		ulogd_del_timer(&cpi->ov_timer);

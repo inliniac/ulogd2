@@ -37,6 +37,7 @@ plugin="@libdir@/ulogd/ulogd_filter_PRINTFLOW.so"
 #plugin="@libdir@/ulogd/ulogd_filter_MARK.so"
 plugin="@libdir@/ulogd/ulogd_output_LOGEMU.so"
 plugin="@libdir@/ulogd/ulogd_output_SYSLOG.so"
+plugin="@libdir@/ulogd/ulogd_output_XML.so"
 #plugin="@libdir@/ulogd/ulogd_output_OPRINT.so"
 #plugin="@libdir@/ulogd/ulogd_output_NACCT.so"
 #plugin="@libdir@/ulogd/ulogd_output_PCAP.so"
@@ -62,6 +63,12 @@ plugin="@libdir@/ulogd/ulogd_raw2packet_BASE.so"
 
 # this is a stack for flow-based logging via OPRINT
 #stack=ct1:NFCT,op1:OPRINT
+
+# this is a stack for flow-based logging via XML
+#stack=ct1:NFCT,xml1:XML
+
+# this is a stack for logging in XML
+#stack=log1:NFLOG,xml1:XML
 
 # this is a stack for NFLOG packet-based logging to PCAP
 #stack=log2:NFLOG,base1:BASE,pcap1:PCAP
@@ -144,6 +151,10 @@ sync=1
 
 [op1]
 file="/var/log/ulogd_oprint.log"
+sync=1
+
+[xml1]
+directory="/var/log/"
 sync=1
 
 [pcap1]
