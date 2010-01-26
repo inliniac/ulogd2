@@ -323,7 +323,7 @@ struct ulogd_plugin libulog_plugin = {
 	.output = {
 		.type = ULOGD_DTYPE_RAW,
 		.keys = output_keys,
-		.num_keys = sizeof(output_keys)/sizeof(struct ulogd_key),
+		.num_keys = ARRAY_SIZE(output_keys),
 	},
 	.configure = &configure,
 	.start = &init,
