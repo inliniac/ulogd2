@@ -50,6 +50,11 @@ static struct ulogd_key ip2bin_inp[] = {
 		.flags = ULOGD_RETF_NONE,
 		.name = "oob.family",
 	},
+	[KEY_OOB_PROTOCOL] = {
+		.type = ULOGD_RET_UINT16,
+		.flags = ULOGD_RETF_NONE,
+		.name = "oob.protocol",
+	},
 	[KEY_IP_SADDR] = {
 		.type = ULOGD_RET_IPADDR,
 		.flags = ULOGD_RETF_NONE|ULOGD_KEYF_OPTIONAL,
