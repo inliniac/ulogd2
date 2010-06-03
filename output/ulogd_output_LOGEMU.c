@@ -150,7 +150,7 @@ static int start_logemu(struct ulogd_pluginstance *pi)
 	if (!li->of) {
 		ulogd_log(ULOGD_FATAL, "can't open syslogemu: %s\n", 
 			  strerror(errno));
-		return errno;
+		return -errno;
 	}		
 #endif
 
