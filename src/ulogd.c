@@ -899,7 +899,7 @@ static void ulogd_main_loop(void)
 			next = ulogd_get_next_timer_run(&next_alarm);
 
 		ret = ulogd_select_main(next);
-		if (ret < 0 && errno != -EINTR)
+		if (ret < 0 && errno != EINTR)
 	                ulogd_log(ULOGD_ERROR, "select says %s\n",
 				  strerror(errno));
 	}
