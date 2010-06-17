@@ -170,10 +170,21 @@ static int xml_open_file(struct ulogd_pluginstance *upi)
 	struct xml_priv *op = (struct xml_priv *) &upi->private;
 	int ret;
 
+	struct ulogd_pluginstance *input_plugin =
+		llist_entry(upi->stack->list.next,
+			    struct ulogd_pluginstance, list);
+	char file_infix[strlen("flow")+1];
+
+	if (input_plugin->plugin->output.type & ULOGD_DTYPE_FLOW)
+		strcpy(file_infix, "flow");
+        else if (input_plugin->plugin->output.type & ULOGD_DTYPE_RAW)
+		strcpy(file_infix, "pkt");
+
 	now = time(NULL);
 	tm = localtime(&now);
 	ret = snprintf(filename, sizeof(filename),
-		       "ulogd-%.2d%.2d%.4d-%.2d%.2d%.2d.xml",
+		       "ulogd-%s-%.2d%.2d%.4d-%.2d%.2d%.2d.xml",
+		       file_infix, 
 		       tm->tm_mday, tm->tm_mon + 1, 1900 + tm->tm_year,
 		       tm->tm_hour, tm->tm_min, tm->tm_sec);
 
