@@ -753,7 +753,7 @@ static int pluginstance_started(struct ulogd_pluginstance *npi)
 					ulogd_log(ULOGD_INFO,
 							"%s instance already "
 							"loaded\n", pi->id);
-					llist_add(&pi->plist, &npi->plist);
+					llist_add(&npi->plist, &pi->plist);
 					return 1;
 				}
 			}
