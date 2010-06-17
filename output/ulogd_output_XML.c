@@ -162,40 +162,41 @@ static int xml_fini(struct ulogd_pluginstance *pi)
 	return 0;
 }
 
-static int xml_start(struct ulogd_pluginstance *upi)
+static int xml_open_file(struct ulogd_pluginstance *upi)
 {
-	struct xml_priv *op = (struct xml_priv *) &upi->private;
-	char buf[PATH_MAX], filename[FILENAME_MAX];
 	time_t now;
 	struct tm *tm;
+	char buf[PATH_MAX], filename[FILENAME_MAX];
+	struct xml_priv *op = (struct xml_priv *) &upi->private;
 	int ret;
 
-	if (upi->config_kset->ces[CFG_XML_STDOUT].u.value != 0) {
-		op->of = stdout;
-	} else {
-		now = time(NULL);
-		tm = localtime(&now);
-		ret = snprintf(filename, sizeof(filename),
-			       "ulogd-%.2d%.2d%.4d-%.2d%.2d%.2d.xml",
-			       tm->tm_mday, tm->tm_mon + 1, 1900 + tm->tm_year,
-			       tm->tm_hour, tm->tm_min, tm->tm_sec);
+	now = time(NULL);
+	tm = localtime(&now);
+	ret = snprintf(filename, sizeof(filename),
+		       "ulogd-%.2d%.2d%.4d-%.2d%.2d%.2d.xml",
+		       tm->tm_mday, tm->tm_mon + 1, 1900 + tm->tm_year,
+		       tm->tm_hour, tm->tm_min, tm->tm_sec);
 
-		if (ret == -1 || ret >= (int)sizeof(filename))
-			return -1;
+	if (ret == -1 || ret >= (int)sizeof(filename))
+		return -1;
 
-		ret = snprintf(buf, sizeof(buf), "%s/%s",
-			       upi->config_kset->ces[CFG_XML_DIR].u.string,
-			       filename);
-		if (ret == -1 || ret >= (int)sizeof(buf))
-			return -1;
+	ret = snprintf(buf, sizeof(buf), "%s/%s",
+		       upi->config_kset->ces[CFG_XML_DIR].u.string,
+		       filename);
+	if (ret == -1 || ret >= (int)sizeof(buf))
+		return -1;
 
-		op->of = fopen(buf, "a");
-		if (!op->of) {
-			ulogd_log(ULOGD_FATAL, "can't open XML file: %s\n", 
-				  strerror(errno));
-			return -1;
-		}
-	}
+	op->of = fopen(buf, "a");
+	if (!op->of)
+		return -1;
+
+	return 0;
+}
+
+static void xml_print_header(struct ulogd_pluginstance *upi)
+{
+	struct xml_priv *op = (struct xml_priv *) &upi->private;
+
 	fprintf(op->of, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
 
 	struct ulogd_pluginstance *input_plugin =
@@ -209,8 +210,42 @@ static int xml_start(struct ulogd_pluginstance *upi)
 
 	if (upi->config_kset->ces[CFG_XML_SYNC].u.value != 0)
 		fflush(op->of);
+}
 
+static int xml_start(struct ulogd_pluginstance *upi)
+{
+	struct xml_priv *op = (struct xml_priv *) &upi->private;
+
+	if (upi->config_kset->ces[CFG_XML_STDOUT].u.value != 0) {
+		op->of = stdout;
+	} else {
+		if (xml_open_file(upi) < 0) {
+			ulogd_log(ULOGD_FATAL, "can't open XML file: %s\n", 
+				  strerror(errno));
+			return -1;
+		}
+	}
+	xml_print_header(upi);
 	return 0;
+}
+
+static void
+xml_signal_handler(struct ulogd_pluginstance *upi, int signal)
+{
+	switch (signal) {
+	case SIGHUP:
+		ulogd_log(ULOGD_NOTICE, "XML: reopening logfile\n");
+		xml_fini(upi);
+		if (xml_open_file(upi) < 0) {
+			ulogd_log(ULOGD_FATAL, "can't open XML file: %s\n", 
+				  strerror(errno));
+			return;
+		}
+		xml_print_header(upi);
+		break;
+	default:
+		break;
+	}
 }
 
 static struct ulogd_plugin xml_plugin = {
@@ -230,6 +265,7 @@ static struct ulogd_plugin xml_plugin = {
 	.start		= &xml_start,
 	.stop		= &xml_fini,
 	.interp		= &xml_output,
+	.signal		= &xml_signal_handler,
 	.version	= ULOGD_VERSION,
 };
 
