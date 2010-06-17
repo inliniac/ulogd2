@@ -556,7 +556,6 @@ static int propagate_ct(struct ulogd_pluginstance *main_upi,
 				     ts->time[STOP].tv_usec);
 		}
 	}
-	memcpy(cpi->ct, ct, nfct_sizeof(ct));
 	okey_set_ptr(&ret[NFCT_CT], cpi->ct);
 
 	ulogd_propagate_results(upi);
@@ -571,6 +570,14 @@ do_propagate_ct(struct ulogd_pluginstance *upi,
 		struct ct_timestamp *ts)
 {
 	struct ulogd_pluginstance *npi = NULL;
+	struct nfct_pluginstance *cpi =
+			(struct nfct_pluginstance *) upi->private;
+
+	/* we copy the conntrack object to the plugin cache.
+	 * Thus, we only copy the object once, then it is used 
+	 * by the several output plugin instance that reference 
+	 * it by means of a pointer. */
+	memcpy(cpi->ct, ct, nfct_sizeof(ct));
 
 	/* since we support the re-use of one instance in
 	 * several different stacks, we duplicate the message
