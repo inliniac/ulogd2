@@ -454,14 +454,16 @@ static int compare(const void *data1, const void *data2)
 	return nfct_cmp(u1->ct, ct, NFCT_CMP_ORIG | NFCT_CMP_REPL);
 }
 
-static int propagate_ct(struct ulogd_pluginstance *upi,
+/* only the main_upi plugin instance contains the correct private data. */
+static int propagate_ct(struct ulogd_pluginstance *main_upi,
+			struct ulogd_pluginstance *upi,
 			struct nf_conntrack *ct,
 			int type,
 			struct ct_timestamp *ts)
 {
 	struct ulogd_key *ret = upi->output.keys;
 	struct nfct_pluginstance *cpi =
-			(struct nfct_pluginstance *) upi->private;
+			(struct nfct_pluginstance *) main_upi->private;
 
 	okey_set_u32(&ret[NFCT_CT_EVENT], type);
 	okey_set_u8(&ret[NFCT_OOB_FAMILY], nfct_get_attr_u8(ct, ATTR_L3PROTO));
@@ -574,11 +576,11 @@ do_propagate_ct(struct ulogd_pluginstance *upi,
 	 * several different stacks, we duplicate the message
 	 * to let them know */
 	llist_for_each_entry(npi, &upi->plist, plist) {
-		if (propagate_ct(npi, ct, type, ts) != 0)
+		if (propagate_ct(upi, npi, ct, type, ts) != 0)
 			break;
 	}
 
-	propagate_ct(upi, ct, type, ts);
+	propagate_ct(upi, upi, ct, type, ts);
 }
 
 static int
