@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ([2.50])
-AC_INIT([ulogd], [2.0.0beta3])
+AC_INIT([ulogd], [2.0.0beta4])
 
 AM_INIT_AUTOMAKE([-Wall])
 AC_CONFIG_HEADER([config.h])
@@ -36,7 +36,7 @@ CFLAGS="$CFLAGS -Wall -Wextra -Wno-unused-parameter"
 dnl Check for the right nfnetlink version
 LIBNFNETLINK_REQUIRED=0.0.39
 LIBNETFILTER_CONNTRACK_REQUIRED=0.0.95
-LIBNETFILTER_LOG_REQUIRED=0.0.15
+LIBNETFILTER_LOG_REQUIRED=1.0.0
 
 PKG_CHECK_MODULES(LIBNFNETLINK, libnfnetlink >= $LIBNFNETLINK_REQUIRED,, AC_MSG_ERROR(Cannot find libnfnetlink >= $LIBNFNETLINK_REQUIRED))
 
