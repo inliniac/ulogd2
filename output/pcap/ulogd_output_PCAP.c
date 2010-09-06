@@ -117,7 +117,7 @@ struct intr_id {
 	unsigned int id;		
 };
 
-#define INTR_IDS 	5
+#define INTR_IDS 	7
 static struct ulogd_key pcap_keys[INTR_IDS] = {
 	{ .type = ULOGD_RET_UINT32,
 	  .flags = ULOGD_RETF_NONE,
@@ -134,6 +134,12 @@ static struct ulogd_key pcap_keys[INTR_IDS] = {
 	{ .type = ULOGD_RET_UINT32,
 	  .flags = ULOGD_RETF_NONE,
 	  .name = "oob.time.usec" },
+	{ .type = ULOGD_RET_UINT8,
+	  .flags = ULOGD_RETF_NONE,
+	  .name = "oob.family" },
+	{ .type = ULOGD_RET_UINT16,
+	  .flags = ULOGD_RETF_NONE,
+	  .name = "ip6.payload_len" },
 };
 
 #define GET_FLAGS(res, x)	(res[x].u.source->flags)
@@ -144,8 +150,20 @@ static int interp_pcap(struct ulogd_pluginstance *upi)
 	struct ulogd_key *res = upi->input.keys;
 	struct pcap_sf_pkthdr pchdr;
 
-	pchdr.caplen = ikey_get_u32(&res[2]);
-	pchdr.len = ikey_get_u32(&res[2]);
+	pchdr.caplen = ikey_get_u32(&res[1]);
+
+	/* Try to set the len field correctly, if we know the protocol. */
+	switch (ikey_get_u8(&res[5])) {
+	case 2: /* INET */
+		pchdr.len = ikey_get_u16(&res[2]);
+		break;
+	case 10: /* INET6 -- payload length + header length */
+		pchdr.len = ikey_get_u16(&res[6]) + 40;
+		break;
+	default:
+		pchdr.len = pchdr.caplen;
+		break;
+	}
 
 	if (GET_FLAGS(res, 3) & ULOGD_RETF_VALID
 	    && GET_FLAGS(res, 4) & ULOGD_RETF_VALID) {
