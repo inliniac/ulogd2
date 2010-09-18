@@ -180,42 +180,40 @@ static int interp_mac2str(struct ulogd_pluginstance *pi)
 
 	if (pp_is_valid(inp, KEY_RAW_MAC_SADDR)) {
 		int fret;
+		if (! pp_is_valid(inp, KEY_RAW_MAC_ADDRLEN))
+			return ULOGD_IRET_ERR;
 		fret = parse_mac2str(ret,
 				     ikey_get_ptr(&inp[KEY_RAW_MAC_SADDR]),
 				     KEY_MAC_SADDR,
 				     ikey_get_u16(&inp[KEY_RAW_MAC_ADDRLEN]));
 		if (fret != ULOGD_IRET_OK)
 			return fret;
+		/* set MAC type to unknown */
+		okey_set_u16(&ret[KEY_MAC_TYPE], ARPHRD_VOID);
 	}
 
 	if (pp_is_valid(inp, KEY_RAW_MAC)) {
-		if (ikey_get_u16(&inp[KEY_RAW_MAC_ADDRLEN]) == ETH_ALEN)
-			okey_set_u16(&ret[KEY_MAC_TYPE], ARPHRD_ETHER);
-		else
-			okey_set_u16(&ret[KEY_MAC_TYPE], ARPHRD_VOID);
-
-		return ULOGD_IRET_OK;
-	}
-
-	if (pp_is_valid(inp, KEY_RAW_TYPE)) {
-		/* NFLOG with Linux >= 2.6.27 case */
-		type = ikey_get_u16(&inp[KEY_RAW_TYPE]);
-		okey_set_u16(&ret[KEY_MAC_TYPE], type);
-	} else {
-		/* ULOG case, treat ethernet encapsulation */
-		if (ikey_get_u16(&inp[KEY_RAW_MACLEN]) == ETH_HLEN) {
-			type = ARPHRD_ETHER;
-			okey_set_u16(&ret[KEY_MAC_TYPE], type);
+		if (! pp_is_valid(inp, KEY_RAW_MACLEN))
+			return ULOGD_IRET_ERR;
+		if (pp_is_valid(inp, KEY_RAW_TYPE)) {
+			/* NFLOG with Linux >= 2.6.27 case */
+			type = ikey_get_u16(&inp[KEY_RAW_TYPE]);
 		} else {
-			type = ARPHRD_VOID;
-			okey_set_u16(&ret[KEY_MAC_TYPE], type);
+			/* ULOG case, treat ethernet encapsulation */
+			if (ikey_get_u16(&inp[KEY_RAW_MACLEN]) == ETH_HLEN)
+				type = ARPHRD_ETHER;
+			else
+				type = ARPHRD_VOID;
 		}
+		okey_set_u16(&ret[KEY_MAC_TYPE], type);
 	}
 
 	switch (type) {
 		case ARPHRD_ETHER:
 			parse_ethernet(ret, inp);
 		default:
+			if (!pp_is_valid(inp, KEY_RAW_MAC))
+				return ULOGD_IRET_OK;
 			/* convert raw header to string */
 			return parse_mac2str(ret,
 					    ikey_get_ptr(&inp[KEY_RAW_MAC]),
