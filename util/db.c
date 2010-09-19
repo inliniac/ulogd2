@@ -190,22 +190,29 @@ int ulogd_db_start(struct ulogd_pluginstance *upi)
 	return ret;
 }
 
-int ulogd_db_stop(struct ulogd_pluginstance *upi)
+static int ulogd_db_instance_stop(struct ulogd_pluginstance *upi)
 {
 	struct db_instance *di = (struct db_instance *) upi->private;
 	ulogd_log(ULOGD_NOTICE, "stopping\n");
 	di->driver->close_db(upi);
 
-	/* try to free our dynamically allocated input key array */
-	if (upi->input.keys) {
-		free(upi->input.keys);
-		upi->input.keys = NULL;
-	}
-
 	/* try to free the buffer for insert statement */
 	if (di->stmt) {
 		free(di->stmt);
 		di->stmt = NULL;
+	}
+
+	return 0;
+}
+
+int ulogd_db_stop(struct ulogd_pluginstance *upi)
+{
+	ulogd_db_instance_stop(upi);
+
+	/* try to free our dynamically allocated input key array */
+	if (upi->input.keys) {
+		free(upi->input.keys);
+		upi->input.keys = NULL;
 	}
 
 	return 0;
@@ -356,7 +363,7 @@ void ulogd_db_signal(struct ulogd_pluginstance *upi, int signal)
 	switch (signal) {
 	case SIGHUP:
 		/* reopen database connection */
-		ulogd_db_stop(upi);
+		ulogd_db_instance_stop(upi);
 		ulogd_db_start(upi);
 		break;
 	default:
