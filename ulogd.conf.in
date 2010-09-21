@@ -172,7 +172,7 @@ procedure="INSERT_PACKET_FULL"
 db="nulog"
 host="localhost"
 user="nupik"
-table="ulog"
+table="conntrack"
 pass="changeme"
 procedure="INSERT_CT"
 
