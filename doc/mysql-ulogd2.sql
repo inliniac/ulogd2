@@ -482,8 +482,8 @@ END
 $$
 delimiter ;
 
-delimiter $$
 DROP FUNCTION IF EXISTS INSERT_IP_PACKET;
+delimiter $$
 CREATE FUNCTION INSERT_IP_PACKET(
 		_oob_time_sec int(10) unsigned,
 		_oob_time_usec int(10) unsigned,
@@ -508,9 +508,10 @@ BEGIN
 	RETURN LAST_INSERT_ID();
 END
 $$
+delimiter ;
 
-delimiter $$
 DROP FUNCTION IF EXISTS INSERT_IP_PACKET_FULL;
+delimiter $$
 CREATE FUNCTION INSERT_IP_PACKET_FULL(
 		_oob_time_sec int(10) unsigned,
 		_oob_time_usec int(10) unsigned,
@@ -545,10 +546,10 @@ BEGIN
 	RETURN LAST_INSERT_ID();
 END
 $$
+delimiter ;
 
-
-delimiter $$
 DROP PROCEDURE IF EXISTS PACKET_ADD_TCP_FULL;
+delimiter $$
 CREATE PROCEDURE PACKET_ADD_TCP_FULL(
 		IN `id` int(10) unsigned,
 		IN `_sport` smallint(5) unsigned,
@@ -569,9 +570,10 @@ BEGIN
 	(id, _sport, _dport, _seq, _ackseq, _window, _urg, _urgp, _ack, _psh, _rst, _syn, _fin);
 END
 $$
+delimiter ;
 
-delimiter $$
 DROP PROCEDURE IF EXISTS PACKET_ADD_TCP;
+delimiter $$
 CREATE PROCEDURE PACKET_ADD_TCP(
 		IN `id` int(10) unsigned,
 		IN `_sport` smallint(5) unsigned,
@@ -581,9 +583,10 @@ BEGIN
 	INSERT INTO tcp (_tcp_id, tcp_sport, tcp_dport) VALUES (id, _sport, _dport);
 END
 $$
+delimiter ;
 
-delimiter $$
 DROP PROCEDURE IF EXISTS PACKET_ADD_UDP;
+delimiter $$
 CREATE PROCEDURE PACKET_ADD_UDP(
 		IN `id` int(10) unsigned,
 		IN `_sport` smallint(5) unsigned,
@@ -595,9 +598,10 @@ BEGIN
 	(id, _sport, _dport, _len);
 END
 $$
+delimiter ;
 
-delimiter $$
 DROP PROCEDURE IF EXISTS PACKET_ADD_SCTP;
+delimiter $$
 CREATE PROCEDURE PACKET_ADD_SCTP(
 		IN `id` int(10) unsigned,
 		IN `_sport` smallint(5) unsigned,
@@ -609,9 +613,10 @@ BEGIN
 	(id, _sport, _dport, _csum);
 END
 $$
+delimiter ;
 
-delimiter $$
 DROP PROCEDURE IF EXISTS PACKET_ADD_ICMP;
+delimiter $$
 CREATE PROCEDURE PACKET_ADD_ICMP(
 		IN `id` int(10) unsigned,
 		IN `_icmp_type` tinyint(3) unsigned,
@@ -629,9 +634,10 @@ BEGIN
 
 END
 $$
+delimiter ;
 
-delimiter $$
 DROP PROCEDURE IF EXISTS PACKET_ADD_ICMPV6;
+delimiter $$
 CREATE PROCEDURE PACKET_ADD_ICMPV6(
 		IN `id` int(10) unsigned,
 		IN `_icmpv6_type` tinyint(3) unsigned,
@@ -647,11 +653,11 @@ BEGIN
 			    _icmpv6_echoseq, _icmpv6_csum);
 END
 $$
+delimiter ;
 
 
-
-delimiter $$
 DROP FUNCTION IF EXISTS INSERT_OR_SELECT_MAC;
+delimiter $$
 CREATE FUNCTION INSERT_OR_SELECT_MAC(
 		`_saddr` varchar(32),
 		`_daddr` varchar(32),
@@ -665,9 +671,10 @@ BEGIN
 	RETURN @last_id;
 END
 $$
+delimiter ;
 
-delimiter $$
 DROP PROCEDURE IF EXISTS PACKET_ADD_HARDWARE_HEADER;
+delimiter $$
 CREATE PROCEDURE PACKET_ADD_HARDWARE_HEADER(
 		IN `id` int(10) unsigned,
 		IN `_hw_type` integer,
@@ -678,9 +685,10 @@ BEGIN
 	(id, _hw_type, _hw_addr);
 END
 $$
+delimiter ;
 
-delimiter $$
 DROP FUNCTION IF EXISTS INSERT_PACKET_FULL;
+delimiter $$
 CREATE FUNCTION INSERT_PACKET_FULL(
 		_oob_time_sec int(10) unsigned,
 		_oob_time_usec int(10) unsigned,
@@ -769,10 +777,11 @@ BEGIN
 	RETURN @lastid;
 END
 $$
+delimiter ;
 
 
-delimiter $$
 DROP PROCEDURE IF EXISTS PACKET_ADD_NUFW;
+delimiter $$
 CREATE PROCEDURE PACKET_ADD_NUFW(
 		IN `id` int(10) unsigned,
 		IN `username` varchar(30),
@@ -786,9 +795,10 @@ BEGIN
 	(id, username, user_id, client_os, client_app, socket);
 END
 $$
+delimiter ;
 
-delimiter $$
 DROP FUNCTION IF EXISTS INSERT_CT;
+delimiter $$
 CREATE FUNCTION INSERT_CT(
 		`_oob_family` bigint,
 		`_orig_ip_saddr` binary(16),
