@@ -875,9 +875,9 @@ CREATE PROCEDURE DELETE_CUSTOM_ONE(
                 IN _id bigint
                 )
 SQL SECURITY INVOKER
-COMMENT 'Delete packet in a custom table (specified at runtime) using a prepared query'
+COMMENT 'Delete packet in a custom table (specified at runtime)'
 BEGIN
-        SET @l_sql = CONCAT('DELETE FROM ',@tname,' WHERE ',@tname,'.',@tfield,' = ',_id);
+        SET @l_sql = CONCAT('DELETE FROM ',@tname,' WHERE ',@tname,'.',@tjoin,' = ',_id);
         PREPARE delete_stmt FROM @l_sql;
         EXECUTE delete_stmt;
         DEALLOCATE PREPARE delete_stmt;
