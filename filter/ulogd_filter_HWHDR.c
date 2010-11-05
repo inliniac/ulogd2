@@ -118,7 +118,7 @@ static int parse_mac2str(struct ulogd_key *ret, unsigned char *mac,
 	char *buf_cur;
 	int i;
 
-	if (len/sizeof(char)*3 + 1 > HWADDR_LENGTH)
+	if (len * 3 + 1 > HWADDR_LENGTH)
 		return ULOGD_IRET_ERR;
 
 	if (len == 0)
