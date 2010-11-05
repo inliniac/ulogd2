@@ -1,6 +1,6 @@
 
 AM_CPPFLAGS = $(all_includes) -I$(top_srcdir)/include
-AM_CFLAGS=-fPIC -Wall
+AM_CFLAGS = -Wall
 LIBS=
 
 pkglib_LTLIBRARIES = ulogd_inppkt_NFLOG.la ulogd_inppkt_ULOG.la ulogd_inppkt_UNIXSOCK.la
