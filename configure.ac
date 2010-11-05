@@ -10,6 +10,7 @@ dnl Checks for programs.
 AC_PROG_MAKE_SET
 AC_PROG_CC
 AC_PROG_INSTALL
+AC_DISABLE_STATIC
 AC_PROG_LIBTOOL
 
 dnl Checks for libraries.
