@@ -1,4 +1,4 @@
-AM_CPPFLAGS = $(all_includes) -I$(top_srcdir)/include $(SQLITE3_INC)
+AM_CPPFLAGS = -I$(top_srcdir)/include $(SQLITE3_INC)
 LIBS=$(SQLITE3_LIB)
 
 if HAVE_SQLITE3

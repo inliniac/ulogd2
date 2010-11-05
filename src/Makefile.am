@@ -1,5 +1,5 @@
 
-AM_CPPFLAGS = $(all_includes) -I$(top_srcdir)/include \
+AM_CPPFLAGS = -I$(top_srcdir)/include \
 	      -DULOGD_CONFIGFILE="\"$(sysconfdir)/ulogd.conf\"" \
 	      -DULOGD_LOGFILE_DEFAULT="\"$(localstatedir)/log/ulogd.log\""
 

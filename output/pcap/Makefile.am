@@ -1,5 +1,5 @@
 
-AM_CPPFLAGS = $(all_includes) -I$(top_srcdir)/include $(PCAP_INC)
+AM_CPPFLAGS = -I$(top_srcdir)/include $(PCAP_INC)
 LIBS=$(PCAP_LIB)
 
 if HAVE_PCAP
