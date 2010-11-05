@@ -2,6 +2,7 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include \
 	      -DULOGD_CONFIGFILE="\"$(sysconfdir)/ulogd.conf\"" \
 	      -DULOGD_LOGFILE_DEFAULT="\"$(localstatedir)/log/ulogd.log\""
+AM_CFLAGS = ${regular_CFLAGS}
 
 sbin_PROGRAMS = ulogd
 

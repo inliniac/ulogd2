@@ -1,4 +1,5 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include $(MYSQL_INC)
+AM_CFLAGS = ${regular_CFLAGS}
 LIBS=$(MYSQL_LIB)
 
 if HAVE_MYSQL

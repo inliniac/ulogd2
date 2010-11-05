@@ -1,5 +1,6 @@
 
 AM_CPPFLAGS = -I$(top_srcdir)/include $(DBI_INC)
+AM_CFLAGS = ${regular_CFLAGS}
 LIBS=$(DBI_LIB)
 
 if HAVE_DBI

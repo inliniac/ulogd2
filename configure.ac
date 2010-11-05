@@ -32,7 +32,8 @@ dnl Checks for library functions.
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(socket strerror)
 
-CFLAGS="$CFLAGS -Wall -Wextra -Wno-unused-parameter"
+regular_CFLAGS="-Wall -Wextra -Wno-unused-parameter"
+AC_SUBST([regular_CFLAGS])
 
 dnl Check for the right nfnetlink version
 LIBNFNETLINK_REQUIRED=0.0.39

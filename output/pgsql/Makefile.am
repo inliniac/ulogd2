@@ -1,5 +1,6 @@
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(PQINCPATH)
+AM_CFLAGS = ${regular_CFLAGS}
 LIBS=$(PQLIBS)
 
 if HAVE_PGSQL
