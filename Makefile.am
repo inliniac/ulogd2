@@ -16,10 +16,6 @@ edit = sed \
 ulogd.conf: Makefile $(srcdir)/ulogd.conf.in
 	$(edit) $(srcdir)/ulogd.conf.in >ulogd.conf
 
-$(OBJECTS): libtool
-libtool: $(LIBTOOL_DEPS)
-	$(SHELL) ./config.status --recheck
-
 dist-hook:
 	rm -f ulogd.conf
 
