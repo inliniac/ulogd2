@@ -1131,9 +1131,15 @@ static int constructor_nfct_polling(struct ulogd_pluginstance *upi)
 		goto err_hashtable;
 	}
 
+	cpi->ct = nfct_new();
+	if (cpi->ct == NULL)
+		goto err_ct_cache;
+
 	ulogd_log(ULOGD_NOTICE, "NFCT working in polling mode\n");
 	return 0;
 
+err_ct_cache:
+	hashtable_destroy(cpi->ct_active);
 err_hashtable:
 	nfct_close(cpi->pgh);
 err:
