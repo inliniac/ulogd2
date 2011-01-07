@@ -762,6 +762,15 @@ static int pluginstance_started(struct ulogd_pluginstance *npi)
 	return 0;
 }
 
+static int pluginstance_stop(struct ulogd_pluginstance *npi)
+{
+	if (--npi->plugin->usage > 0 &&
+	    npi->plugin->input.type == ULOGD_DTYPE_SOURCE) {
+		return 0;
+	}
+	return 1;
+}
+
 static int create_stack_start_instances(struct ulogd_pluginstance_stack *stack)
 {
 	int ret;
@@ -839,6 +848,7 @@ static int create_stack(const char *option)
 			ret = -ENODEV;
 			goto out;
 		}
+		pl->usage++;
 
 		/* allocate */
 		pi = pluginstance_alloc_init(pl, pi_id, stack);
@@ -989,8 +999,8 @@ static void stop_pluginstances()
 
 	llist_for_each_entry(stack, &ulogd_pi_stacks, stack_list) {
 		llist_for_each_entry_safe(pi, npi, &stack->list, list) {
-			if (((pi->plugin->priv_size == 0) || pi->private[0])
-					&& *pi->plugin->stop) {
+			if ((pi->plugin->priv_size > 0 || *pi->plugin->stop) &&
+			    pluginstance_stop(pi)) {
 				ulogd_log(ULOGD_DEBUG, "calling stop for %s\n",
 					  pi->plugin->name);
 				(*pi->plugin->stop)(pi);

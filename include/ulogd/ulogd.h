@@ -208,6 +208,8 @@ struct ulogd_plugin {
 	char name[ULOGD_MAX_KEYLEN+1];
 	/* ID for this plugin (dynamically assigned) */
 	unsigned int id;
+	/* how many stacks are using this plugin? initially set to zero. */
+	unsigned int usage;
 
 	struct ulogd_keyset input;
 	struct ulogd_keyset output;
