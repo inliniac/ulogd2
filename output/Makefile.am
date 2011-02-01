@@ -3,9 +3,9 @@ AM_CFLAGS = ${regular_CFLAGS}
 
 SUBDIRS= pcap mysql pgsql sqlite3 dbi
 
-pkglib_LTLIBRARIES = ulogd_output_LOGEMU.la ulogd_output_SYSLOG.la \
-		     ulogd_output_OPRINT.la \
-		     ulogd_output_NACCT.la ulogd_output_XML.la
+pkglibexec_LTLIBRARIES = ulogd_output_LOGEMU.la ulogd_output_SYSLOG.la \
+			 ulogd_output_OPRINT.la \
+			 ulogd_output_NACCT.la ulogd_output_XML.la
 
 ulogd_output_LOGEMU_la_SOURCES = ulogd_output_LOGEMU.c
 ulogd_output_LOGEMU_la_LDFLAGS = -avoid-version -module

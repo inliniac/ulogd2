@@ -4,7 +4,7 @@ AM_CFLAGS = ${regular_CFLAGS}
 
 if HAVE_PGSQL
 
-pkglib_LTLIBRARIES = ulogd_output_PGSQL.la
+pkglibexec_LTLIBRARIES = ulogd_output_PGSQL.la
 
 ulogd_output_PGSQL_la_SOURCES = ulogd_output_PGSQL.c ../../util/db.c
 ulogd_output_PGSQL_la_LIBADD  = ${PQLIBS}

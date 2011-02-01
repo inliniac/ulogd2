@@ -11,7 +11,7 @@ SUBDIRS = include libipulog src input filter output
 noinst_DATA = ulogd.conf
 
 edit = sed \
-	-e 's,@libdir\@,$(libdir),g'
+	-e 's,@pkglibexecdir\@,${pkglibexecdir},g'
 
 ulogd.conf: Makefile $(srcdir)/ulogd.conf.in
 	$(edit) $(srcdir)/ulogd.conf.in >ulogd.conf
