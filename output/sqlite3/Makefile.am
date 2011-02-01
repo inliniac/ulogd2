@@ -1,12 +1,12 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include $(SQLITE3_INC)
 AM_CFLAGS = ${regular_CFLAGS}
-LIBS=$(SQLITE3_LIB)
 
 if HAVE_SQLITE3
 
 pkglib_LTLIBRARIES = ulogd_output_SQLITE3.la
 
 ulogd_output_SQLITE3_la_SOURCES = ulogd_output_SQLITE3.c ../../util/db.c
+ulogd_output_SQLITE3_la_LIBADD  = ${SQLITE3_LIBS}
 ulogd_output_SQLITE3_la_LDFLAGS = -avoid-version -module
 
 endif

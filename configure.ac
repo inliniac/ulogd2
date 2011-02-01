@@ -14,7 +14,8 @@ AC_DISABLE_STATIC
 AC_PROG_LIBTOOL
 
 dnl Checks for libraries.
-AC_CHECK_LIB(dl, dlopen)
+AC_SEARCH_LIBS([dlopen], [dl], [libdl_LIBS="$LIBS"; LIBS=""])
+AC_SUBST([libdl_LIBS])
 AC_CHECK_HEADER(pcap.h,HAVE_PCAP_H=true)
 
 dnl Checks for header files.
