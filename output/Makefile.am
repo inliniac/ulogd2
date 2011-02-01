@@ -1,5 +1,6 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include
-AM_CFLAGS = ${regular_CFLAGS}
+AM_CFLAGS = ${regular_CFLAGS} ${LIBNETFILTER_LOG_CFLAGS} \
+	    ${LIBNETFILTER_CONNTRACK_CFLAGS}
 
 SUBDIRS= pcap mysql pgsql sqlite3 dbi
 
@@ -20,5 +21,6 @@ ulogd_output_NACCT_la_SOURCES = ulogd_output_NACCT.c
 ulogd_output_NACCT_la_LDFLAGS = -avoid-version -module
 
 ulogd_output_XML_la_SOURCES = ulogd_output_XML.c
-ulogd_output_XML_la_LDFLAGS = -avoid-version -module -lnetfilter_log \
-			      -lnetfilter_conntrack
+ulogd_output_XML_la_LIBADD  = ${LIBNETFILTER_LOG_LIBS} \
+			      ${LIBNETFILTER_CONNTRACK_LIBS}
+ulogd_output_XML_la_LDFLAGS = -avoid-version -module

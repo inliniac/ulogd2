@@ -1,7 +1,7 @@
 SUBDIRS = raw2packet packet2flow
 
 AM_CPPFLAGS = -I$(top_srcdir)/include
-AM_CFLAGS = ${regular_CFLAGS}
+AM_CFLAGS = ${regular_CFLAGS} ${LIBNFNETLINK_CFLAGS}
 
 pkglibexec_LTLIBRARIES = ulogd_filter_IFINDEX.la ulogd_filter_PWSNIFF.la \
 			 ulogd_filter_PRINTPKT.la ulogd_filter_PRINTFLOW.la \
@@ -9,7 +9,8 @@ pkglibexec_LTLIBRARIES = ulogd_filter_IFINDEX.la ulogd_filter_PWSNIFF.la \
 			 ulogd_filter_HWHDR.la ulogd_filter_MARK.la
 
 ulogd_filter_IFINDEX_la_SOURCES = ulogd_filter_IFINDEX.c
-ulogd_filter_IFINDEX_la_LDFLAGS = -avoid-version -module -lnfnetlink
+ulogd_filter_IFINDEX_la_LDFLAGS = -avoid-version -module
+ulogd_filter_IFINDEX_la_LIBADD  = ${LIBNFNETLINK_LIBS}
 
 ulogd_filter_PWSNIFF_la_SOURCES = ulogd_filter_PWSNIFF.c
 ulogd_filter_PWSNIFF_la_LDFLAGS = -avoid-version -module
