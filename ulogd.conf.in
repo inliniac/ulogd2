@@ -221,6 +221,7 @@ facility=LOG_LOCAL2
 
 [nacct1]
 sync = 1
+#file = /var/log/ulogd_nacct.log
 
 [mark1]
 mark = 1
