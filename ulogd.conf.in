@@ -39,6 +39,7 @@ plugin="@pkglibexecdir@/ulogd_filter_PRINTFLOW.so"
 plugin="@pkglibexecdir@/ulogd_output_LOGEMU.so"
 plugin="@pkglibexecdir@/ulogd_output_SYSLOG.so"
 plugin="@pkglibexecdir@/ulogd_output_XML.so"
+#plugin="@pkglibexecdir@/ulogd_output_SQLITE3.so"
 #plugin="@pkglibexecdir@/ulogd_output_OPRINT.so"
 #plugin="@pkglibexecdir@/ulogd_output_NACCT.so"
 #plugin="@pkglibexecdir@/ulogd_output_PCAP.so"
@@ -95,6 +96,11 @@ plugin="@pkglibexecdir@/ulogd_raw2packet_BASE.so"
 # this is a stack for flow-based logging to PGSQL without local hash
 #stack=ct1:NFCT,ip2str1:IP2STR,pgsql3:PGSQL
 
+# this is a stack for flow-based logging to SQLITE3
+#stack=ct1:NFCT,sqlite3_ct:SQLITE3
+
+# this is a stack for logging packet to SQLITE3
+#stack=log1:NFLOG,sqlite3_pkt:SQLITE3
 
 # this is a stack for flow-based logging in NACCT compatible format
 #stack=ct1:NFCT,ip2str1:IP2STR,nacct1:NACCT
@@ -215,6 +221,16 @@ user="ulog2"
 table="ulog"
 pass="ulog2"
 procedure="INSERT_PACKET_FULL"
+
+[sqlite3_ct]
+table="ulog_ct"
+db="/var/log/ulogd.sqlite3db"
+buffer=200
+
+[sqlite3_pkt]
+table="ulog_pkt"
+db="/var/log/ulogd.sqlite3db"
+buffer=200
 
 [sys2]
 facility=LOG_LOCAL2

@@ -1,0 +1,7 @@
+XXX: This has to go in ulogd.sgml, later.
+
+To create the database file, you have to:
+$ sqlite3 file.db < sqlite3.table
+
+To check that we are logging stuff into it correctly:
+sqlite3 ulogd.sqlite3db "SELECT * from ulog"
