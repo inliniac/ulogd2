@@ -151,7 +151,8 @@ sqlite3_interp(struct ulogd_pluginstance *pi)
 
 		if (f->key == NULL || !IS_VALID(*k_ret)) {
 			sqlite3_bind_null(priv->p_stmt, i);
-			goto next_field;
+			i++;
+			continue;
 		}
 
 		switch (f->key->type) {
@@ -221,8 +222,6 @@ sqlite3_interp(struct ulogd_pluginstance *pi)
 			ulogd_log(ULOGD_NOTICE, "unknown type %d for %s\n",
 					  f->key->type, f->key->name);
 		}
-
-	next_field:
 		i++;
 	}
 
