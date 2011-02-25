@@ -577,7 +577,7 @@ do_propagate_ct(struct ulogd_pluginstance *upi,
 	 * Thus, we only copy the object once, then it is used 
 	 * by the several output plugin instance that reference 
 	 * it by means of a pointer. */
-	memcpy(cpi->ct, ct, nfct_sizeof(ct));
+	nfct_copy(cpi->ct, ct, NFCT_CP_OVERRIDE);
 
 	/* since we support the re-use of one instance in
 	 * several different stacks, we duplicate the message
