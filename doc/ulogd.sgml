@@ -576,7 +576,16 @@ unsigned integer into the table.
 <p>
 You may want to have a look at the file '<tt>doc/sqlite3.table</tt>' as an
 example table including fields to log all keys from ulogd_BASE.so. Just delete
-the fields you are not interested in, and create the table.
+the fields you are not interested in, and create the table. This file contains
+two tables, one for packet-based logging and another for flow-based logging.
+
+<p>
+To create the database file with the tables, you have to invoke the following
+command: <tt>sqlite3 ulogd.sqlite3db < sqlite3.table</tt>
+
+<p>
+To check that we are logging stuff into it correctly:
+sqlite3 ulogd.sqlite3db "SELECT * from ulog_ct"
 
 <p>
 The module defines the following configuration directives:

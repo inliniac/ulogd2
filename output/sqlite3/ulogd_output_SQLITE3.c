@@ -40,9 +40,6 @@
 
 #define CFG_BUFFER_DEFAULT		10
 
-/* number of colums we have (really should be configurable) */
-#define DB_NUM_COLS	11
-
 #if 0
 #define DEBUGP(x, args...)	fprintf(stderr, x, ## args)
 #else
@@ -314,37 +311,6 @@ db_count_cols(struct ulogd_pluginstance *pi, sqlite3_stmt **stmt)
 	return sqlite3_column_count(*stmt);
 }
 
-
-/* FIXME make this configurable */
-#define SQL_CREATE_STR \
-		"create table daily(ip_saddr integer, ip_daddr integer, " \
-		"ip_protocol integer, l4_dport integer, raw_in_pktlen integer, " \
-		"raw_in_pktcount integer, raw_out_pktlen integer, " \
-		"raw_out_pktcount integer, flow_start_day integer, " \
-		"flow_start_sec integer, flow_duration integer)"
-
-static int
-db_create_tbl(struct ulogd_pluginstance *pi)
-{
-	struct sqlite3_priv *priv = (void *)pi->private;
-	char *errmsg;
-	int ret;
-
-	sqlite3_exec(priv->dbh, "drop table daily", NULL, NULL, NULL);
-
-	ret = sqlite3_exec(priv->dbh, SQL_CREATE_STR, NULL, NULL, &errmsg);
-	if (ret != SQLITE_OK) {
-		ulogd_log(ULOGD_ERROR, "SQLITE3: create table: %s\n", errmsg);
-		sqlite3_free(errmsg);
-
-		return -1;
-	}
-
-	return 0;
-}
-
-
-
 /* initialize DB, possibly creating it */
 static int
 sqlite3_init_db(struct ulogd_pluginstance *pi)
@@ -360,11 +326,13 @@ sqlite3_init_db(struct ulogd_pluginstance *pi)
 		return -1;
 
 	num_cols = db_count_cols(pi, &schema_stmt);
-	if (num_cols != DB_NUM_COLS) {
-		if (db_create_tbl(pi) < 0)
-			return -1;
-
-		num_cols = db_count_cols(pi, &schema_stmt);
+	if (num_cols <= 0) {
+		ulogd_log(ULOGD_ERROR, "table `%s' is empty or missing in "
+				       "file `%s'. Did you created this "
+				       "table in the database file? Please, "
+				       "see ulogd2 documentation.\n",
+					table_ce(pi), db_ce(pi));
+		return -1;
 	}
 
 	for (col = 0; col < num_cols; col++) {
