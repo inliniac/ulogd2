@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #include <ulogd/ulogd.h>
 #include <libnfnetlink/libnfnetlink.h>
@@ -26,6 +27,7 @@ struct nflog_input {
 	unsigned char *nfulog_buf;
 	struct ulogd_fd nful_fd;
 	int nlbufsiz;
+	bool nful_overrun_warned;
 };
 
 /* configuration entries */
@@ -433,7 +435,7 @@ static int nful_read_cb(int fd, unsigned int what, void *param)
 	 * sockets that have pending work */
 	len = recv(fd, ui->nfulog_buf, bufsiz_ce(upi->config_kset).u.value, 0);
 	if (len < 0) {
-		if (errno == ENOBUFS) {
+		if (errno == ENOBUFS && !ui->nful_overrun_warned) {
 			if (nlsockbufmaxsize_ce(upi->config_kset).u.value) {
 				int s = ui->nlbufsiz * 2;
 				if (setnlbufsiz(upi, s)) {
@@ -441,6 +443,11 @@ static int nful_read_cb(int fd, unsigned int what, void *param)
 						  "We are losing events, "
 						  "increasing buffer size "
 						  "to %d\n", ui->nlbufsiz);
+				} else {
+					/* we have reached the maximum buffer
+					 * limit size, don't perform any
+					 * further treatments on overruns. */
+					ui->nful_overrun_warned = true;
 				}
 			} else {
 				ulogd_log(ULOGD_NOTICE,
@@ -448,6 +455,8 @@ static int nful_read_cb(int fd, unsigned int what, void *param)
 					  "consider using the clauses "
 					  "`netlink_socket_buffer_size' and "
 					  "`netlink_socket_buffer_maxsize'\n");
+				/* display the previous log message once. */
+				ui->nful_overrun_warned = true;
 			}
 		}
 		return len;
@@ -605,6 +614,8 @@ static int start(struct ulogd_pluginstance *upi)
 
 	if (ulogd_register_fd(&ui->nful_fd) < 0)
 		goto out_bind;
+
+	ui->nful_overrun_warned = false;
 
 	return 0;
 
