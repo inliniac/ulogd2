@@ -158,70 +158,54 @@ sqlite3_interp(struct ulogd_pluginstance *pi)
 		switch (f->key->type) {
 		case ULOGD_RET_INT8:
 			ret = sqlite3_bind_int(priv->p_stmt, i, k_ret->u.value.i8);
-			if (ret != SQLITE_OK)
-				goto err_bind;
 			break;
 
 		case ULOGD_RET_INT16:
 			ret = sqlite3_bind_int(priv->p_stmt, i, k_ret->u.value.i16);
-			if (ret != SQLITE_OK)
-				goto err_bind;
 			break;
 
 		case ULOGD_RET_INT32:
 			ret = sqlite3_bind_int(priv->p_stmt, i, k_ret->u.value.i32);
-			if (ret != SQLITE_OK)
-				goto err_bind;
 			break;
 
 		case ULOGD_RET_INT64:
 			ret = sqlite3_bind_int(priv->p_stmt, i, k_ret->u.value.i64);
-			if (ret != SQLITE_OK)
-				goto err_bind;
 			break;
 			
 		case ULOGD_RET_UINT8:
 			ret = sqlite3_bind_int(priv->p_stmt, i, k_ret->u.value.ui8);
-			if (ret != SQLITE_OK)
-				goto err_bind;
 			break;
 			
 		case ULOGD_RET_UINT16:
 			ret = sqlite3_bind_int(priv->p_stmt, i, k_ret->u.value.ui16);
-			if (ret != SQLITE_OK)
-				goto err_bind;
 			break;
 
 		case ULOGD_RET_UINT32:
 			ret = sqlite3_bind_int(priv->p_stmt, i, k_ret->u.value.ui32);
-			if (ret != SQLITE_OK)
-				goto err_bind;
 			break;
 
 		case ULOGD_RET_IPADDR:
 		case ULOGD_RET_UINT64:
 			ret = sqlite3_bind_int64(priv->p_stmt, i, k_ret->u.value.ui64);
-			if (ret != SQLITE_OK)
-				goto err_bind;
 			break;
 
 		case ULOGD_RET_BOOL:
 			ret = sqlite3_bind_int(priv->p_stmt, i, k_ret->u.value.b);
-			if (ret != SQLITE_OK)
-				goto err_bind;
 			break;
 
 		case ULOGD_RET_STRING:
 			ret = sqlite3_bind_text(priv->p_stmt, i, k_ret->u.value.ptr,
 									strlen(k_ret->u.value.ptr), SQLITE_STATIC);
-			if (ret != SQLITE_OK)
-				goto err_bind;
 			break;
 
 		default:
+			ret = SQLITE_OK;
 			ulogd_log(ULOGD_NOTICE, "unknown type %d for %s\n",
 					  f->key->type, f->key->name);
 		}
+		if (ret != SQLITE_OK)
+			goto err_bind;
+
 		i++;
 	}
 
