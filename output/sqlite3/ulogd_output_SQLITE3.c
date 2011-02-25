@@ -287,7 +287,7 @@ sqlite3_createstmt(struct ulogd_pluginstance *pi)
 static struct ulogd_key *
 ulogd_find_key(struct ulogd_pluginstance *pi, const char *name)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < pi->input.num_keys; i++) {
 		if (strcmp(pi->input.keys[i].name, name) == 0)
