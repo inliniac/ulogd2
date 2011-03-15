@@ -6,6 +6,9 @@ AM_INIT_AUTOMAKE([-Wall foreign dist-bzip2 1.10b])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
+dnl kernel style compile messages
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+
 dnl Checks for programs.
 AC_PROG_MAKE_SET
 AC_PROG_CC
