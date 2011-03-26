@@ -1047,7 +1047,7 @@ static void sigterm_handler(int signal)
 	unload_plugins();
 #endif
 
-	if (logfile != NULL  && logfile != stdout) {
+	if (logfile != NULL  && logfile != stdout && logfile != &syslog_dummy) {
 		fclose(logfile);
 		logfile = NULL;
 	}
@@ -1228,7 +1228,7 @@ int main(int argc, char* argv[])
 		if (fork()) {
 			exit(0);
 		}
-		if (logfile != stdout && logfile != &syslog_dummy)
+		if (logfile != stdout)
 			fclose(stdout);
 		fclose(stderr);
 		fclose(stdin);
