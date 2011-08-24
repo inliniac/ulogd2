@@ -406,6 +406,7 @@ static int open_connect_socket(struct ulogd_pluginstance *pi)
 				freeaddrinfo(resave);
 				return ret;
 			}
+		}
 #endif
 
 		if (connect(ii->fd, res->ai_addr, res->ai_addrlen) != 0) {
