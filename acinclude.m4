@@ -218,6 +218,7 @@ AC_ARG_WITH(pcap-lib,
 
 AC_SUBST(PCAP_INC)
 AC_SUBST(PCAP_LIB)
+AC_SUBST(HAVE_PCAP_LIB)
 
 if test "$pcap_prefix" != "no"; then
 
@@ -261,7 +262,7 @@ if test "$PCAP_INC" = "" ; then
   AC_CHECK_HEADER([pcap.h], [], AC_MSG_WARN(pcap.h not found))
 fi
 if test "$PCAP_LIB" = "" ; then
-  AC_CHECK_LIB(pcap, pcap_close, [], AC_MSG_WARN(libpcap.so not found))
+  AC_CHECK_LIB(pcap, pcap_close, [HAVE_PCAP_LIB="yes"], AC_MSG_WARN(libpcap.so not found))
 fi
 
 fi
