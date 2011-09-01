@@ -171,6 +171,8 @@ directory="/var/log/"
 sync=1
 
 [pcap1]
+#default file is /var/log/ulogd.pcap
+#file=/var/log/ulogd.pcap
 sync=1
 
 [mysql1]
