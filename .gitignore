@@ -14,11 +14,8 @@ Makefile.in
 # build system
 /aclocal.m4
 /autom4te.cache/
+/build-aux/
 /config.*
 /configure
-/depcomp
-/install-sh
 /libtool
-/ltmain.sh
-/missing
 /stamp-h1
