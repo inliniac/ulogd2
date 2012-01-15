@@ -122,6 +122,8 @@ static int sql_createstmt(struct ulogd_pluginstance *upi)
 		*(mi->stmt_val - 1) = ')';
 
 		sprintf(mi->stmt_val, " values (");
+	} else if (strncasecmp(procedure,"CALL", strlen("CALL")) == 0) {
+		sprintf(mi->stmt, "CALL %s(", procedure);
 	} else {
 		sprintf(mi->stmt, "SELECT %s(", procedure);
 

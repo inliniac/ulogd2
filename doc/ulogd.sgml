@@ -471,6 +471,10 @@ If procedure name is:
   "table" variable.</item>
 <item>start with "INSERT ": Configuration has to specify the start of the INSERT query that will be used. For example,
 a typical value is "INSERT INTO ulog2".</item>
+<item>start with "CALL": the named stored procedure is executed with
+the "CALL" MySQL command.</item>
+<item>Otherwise the named stored function is executed with
+the "SELECT" MySQL command.</item> 
 </itemize>
 <tag>db</tag>
 Name of the mysql database.
