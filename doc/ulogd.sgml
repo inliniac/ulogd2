@@ -373,6 +373,10 @@ it basically convert mac address to a string represetation.
 <p>
 This plugin convert IP addresses to a binary form usable by databases like MySQL.
 
+<sect2>ulogd_filter_IP2HBIN.so
+<p>
+This plugin convert IP addresses to a binary form in host order usable by databases like MySQL.
+
 <sect2>ulogd_filter_IP2STR.so
 <p>
 This plugin convert IP addresses to string.
