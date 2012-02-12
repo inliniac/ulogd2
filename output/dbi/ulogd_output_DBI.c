@@ -102,13 +102,16 @@ static void str_tolower(char *s)
 static int get_columns_dbi(struct ulogd_pluginstance *upi)
 {
 	struct dbi_instance *pi = (struct dbi_instance *) upi->private;
-	char query[256] = "SELECT * FROM ulog\0";
+	char *table = table_ce(upi->config_kset).u.string;
+	char query[256];
 	unsigned int ui;
 
 	if (!pi->dbh) {
 		ulogd_log(ULOGD_ERROR, "no database handle\n");
 		return 1;
 	}
+
+	snprintf(query, 256, "SELECT * FROM %s", table);
 
 	ulogd_log(ULOGD_DEBUG, "%s\n", query);
 	pi->result = dbi_conn_query(pi->dbh,query);
