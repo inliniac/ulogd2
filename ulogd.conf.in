@@ -49,6 +49,7 @@ plugin="@pkglibexecdir@/ulogd_output_GPRINT.so"
 #plugin="@pkglibexecdir@/ulogd_output_MYSQL.so"
 #plugin="@pkglibexecdir@/ulogd_output_DBI.so"
 plugin="@pkglibexecdir@/ulogd_raw2packet_BASE.so"
+plugin="@pkglibexecdir@/ulogd_inpflow_NFACCT.so"
 
 # this is a stack for logging packet send by system via LOGEMU
 #stack=log1:NFLOG,base1:BASE,ifi1:IFINDEX,ip2str1:IP2STR,print1:PRINTPKT,emu1:LOGEMU
@@ -106,6 +107,9 @@ plugin="@pkglibexecdir@/ulogd_raw2packet_BASE.so"
 
 # this is a stack for flow-based logging in NACCT compatible format
 #stack=ct1:NFCT,ip2str1:IP2STR,nacct1:NACCT
+
+# this is a stack for accounting-based logging via GPRINT
+#stack=acct1:NFACCT,gp1:GPRINT
 
 [ct1]
 #netlink_socket_buffer_size=217088
@@ -250,3 +254,6 @@ sync = 1
 
 [mark1]
 mark = 1
+
+[acct1]
+pollinterval = 2
