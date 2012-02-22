@@ -42,6 +42,7 @@ plugin="@pkglibexecdir@/ulogd_output_SYSLOG.so"
 plugin="@pkglibexecdir@/ulogd_output_XML.so"
 #plugin="@pkglibexecdir@/ulogd_output_SQLITE3.so"
 #plugin="@pkglibexecdir@/ulogd_output_OPRINT.so"
+plugin="@pkglibexecdir@/ulogd_output_GPRINT.so"
 #plugin="@pkglibexecdir@/ulogd_output_NACCT.so"
 #plugin="@pkglibexecdir@/ulogd_output_PCAP.so"
 #plugin="@pkglibexecdir@/ulogd_output_PGSQL.so"
@@ -166,6 +167,11 @@ sync=1
 [op1]
 file="/var/log/ulogd_oprint.log"
 sync=1
+
+[gp1]
+file="/var/log/ulogd_gprint.log"
+sync=1
+timestamp=1
 
 [xml1]
 directory="/var/log/"
