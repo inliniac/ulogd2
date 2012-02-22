@@ -81,6 +81,9 @@ static int oprint_interp(struct ulogd_pluginstance *upi)
 			case ULOGD_RET_UINT32:
 				fprintf(opi->of, "%u\n", ret->u.value.ui32);
 				break;
+			case ULOGD_RET_UINT64:
+				fprintf(opi->of, "%lu\n", ret->u.value.ui64);
+				break;
 			case ULOGD_RET_IPADDR:
 				fprintf(opi->of, "%u.%u.%u.%u\n", 
 					HIPQUAD(ret->u.value.ui32));
