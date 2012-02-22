@@ -152,6 +152,12 @@ static inline void okey_set_u32(struct ulogd_key *key, u_int32_t value)
 	key->flags |= ULOGD_RETF_VALID;
 }
 
+static inline void okey_set_u64(struct ulogd_key *key, u_int64_t value)
+{
+	key->u.value.ui64 = value;
+	key->flags |= ULOGD_RETF_VALID;
+}
+
 static inline void okey_set_u128(struct ulogd_key *key, const void *value)
 {
 	memcpy(key->u.value.ui128, value, 16);
