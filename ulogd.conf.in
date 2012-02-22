@@ -41,7 +41,6 @@ plugin="@pkglibexecdir@/ulogd_output_LOGEMU.so"
 plugin="@pkglibexecdir@/ulogd_output_SYSLOG.so"
 plugin="@pkglibexecdir@/ulogd_output_XML.so"
 #plugin="@pkglibexecdir@/ulogd_output_SQLITE3.so"
-#plugin="@pkglibexecdir@/ulogd_output_OPRINT.so"
 plugin="@pkglibexecdir@/ulogd_output_GPRINT.so"
 #plugin="@pkglibexecdir@/ulogd_output_NACCT.so"
 #plugin="@pkglibexecdir@/ulogd_output_PCAP.so"
@@ -63,11 +62,14 @@ plugin="@pkglibexecdir@/ulogd_inpflow_NFACCT.so"
 # this is a stack for packet-based logging via LOGEMU with filtering on MARK
 #stack=log2:NFLOG,mark1:MARK,base1:BASE,ifi1:IFINDEX,ip2str1:IP2STR,print1:PRINTPKT,emu1:LOGEMU
 
+# this is a stack for packet-based logging via GPRINT
+#stack=log1:NFLOG,gp1:GPRINT
+
 # this is a stack for flow-based logging via LOGEMU
 #stack=ct1:NFCT,ip2str1:IP2STR,print1:PRINTFLOW,emu1:LOGEMU
 
-# this is a stack for flow-based logging via OPRINT
-#stack=ct1:NFCT,op1:OPRINT
+# this is a stack for flow-based logging via GPRINT
+#stack=ct1:NFCT,gp1:GPRINT
 
 # this is a stack for flow-based logging via XML
 #stack=ct1:NFCT,xml1:XML
