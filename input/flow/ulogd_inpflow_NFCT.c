@@ -72,7 +72,7 @@ struct nfct_pluginstance {
 #define EVENT_MASK	NF_NETLINK_CONNTRACK_NEW | NF_NETLINK_CONNTRACK_DESTROY
 
 static struct config_keyset nfct_kset = {
-	.num_ces = 8,
+	.num_ces = 9,
 	.ces = {
 		{
 			.key	 = "pollinterval",
@@ -122,6 +122,12 @@ static struct config_keyset nfct_kset = {
 			.options = CONFIG_OPT_NONE,
 			.u.value = 60,
 		},
+		{
+			.key	 = "reliable",
+			.type	 = CONFIG_TYPE_INT,
+			.options = CONFIG_OPT_NONE,
+			.u.value = 0,
+		},
 	},
 };
 #define pollint_ce(x)	(x->ces[0])
@@ -132,6 +138,7 @@ static struct config_keyset nfct_kset = {
 #define nlsockbufsize_ce(x) (x->ces[5])
 #define nlsockbufmaxsize_ce(x) (x->ces[6])
 #define nlresynctimeout_ce(x) (x->ces[7])
+#define reliable_ce(x)	(x->ces[8])
 
 enum nfct_keys {
 	NFCT_ORIG_IP_SADDR = 0,
@@ -1019,6 +1026,16 @@ static int constructor_nfct_events(struct ulogd_pluginstance *upi)
 					"set to %d\n", cpi->nlbufsiz);
 	}
 
+	if (reliable_ce(upi->config_kset).u.value != 0) {
+		int on = 1;
+
+		setsockopt(nfct_fd(cpi->cth), SOL_NETLINK,
+				NETLINK_BROADCAST_SEND_ERROR, &on, sizeof(int));
+		setsockopt(nfct_fd(cpi->cth), SOL_NETLINK,
+				NETLINK_NO_ENOBUFS, &on, sizeof(int));
+		ulogd_log(ULOGD_NOTICE, "NFCT reliable logging "
+					"has been enabled.");
+	}
 	cpi->nfct_fd.fd = nfct_fd(cpi->cth);
 	cpi->nfct_fd.cb = &read_cb_nfct;
 	cpi->nfct_fd.data = cpi;

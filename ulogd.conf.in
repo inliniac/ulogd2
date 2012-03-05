@@ -122,6 +122,7 @@ plugin="@pkglibexecdir@/ulogd_inpflow_NFACCT.so"
 [ct2]
 #netlink_socket_buffer_size=217088
 #netlink_socket_buffer_maxsize=1085440
+#reliable=1 # enable reliable flow-based logging (may drop packets)
 hash_enable=0
 
 # Logging of system packet through NFLOG
