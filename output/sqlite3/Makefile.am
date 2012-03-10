@@ -3,7 +3,7 @@ AM_CFLAGS = ${regular_CFLAGS} ${libsqlite3_CFLAGS}
 
 if HAVE_SQLITE3
 
-pkglibexec_LTLIBRARIES = ulogd_output_SQLITE3.la
+pkglib_LTLIBRARIES = ulogd_output_SQLITE3.la
 
 ulogd_output_SQLITE3_la_SOURCES = ulogd_output_SQLITE3.c ../../util/db.c
 ulogd_output_SQLITE3_la_LIBADD  = ${libsqlite3_LIBS}

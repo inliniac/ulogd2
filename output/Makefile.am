@@ -4,7 +4,7 @@ AM_CFLAGS = ${regular_CFLAGS} ${LIBNETFILTER_LOG_CFLAGS} \
 
 SUBDIRS= pcap mysql pgsql sqlite3 dbi
 
-pkglibexec_LTLIBRARIES = ulogd_output_LOGEMU.la ulogd_output_SYSLOG.la \
+pkglib_LTLIBRARIES = ulogd_output_LOGEMU.la ulogd_output_SYSLOG.la \
 			 ulogd_output_OPRINT.la ulogd_output_GPRINT.la \
 			 ulogd_output_NACCT.la ulogd_output_XML.la
 

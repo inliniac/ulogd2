@@ -2,7 +2,7 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include
 AM_CFLAGS = ${regular_CFLAGS}
 
-pkglibexec_LTLIBRARIES = ulogd_inppkt_NFLOG.la ulogd_inppkt_ULOG.la \
+pkglib_LTLIBRARIES = ulogd_inppkt_NFLOG.la ulogd_inppkt_ULOG.la \
 			 ulogd_inppkt_UNIXSOCK.la
 
 ulogd_inppkt_NFLOG_la_SOURCES = ulogd_inppkt_NFLOG.c

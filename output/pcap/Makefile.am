@@ -4,7 +4,7 @@ AM_CFLAGS = ${regular_CFLAGS}
 
 if HAVE_PCAP
 
-pkglibexec_LTLIBRARIES = ulogd_output_PCAP.la
+pkglib_LTLIBRARIES = ulogd_output_PCAP.la
 
 ulogd_output_PCAP_la_SOURCES = ulogd_output_PCAP.c
 ulogd_output_PCAP_la_LIBADD  = ${PCAP_LIB}

@@ -4,7 +4,7 @@ AM_CFLAGS = ${regular_CFLAGS}
 
 if HAVE_DBI
 
-pkglibexec_LTLIBRARIES = ulogd_output_DBI.la
+pkglib_LTLIBRARIES = ulogd_output_DBI.la
 
 ulogd_output_DBI_la_SOURCES = ulogd_output_DBI.c ../../util/db.c
 ulogd_output_DBI_la_LIBADD  = ${DBI_LIB}

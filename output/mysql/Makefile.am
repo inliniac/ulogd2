@@ -3,7 +3,7 @@ AM_CFLAGS = ${regular_CFLAGS}
 
 if HAVE_MYSQL
 
-pkglibexec_LTLIBRARIES = ulogd_output_MYSQL.la
+pkglib_LTLIBRARIES = ulogd_output_MYSQL.la
 
 ulogd_output_MYSQL_la_SOURCES = ulogd_output_MYSQL.c ../../util/db.c
 ulogd_output_MYSQL_la_LIBADD  = ${MYSQL_LIB}
