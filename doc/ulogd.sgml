@@ -253,6 +253,9 @@ Close and re-open all logfiles.  This is mainly intended for logrotate scripts.
 Also closes and re-opens database connections.
 <tag>SIGUSR1</tag>
 Reload configuration file.  This is not fully implemented yet.
+<tag>SIGUSR2</tag>
+Dump the whole conntrack table and flush counters afterwards.
+Only Plugin ulogd_inpflow_NFCT.so uses this signal.
 </descrip>
 
 <sect>Available plugins
