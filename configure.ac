@@ -19,7 +19,9 @@ AC_PROG_LIBTOOL
 dnl Checks for libraries.
 AC_SEARCH_LIBS([dlopen], [dl], [libdl_LIBS="$LIBS"; LIBS=""])
 AC_SUBST([libdl_LIBS])
-AC_CHECK_HEADER(pcap.h,HAVE_PCAP_H=true)
+AC_SEARCH_LIBS([pcap_close], [pcap], [libpcap_LIBS="-lpcap"; LIBS=""])
+AC_SUBST([libpcap_LIBS])
+AM_CONDITIONAL([HAVE_PCAP], test -n "$libpcap_LIBS"])
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
@@ -58,8 +60,6 @@ AM_CONDITIONAL([HAVE_SQLITE3], [test -n "$libsqlite3_LIBS"])
 CT_CHECK_DBI()
 AM_CONDITIONAL(HAVE_DBI, test "x$DBI_LIB" != "x")
 
-CT_CHECK_PCAP()
-AM_CONDITIONAL(HAVE_PCAP, test "x$HAVE_PCAP_LIB" != "x")
 
 
 dnl AC_SUBST(DATABASE_DIR)
@@ -70,7 +70,6 @@ dnl AC_SUBST(EXTRA_MYSQL_DEF)
 dnl AC_SUBST(EXTRA_PGSQL_DEF)
 
 dnl AC_SUBST(DATABASE_DRIVERS)
-dnl AC_SUBST(HAVE_PCAP_H)
 
 dnl AM_CONDITIONAL(HAVE_MYSQL, test x$mysqldir != x)
 dnl AM_CONDITIONAL(HAVE_PGSQL, test x$pgsqldir != x)
