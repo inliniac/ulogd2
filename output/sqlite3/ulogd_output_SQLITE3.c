@@ -303,7 +303,7 @@ db_count_cols(struct ulogd_pluginstance *pi, sqlite3_stmt **stmt)
 	struct sqlite3_priv *priv = (void *)pi->private;
 	char query[SELECT_ALL_LEN + CONFIG_VAL_STRING_LEN] = SELECT_ALL_STR;
 
-	strncat(query, table_ce(pi), LINE_LEN);
+	strncat(query, table_ce(pi), sizeof(query) - strlen(query) - 1);
 
 	if (sqlite3_prepare(priv->dbh, query, -1, stmt, 0) != SQLITE_OK)
 		return -1;
