@@ -42,10 +42,10 @@ regular_CFLAGS="-Wall -Wextra -Wno-unused-parameter"
 AC_SUBST([regular_CFLAGS])
 
 dnl Check for the right nfnetlink version
-PKG_CHECK_MODULES([LIBNFNETLINK], [libnfnetlink >= 0.0.39])
+PKG_CHECK_MODULES([LIBNFNETLINK], [libnfnetlink >= 1.0.0])
 PKG_CHECK_MODULES([LIBMNL], [libmnl >= 1.0.0])
 PKG_CHECK_MODULES([LIBNETFILTER_ACCT], [libnetfilter_acct >= 1.0.0])
-PKG_CHECK_MODULES([LIBNETFILTER_CONNTRACK], [libnetfilter_conntrack >= 0.0.95])
+PKG_CHECK_MODULES([LIBNETFILTER_CONNTRACK], [libnetfilter_conntrack >= 1.0.0])
 PKG_CHECK_MODULES([LIBNETFILTER_LOG], [libnetfilter_log >= 1.0.0])
 
 CT_CHECK_POSTGRES_DB()
