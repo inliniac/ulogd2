@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ([2.50])
-AC_INIT([ulogd], [2.0.0beta4])
+AC_INIT([ulogd], [2.0.0])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([-Wall foreign tar-pax no-dist-gzip dist-bzip2 1.10b])
 AC_CONFIG_HEADER([config.h])
