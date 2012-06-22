@@ -121,7 +121,8 @@ xml_output_sum(struct ulogd_key *inp, char *buf, ssize_t size)
 	struct nfacct *nfacct = ikey_get_ptr(&inp[KEY_SUM]);
 	int tmp;
 
-	tmp = nfacct_snprintf(buf, size, nfacct, NFACCT_SNPRINTF_T_XML, 0);
+	tmp = nfacct_snprintf(buf, size, nfacct, NFACCT_SNPRINTF_T_XML,
+						 NFACCT_SNPRINTF_F_TIME);
 	if (tmp < 0 || tmp >= size)
 		return -1;
 
