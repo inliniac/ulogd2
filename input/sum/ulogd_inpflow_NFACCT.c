@@ -49,6 +49,7 @@ enum ulogd_nfacct_keys {
 	ULOGD_NFACCT_NAME,
 	ULOGD_NFACCT_PKTS,
 	ULOGD_NFACCT_BYTES,
+	ULOGD_NFACCT_RAW,
 };
 
 static struct ulogd_key nfacct_okeys[] = {
@@ -67,6 +68,11 @@ static struct ulogd_key nfacct_okeys[] = {
 		.flags	= ULOGD_RETF_NONE,
 		.name	= "sum.bytes",
 	},
+	[ULOGD_NFACCT_RAW] = {
+		.type	= ULOGD_RET_RAW,
+		.flags	= ULOGD_RETF_NONE,
+		.name	= "sum",
+	},
 };
 
 static void
@@ -80,6 +86,7 @@ propagate_nfacct(struct ulogd_pluginstance *upi, struct nfacct *nfacct)
 			nfacct_attr_get_u64(nfacct, NFACCT_ATTR_PKTS));
 	okey_set_u64(&ret[ULOGD_NFACCT_BYTES],
 			nfacct_attr_get_u64(nfacct, NFACCT_ATTR_BYTES));
+	okey_set_ptr(&ret[ULOGD_NFACCT_RAW], nfacct);
 
 	ulogd_propagate_results(upi);
 }
@@ -93,6 +100,8 @@ do_propagate_nfacct(struct ulogd_pluginstance *upi, struct nfacct *nfacct)
 		propagate_nfacct(npi, nfacct);
 
 	propagate_nfacct(upi, nfacct);
+
+	nfacct_free(nfacct);
 }
 
 static int nfacct_cb(const struct nlmsghdr *nlh, void *data)
@@ -108,13 +117,11 @@ static int nfacct_cb(const struct nlmsghdr *nlh, void *data)
 
 	if (nfacct_nlmsg_parse_payload(nlh, nfacct) < 0) {
 		ulogd_log(ULOGD_ERROR, "Error parsing nfacct message");
-		goto err_free;
+		goto err;
 	}
 
 	do_propagate_nfacct(upi, nfacct);
 
-err_free:
-	nfacct_free(nfacct);
 err:
 	return MNL_CB_OK;
 }

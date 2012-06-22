@@ -77,6 +77,9 @@ plugin="@pkglibdir@/ulogd_inpflow_NFACCT.so"
 # this is a stack for logging in XML
 #stack=log1:NFLOG,xml1:XML
 
+# this is a stack for accounting-based logging via XML
+#stack=acct1:NFACCT,xml1:XML
+
 # this is a stack for NFLOG packet-based logging to PCAP
 #stack=log2:NFLOG,base1:BASE,pcap1:PCAP
 

@@ -20,6 +20,7 @@
 
 #include <libnetfilter_conntrack/libnetfilter_conntrack.h>
 #include <libnetfilter_log/libnetfilter_log.h>
+#include <libnetfilter_acct/libnetfilter_acct.h>
 #include <ulogd/ulogd.h>
 #include <sys/param.h>
 #include <time.h>
@@ -32,6 +33,7 @@
 enum {
 	KEY_CT,
 	KEY_PCKT,
+	KEY_SUM,
 };
 
 static struct ulogd_key xml_inp[] = {
@@ -44,6 +46,11 @@ static struct ulogd_key xml_inp[] = {
                 .type = ULOGD_RET_RAW,
                 .flags = ULOGD_RETF_NONE | ULOGD_KEYF_OPTIONAL,
                 .name = "raw",
+	},
+	[KEY_SUM] = {
+                .type = ULOGD_RET_RAW,
+                .flags = ULOGD_RETF_NONE | ULOGD_KEYF_OPTIONAL,
+                .name = "sum",
 	},
 };
 
@@ -108,6 +115,19 @@ xml_output_packet(struct ulogd_key *inp, char *buf, ssize_t size)
 	return 0;
 }
 
+static int
+xml_output_sum(struct ulogd_key *inp, char *buf, ssize_t size)
+{
+	struct nfacct *nfacct = ikey_get_ptr(&inp[KEY_SUM]);
+	int tmp;
+
+	tmp = nfacct_snprintf(buf, size, nfacct, NFACCT_SNPRINTF_T_XML, 0);
+	if (tmp < 0 || tmp >= size)
+		return -1;
+
+	return 0;
+}
+
 static int xml_output(struct ulogd_pluginstance *upi)
 {
 	struct ulogd_key *inp = upi->input.keys;
@@ -119,6 +139,8 @@ static int xml_output(struct ulogd_pluginstance *upi)
 		ret = xml_output_flow(inp, buf, sizeof(buf));
 	else if (pp_is_valid(inp, KEY_PCKT))
 		ret = xml_output_packet(inp, buf, sizeof(buf));
+	else if (pp_is_valid(inp, KEY_SUM))
+		ret = xml_output_sum(inp, buf, sizeof(buf));
 
 	if (ret < 0)
 		return ULOGD_IRET_ERR;
@@ -155,6 +177,8 @@ static int xml_fini(struct ulogd_pluginstance *pi)
 		fprintf(op->of, "</conntrack>\n");
 	else if (input_plugin->plugin->output.type & ULOGD_DTYPE_RAW)
 		fprintf(op->of, "</packet>\n");
+	else if (input_plugin->plugin->output.type & ULOGD_DTYPE_SUM)
+		fprintf(op->of, "</sum>\n");
 
 	if (op->of != stdout)
 		fclose(op->of);
@@ -179,6 +203,8 @@ static int xml_open_file(struct ulogd_pluginstance *upi)
 		strcpy(file_infix, "flow");
         else if (input_plugin->plugin->output.type & ULOGD_DTYPE_RAW)
 		strcpy(file_infix, "pkt");
+        else if (input_plugin->plugin->output.type & ULOGD_DTYPE_SUM)
+		strcpy(file_infix, "sum");
 
 	now = time(NULL);
 	tm = localtime(&now);
@@ -218,6 +244,8 @@ static void xml_print_header(struct ulogd_pluginstance *upi)
 		fprintf(op->of, "<conntrack>\n");
 	else if (input_plugin->plugin->output.type & ULOGD_DTYPE_RAW)
 		fprintf(op->of, "<packet>\n");
+	else if (input_plugin->plugin->output.type & ULOGD_DTYPE_SUM)
+		fprintf(op->of, "<sum>\n");
 
 	if (upi->config_kset->ces[CFG_XML_SYNC].u.value != 0)
 		fflush(op->of);
@@ -264,7 +292,7 @@ static struct ulogd_plugin xml_plugin = {
 	.input = {
 		.keys = xml_inp,
 		.num_keys = ARRAY_SIZE(xml_inp),
-		.type = ULOGD_DTYPE_FLOW,
+		.type = ULOGD_DTYPE_FLOW | ULOGD_DTYPE_SUM,
 	},
 	.output = {
 		.type = ULOGD_DTYPE_SINK,
