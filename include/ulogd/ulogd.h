@@ -80,7 +80,8 @@ enum ulogd_dtype {
 	ULOGD_DTYPE_RAW		= 0x0002, /* raw packet data */
 	ULOGD_DTYPE_PACKET	= 0x0004, /* packet metadata */
 	ULOGD_DTYPE_FLOW	= 0x0008, /* flow metadata */
-	ULOGD_DTYPE_SINK	= 0x0010, /* sink of data, no output keys */
+	ULOGD_DTYPE_SUM		= 0x0010, /* sum metadata */
+	ULOGD_DTYPE_SINK	= 0x0020, /* sink of data, no output keys */
 };
 
 /* structure describing an input  / output parameter of a plugin */

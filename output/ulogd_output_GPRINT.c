@@ -248,7 +248,7 @@ static int gprint_fini(struct ulogd_pluginstance *pi)
 static struct ulogd_plugin gprint_plugin = {
 	.name = "GPRINT",
 	.input = {
-		.type = ULOGD_DTYPE_PACKET | ULOGD_DTYPE_FLOW,
+		.type = ULOGD_DTYPE_PACKET | ULOGD_DTYPE_FLOW | ULOGD_DTYPE_SUM,
 	},
 	.output = {
 		.type = ULOGD_DTYPE_SINK,

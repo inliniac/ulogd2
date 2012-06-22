@@ -245,7 +245,7 @@ static struct ulogd_plugin nfacct_plugin = {
 	.output = {
 		.keys = nfacct_okeys,
 		.num_keys = ARRAY_SIZE(nfacct_okeys),
-		.type = ULOGD_DTYPE_FLOW,
+		.type = ULOGD_DTYPE_SUM,
 	},
 	.config_kset	= &nfacct_kset,
 	.interp		= NULL,
