@@ -125,6 +125,10 @@ plugin="@pkglibdir@/ulogd_output_GRAPHITE.so"
 #netlink_socket_buffer_maxsize=1085440
 #netlink_resync_timeout=60 # seconds to wait to perform resynchronization
 #pollinterval=10 # use poll-based logging instead of event-driven
+# If pollinterval is not set, NFCT plugin will work in event mode
+# In this case, you can use the following filters on events:
+#accept_src_filter=192.168.1.0/24,1:2::/64 # source ip of connection must belong to these networks
+#accept_dst_filter=192.168.1.0/24 # destination ip of connection must belong to these networks
 
 [ct2]
 #netlink_socket_buffer_size=217088
