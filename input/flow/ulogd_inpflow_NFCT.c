@@ -982,11 +982,6 @@ static int configure_nfct(struct ulogd_pluginstance *upi,
 	if (ret < 0)
 		return ret;
 
-	ulogd_init_timer(&cpi->timer, upi, polling_timer_cb);
-	if (pollint_ce(upi->config_kset).u.value != 0)
-		ulogd_add_timer(&cpi->timer,
-				pollint_ce(upi->config_kset).u.value);
-
 	return 0;
 }
 
@@ -1151,6 +1146,11 @@ static int constructor_nfct_polling(struct ulogd_pluginstance *upi)
 	cpi->ct = nfct_new();
 	if (cpi->ct == NULL)
 		goto err_ct_cache;
+
+	ulogd_init_timer(&cpi->timer, upi, polling_timer_cb);
+	if (pollint_ce(upi->config_kset).u.value != 0)
+		ulogd_add_timer(&cpi->timer,
+				pollint_ce(upi->config_kset).u.value);
 
 	ulogd_log(ULOGD_NOTICE, "NFCT working in polling mode\n");
 	return 0;
