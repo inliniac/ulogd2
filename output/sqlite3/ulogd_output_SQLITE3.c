@@ -322,8 +322,10 @@ sqlite3_init_db(struct ulogd_pluginstance *pi)
 	sqlite3_stmt *schema_stmt;
 	int col, num_cols;
 
-	if (priv->dbh == NULL)
+	if (priv->dbh == NULL) {
+		ulogd_log(ULOGD_ERROR, "SQLITE3: No database handle.\n");
 		return -1;
+	}
 
 	num_cols = db_count_cols(pi, &schema_stmt);
 	if (num_cols <= 0) {
@@ -397,8 +399,10 @@ sqlite3_start(struct ulogd_pluginstance *pi)
 	sqlite3_busy_timeout(priv->dbh, SQLITE3_BUSY_TIMEOUT);
 
 	/* read the fieldnames to know which values to insert */
-	if (sqlite3_init_db(pi) < 0)
+	if (sqlite3_init_db(pi) < 0) {
+		ulogd_log(ULOGD_ERROR, "SQLITE3: Could not read database fieldnames.\n");
 		return -1;
+	}
 
 	/* initialize our buffer size and counter */
 	priv->buffer_size = buffer_ce(pi);
