@@ -195,8 +195,9 @@ static int get_columns_pgsql(struct ulogd_pluginstance *upi)
 		strncpy(upi->input.keys[i].name, buf, ULOGD_MAX_KEYLEN);
 	}
 
-	/* ID is a sequence */
-	upi->input.keys[0].flags |= ULOGD_KEYF_INACTIVE;
+	/* ID (starting by '.') is a sequence */
+	if (upi->input.keys[0].name[0] == '.')
+		upi->input.keys[0].flags |= ULOGD_KEYF_INACTIVE;
 
 	PQclear(pi->pgres);
 	return 0;
