@@ -62,7 +62,7 @@ CREATE TABLE ulog2 (
   ip_fragoff smallint default NULL,
   label smallint default NULL,
   mac_id bigint default NULL,
-  timestamp timestamp NOT NULL default 'now'
+  timestamp timestamp NOT NULL default now()
 ) WITH (OIDS=FALSE);
 
 CREATE INDEX ulog2_oob_family ON ulog2(oob_family);
