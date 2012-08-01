@@ -40,10 +40,17 @@ static struct config_keyset nfacct_kset = {
 			.options = CONFIG_OPT_NONE,
 			.u.value = 0,
 		},
+		{
+			.key	 = "zerocounter",
+			.type	 = CONFIG_TYPE_INT,
+			.options = CONFIG_OPT_NONE,
+			.u.value = 1,
+		}
 	},
-	.num_ces = 1,
+	.num_ces = 2,
 };
 #define pollint_ce(x)	(x->ces[0])
+#define zerocounter_ce(x) (x->ces[1])
 
 enum ulogd_nfacct_keys {
 	ULOGD_NFACCT_NAME,
@@ -145,14 +152,21 @@ static int nfacct_read_cb(int fd, unsigned int what, void *param)
 	return ret;
 }
 
-static int nfacct_send_request(struct nfacct_pluginstance *cpi)
+static int nfacct_send_request(struct ulogd_pluginstance *upi)
 {
+	struct nfacct_pluginstance *cpi =
+		(struct nfacct_pluginstance *)upi->private;
 	struct nlmsghdr *nlh;
 	char buf[MNL_SOCKET_BUFFER_SIZE];
+	int flushctr;
+
+	if (zerocounter_ce(upi->config_kset).u.value != 0)
+		flushctr = NFNL_MSG_ACCT_GET_CTRZERO;
+	else
+		flushctr = NFNL_MSG_ACCT_GET;
 
 	cpi->seq = time(NULL);
-	nlh = nfacct_nlmsg_build_hdr(buf, NFNL_MSG_ACCT_GET_CTRZERO,
-				     NLM_F_DUMP, cpi->seq);
+	nlh = nfacct_nlmsg_build_hdr(buf, flushctr, NLM_F_DUMP, cpi->seq);
 
 	if (mnl_socket_sendto(cpi->nl, nlh, nlh->nlmsg_len) < 0) {
 		ulogd_log(ULOGD_ERROR, "Cannot send netlink message\n");
@@ -167,7 +181,7 @@ static void polling_timer_cb(struct ulogd_timer *t, void *data)
 	struct nfacct_pluginstance *cpi =
 		(struct nfacct_pluginstance *)upi->private;
 
-	nfacct_send_request(cpi);
+	nfacct_send_request(upi);
 
 	ulogd_add_timer(&cpi->timer, pollint_ce(upi->config_kset).u.value);
 }
@@ -234,12 +248,9 @@ static int destructor_nfacct(struct ulogd_pluginstance *upi)
 
 static void signal_nfacct(struct ulogd_pluginstance *upi, int signal)
 {
-	struct nfacct_pluginstance *cpi =
-		(struct nfacct_pluginstance *)upi->private;
-
 	switch (signal) {
 	case SIGUSR2:
-		nfacct_send_request(cpi);
+		nfacct_send_request(upi);
 		break;
 	}
 }

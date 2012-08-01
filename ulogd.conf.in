@@ -263,3 +263,5 @@ mark = 1
 
 [acct1]
 pollinterval = 2
+# Set to zero to avoid zeroing counters after read
+#zerocounter = 0
