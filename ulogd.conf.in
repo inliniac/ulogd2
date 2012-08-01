@@ -232,6 +232,14 @@ table="ulog2_ct"
 pass="changeme"
 procedure="INSERT_OR_REPLACE_CT"
 
+[pgsql4]
+db="nulog"
+host="localhost"
+user="nupik"
+table="nfacct"
+pass="changeme"
+procedure="INSERT_NFACCT"
+
 [dbi1]
 db="ulog2"
 dbtype="pgsql"

@@ -33,6 +33,7 @@ DROP TABLE IF EXISTS sctp CASCADE;
 DROP TABLE IF EXISTS icmp CASCADE;
 DROP TABLE IF EXISTS icmpv6 CASCADE;
 DROP TABLE IF EXISTS nufw CASCADE;
+DROP TABLE IF EXISTS nfacct CASCADE;
 DROP TABLE IF EXISTS ulog2_ct CASCADE;
 DROP TABLE IF EXISTS ulog2 CASCADE;
 
@@ -148,6 +149,16 @@ CREATE TABLE icmpv6 (
   icmpv6_echoseq integer default NULL,
   icmpv6_csum integer default NULL
 ) WITH (OIDS=FALSE);
+
+CREATE TABLE nfacct (
+  sum_name varchar(128),
+  sum_pkts integer default 0,
+  sum_bytes integer default 0,
+  oob_time_sec integer default NULL,
+  oob_time_usec integer default NULL
+) WITH (OIDS=FALSE);
+
+CREATE UNIQUE INDEX unique_acct ON nfacct(sum_name, oob_time_sec, oob_time_usec);
 
 -- 
 -- VIEWS
@@ -696,6 +707,17 @@ END
 $$ LANGUAGE plpgsql SECURITY INVOKER;
 
 
+CREATE OR REPLACE FUNCTION INSERT_NFACCT(
+                IN sum_name varchar(128),
+                IN sum_pkts integer,
+                IN sum_bytes integer,
+                IN oob_time_sec integer,
+                IN oob_time_usec integer
+        )
+RETURNS void AS $$
+        INSERT INTO nfacct (sum_name,sum_pkts,sum_bytes,oob_time_sec,oob_time_usec)
+                VALUES ($1,$2,$3,$4,$5);
+$$ LANGUAGE SQL SECURITY INVOKER;
 
 
 CREATE OR REPLACE FUNCTION DELETE_PACKET(
