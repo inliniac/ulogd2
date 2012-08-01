@@ -30,6 +30,7 @@ struct nfacct_pluginstance {
 	uint32_t		seq;
 	struct ulogd_fd		ufd;
 	struct ulogd_timer	timer;
+	struct timeval tv;
 };
 
 static struct config_keyset nfacct_kset = {
@@ -45,18 +46,27 @@ static struct config_keyset nfacct_kset = {
 			.type	 = CONFIG_TYPE_INT,
 			.options = CONFIG_OPT_NONE,
 			.u.value = 1,
+		},
+		{
+			.key	 = "timestamp",
+			.type	 = CONFIG_TYPE_INT,
+			.options = CONFIG_OPT_NONE,
+			.u.value = 0,
 		}
 	},
-	.num_ces = 2,
+	.num_ces = 3,
 };
 #define pollint_ce(x)	(x->ces[0])
 #define zerocounter_ce(x) (x->ces[1])
+#define timestamp_ce(x) (x->ces[2])
 
 enum ulogd_nfacct_keys {
 	ULOGD_NFACCT_NAME,
 	ULOGD_NFACCT_PKTS,
 	ULOGD_NFACCT_BYTES,
 	ULOGD_NFACCT_RAW,
+	ULOGD_NFACCT_TIME_SEC,
+	ULOGD_NFACCT_TIME_USEC,
 };
 
 static struct ulogd_key nfacct_okeys[] = {
@@ -80,12 +90,23 @@ static struct ulogd_key nfacct_okeys[] = {
 		.flags	= ULOGD_RETF_NONE,
 		.name	= "sum",
 	},
+	[ULOGD_NFACCT_TIME_SEC] = {
+		.type = ULOGD_RET_UINT32,
+		.flags = ULOGD_RETF_NONE,
+		.name = "oob.time.sec",
+	},
+	[ULOGD_NFACCT_TIME_USEC] = {
+		.type = ULOGD_RET_UINT32,
+		.flags = ULOGD_RETF_NONE,
+		.name = "oob.time.usec",
+	},
 };
 
 static void
 propagate_nfacct(struct ulogd_pluginstance *upi, struct nfacct *nfacct)
 {
 	struct ulogd_key *ret = upi->output.keys;
+	struct nfacct_pluginstance *cpi = (struct nfacct_pluginstance *) upi->private;
 
 	okey_set_ptr(&ret[ULOGD_NFACCT_NAME],
 			(void *)nfacct_attr_get_str(nfacct, NFACCT_ATTR_NAME));
@@ -94,6 +115,11 @@ propagate_nfacct(struct ulogd_pluginstance *upi, struct nfacct *nfacct)
 	okey_set_u64(&ret[ULOGD_NFACCT_BYTES],
 			nfacct_attr_get_u64(nfacct, NFACCT_ATTR_BYTES));
 	okey_set_ptr(&ret[ULOGD_NFACCT_RAW], nfacct);
+
+	if (timestamp_ce(upi->config_kset).u.value != 0) {
+		okey_set_u32(&ret[ULOGD_NFACCT_TIME_SEC], cpi->tv.tv_sec);
+		okey_set_u32(&ret[ULOGD_NFACCT_TIME_USEC], cpi->tv.tv_usec);
+	}
 
 	ulogd_propagate_results(upi);
 }
@@ -171,6 +197,10 @@ static int nfacct_send_request(struct ulogd_pluginstance *upi)
 	if (mnl_socket_sendto(cpi->nl, nlh, nlh->nlmsg_len) < 0) {
 		ulogd_log(ULOGD_ERROR, "Cannot send netlink message\n");
 		return -1;
+	}
+	if (timestamp_ce(upi->config_kset).u.value != 0) {
+		/* Compute time of query */
+		gettimeofday(&cpi->tv, NULL);
 	}
 	return 0;
 }

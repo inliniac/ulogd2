@@ -273,3 +273,6 @@ mark = 1
 pollinterval = 2
 # Set to zero to avoid zeroing counters after read
 #zerocounter = 0
+# Set timestamp (default is 0, which means not set). This timestamp can be
+# interpreted by the output plugin.
+#timestamp = 1
