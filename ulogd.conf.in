@@ -271,7 +271,7 @@ mark = 1
 
 [acct1]
 pollinterval = 2
-# Set to zero to avoid zeroing counters after read
+# If set to 0, we don't reset the counters for each polling (default is 1).
 #zerocounter = 0
 # Set timestamp (default is 0, which means not set). This timestamp can be
 # interpreted by the output plugin.
