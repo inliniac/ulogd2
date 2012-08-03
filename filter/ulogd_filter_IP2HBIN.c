@@ -119,7 +119,6 @@ static int interp_ip2hbin(struct ulogd_pluginstance *pi)
 	u_int8_t family = ikey_get_u8(&inp[KEY_OOB_FAMILY]);
 	u_int8_t convfamily = family;
 	int i;
-	int fret;
 
 	switch (family) {
 	case AF_INET:
