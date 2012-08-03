@@ -974,8 +974,6 @@ static void polling_timer_cb(struct ulogd_timer *t, void *data)
 static int configure_nfct(struct ulogd_pluginstance *upi,
 			  struct ulogd_pluginstance_stack *stack)
 {
-	struct nfct_pluginstance *cpi =
-			(struct nfct_pluginstance *)upi->private;
 	int ret;
 
 	ret = config_parse_file(upi->id, upi->config_kset);
