@@ -23,8 +23,6 @@
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
-#define ULOGD_VERSION "2.0.0beta"
-
 /* All types with MSB = 1 make use of value.ptr
  * other types use one of the union's member */
 

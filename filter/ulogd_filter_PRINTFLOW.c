@@ -54,7 +54,7 @@ static struct ulogd_plugin printflow_plugin = {
 		.type = ULOGD_DTYPE_FLOW,
 	},
 	.interp = &printflow_interp,
-	.version = ULOGD_VERSION,
+	.version = VERSION,
 };
 
 void __attribute__ ((constructor)) init(void);

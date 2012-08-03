@@ -1256,7 +1256,7 @@ static struct ulogd_plugin nfct_plugin = {
 	.stop		= &destructor_nfct,
 	.signal		= &signal_nfct,
 	.priv_size	= sizeof(struct nfct_pluginstance),
-	.version	= ULOGD_VERSION,
+	.version	= VERSION,
 };
 
 void __attribute__ ((constructor)) init(void);

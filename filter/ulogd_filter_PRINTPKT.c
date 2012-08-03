@@ -54,7 +54,7 @@ static struct ulogd_plugin printpkt_plugin = {
 		.type = ULOGD_DTYPE_PACKET,
 	},
 	.interp = &printpkt_interp,
-	.version = ULOGD_VERSION,
+	.version = VERSION,
 };
 
 void __attribute__ ((constructor)) init(void);

@@ -329,7 +329,7 @@ struct ulogd_plugin libulog_plugin = {
 	.start = &init,
 	.stop = &fini,
 	.config_kset = &libulog_kset,
-	.version = ULOGD_VERSION,
+	.version = VERSION,
 };
 
 void __attribute__ ((constructor)) initializer(void)

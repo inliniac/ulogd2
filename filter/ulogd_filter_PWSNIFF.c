@@ -168,7 +168,7 @@ static struct ulogd_plugin pwsniff_plugin = {
 		.type = ULOGD_DTYPE_PACKET,
 	},
 	.interp = &interp_pwsniff,
-	.version = ULOGD_VERSION,
+	.version = VERSION,
 };
 
 void __attribute__ ((constructor)) init(void)

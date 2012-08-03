@@ -272,7 +272,7 @@ static struct ulogd_plugin nfacct_plugin = {
 	.stop		= &destructor_nfacct,
 	.signal		= &signal_nfacct,
 	.priv_size	= sizeof(struct nfacct_pluginstance),
-	.version	= ULOGD_VERSION,
+	.version	= VERSION,
 };
 
 void __attribute__ ((constructor)) init(void);

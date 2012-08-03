@@ -238,7 +238,7 @@ static struct ulogd_plugin mac2str_pluging = {
 		.type = ULOGD_DTYPE_PACKET,
 		},
 	.interp = &interp_mac2str,
-	.version = ULOGD_VERSION,
+	.version = VERSION,
 };
 
 void __attribute__ ((constructor)) init(void);

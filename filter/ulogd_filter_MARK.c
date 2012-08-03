@@ -112,7 +112,7 @@ static struct ulogd_plugin mark_pluging = {
 	.interp = &interp_mark,
 	.config_kset = &libulog_kset,
 	.configure = &configure,
-	.version = ULOGD_VERSION,
+	.version = VERSION,
 };
 
 void __attribute__ ((constructor)) init(void);

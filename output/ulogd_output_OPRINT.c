@@ -193,7 +193,7 @@ static struct ulogd_plugin oprint_plugin = {
 	.stop	= &oprint_fini,
 	.signal = &sighup_handler_print,
 	.config_kset = &oprint_kset,
-	.version = ULOGD_VERSION,
+	.version = VERSION,
 };
 
 void __attribute__ ((constructor)) init(void);

@@ -817,7 +817,7 @@ struct ulogd_plugin libunixsock_plugin = {
 	.start 		= &start,
 	.stop 		= &stop,
 	.config_kset 	= &libunixsock_kset,
-	.version	= ULOGD_VERSION,
+	.version	= VERSION,
 };
 
 static void __attribute__ ((constructor)) init(void)

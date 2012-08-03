@@ -306,7 +306,7 @@ static struct ulogd_plugin xml_plugin = {
 	.stop		= &xml_fini,
 	.interp		= &xml_output,
 	.signal		= &xml_signal_handler,
-	.version	= ULOGD_VERSION,
+	.version	= VERSION,
 };
 
 void __attribute__ ((constructor)) init(void);

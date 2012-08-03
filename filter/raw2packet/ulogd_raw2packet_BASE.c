@@ -992,7 +992,7 @@ static struct ulogd_plugin base_plugin = {
 		.type = ULOGD_DTYPE_PACKET,
 		},
 	.interp = &_interp_pkt,
-	.version = ULOGD_VERSION,
+	.version = VERSION,
 };
 
 void __attribute__ ((constructor)) init(void);

@@ -448,7 +448,7 @@ static struct ulogd_plugin sqlite3_plugin = {
 	.start = sqlite3_start,
 	.stop = sqlite3_stop,
 	.interp = sqlite3_interp,
-	.version = ULOGD_VERSION,
+	.version = VERSION,
 };
 
 static void init(void) __attribute__((constructor));

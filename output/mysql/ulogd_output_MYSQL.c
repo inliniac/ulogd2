@@ -279,7 +279,7 @@ static struct ulogd_plugin plugin_mysql = {
 	.stop	   = &ulogd_db_stop,
 	.signal	   = &ulogd_db_signal,
 	.interp	   = &ulogd_db_interp,
-	.version   = ULOGD_VERSION,
+	.version   = VERSION,
 };
 
 void __attribute__ ((constructor)) init(void);

@@ -356,7 +356,7 @@ void get_plugin_infos(struct ulogd_plugin *me)
 /* the function called by all plugins for registering themselves */
 void ulogd_register_plugin(struct ulogd_plugin *me)
 {
-	if (strcmp(me->version, ULOGD_VERSION)) { 
+	if (strcmp(me->version, VERSION)) { 
 		ulogd_log(ULOGD_NOTICE, 
 			  "plugin `%s' has incompatible version %s\n",
 			  me->version);
@@ -936,7 +936,7 @@ static int logfile_open(const char *name)
 			exit(2);
 		}
 	}
-	ulogd_log(ULOGD_INFO, "ulogd Version %s (re-)starting\n", ULOGD_VERSION);
+	ulogd_log(ULOGD_INFO, "ulogd Version %s (re-)starting\n", VERSION);
 	return 0;
 }
 
@@ -1089,7 +1089,7 @@ static void signal_handler(int signal)
 static void print_usage(void)
 {
 	/* FIXME */
-	printf("ulogd Version %s\n", ULOGD_VERSION);
+	printf("ulogd Version %s\n", VERSION);
 	printf(COPYRIGHT);
 	printf("This is free software with ABSOLUTELY NO WARRANTY.\n\n");
 	printf("Parameters:\n");
@@ -1145,7 +1145,7 @@ int main(int argc, char* argv[])
 			daemonize = 1;
 			break;
 		case 'V':
-			printf("ulogd Version %s\n", ULOGD_VERSION);
+			printf("ulogd Version %s\n", VERSION);
 			printf(COPYRIGHT);
 			exit(0);
 			break;

@@ -188,7 +188,7 @@ static struct ulogd_plugin ip2hbin_pluging = {
 		.type = ULOGD_DTYPE_PACKET | ULOGD_DTYPE_FLOW,
 		},
 	.interp = &interp_ip2hbin,
-	.version = ULOGD_VERSION,
+	.version = VERSION,
 };
 
 void __attribute__ ((constructor)) init(void);
