@@ -71,7 +71,9 @@
 #endif
 
 #define COPYRIGHT \
-	"Copyright (C) 2000-2005 Harald Welte <laforge@netfilter.org>\n"
+	"(C) 2000-2006 Harald Welte <laforge@netfilter.org>\n" \
+	"(C) 2008-2012 Pablo Neira Ayuso <pablo@netfilter.org>\n" \
+	"(C) 2008-2012 Eric Leblond <eric@regit.org>\n"
 
 /* global variables */
 static FILE *logfile = NULL;		/* logfile pointer */
