@@ -6,6 +6,6 @@ AM_CFLAGS = ${regular_CFLAGS}
 
 sbin_PROGRAMS = ulogd
 
-ulogd_SOURCES = ulogd.c select.c timer.c rbtree.c conffile.c hash.c
+ulogd_SOURCES = ulogd.c select.c timer.c rbtree.c conffile.c hash.c addr.c
 ulogd_LDADD   = ${libdl_LIBS}
 ulogd_LDFLAGS = -export-dynamic
