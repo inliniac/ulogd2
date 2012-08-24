@@ -1063,7 +1063,7 @@ static int constructor_nfct_events(struct ulogd_pluginstance *upi)
 			ulogd_log(ULOGD_FATAL, "error opening ctnetlink\n");
 			goto err_ovh;
 		}
-		nfct_callback_register(cpi->cth, NFCT_T_ALL,
+		nfct_callback_register(h, NFCT_T_ALL,
 				       &event_handler_hashtable, upi);
 		nfct_query(h, NFCT_Q_DUMP, &family);
 		nfct_close(h);
