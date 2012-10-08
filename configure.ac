@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
+AC_INIT([ulogd], [2.0.1])
 AC_PREREQ([2.50])
-AC_INIT([ulogd], [2.0.0])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([-Wall foreign tar-pax no-dist-gzip dist-bzip2 1.10b])
 AC_CONFIG_HEADER([config.h])
@@ -42,10 +42,10 @@ regular_CFLAGS="-Wall -Wextra -Wno-unused-parameter"
 AC_SUBST([regular_CFLAGS])
 
 dnl Check for the right nfnetlink version
-PKG_CHECK_MODULES([LIBNFNETLINK], [libnfnetlink >= 1.0.0])
-PKG_CHECK_MODULES([LIBMNL], [libmnl >= 1.0.0])
+PKG_CHECK_MODULES([LIBNFNETLINK], [libnfnetlink >= 1.0.1])
+PKG_CHECK_MODULES([LIBMNL], [libmnl >= 1.0.3])
 PKG_CHECK_MODULES([LIBNETFILTER_ACCT], [libnetfilter_acct >= 1.0.1])
-PKG_CHECK_MODULES([LIBNETFILTER_CONNTRACK], [libnetfilter_conntrack >= 1.0.0])
+PKG_CHECK_MODULES([LIBNETFILTER_CONNTRACK], [libnetfilter_conntrack >= 1.0.2])
 PKG_CHECK_MODULES([LIBNETFILTER_LOG], [libnetfilter_log >= 1.0.0])
 
 CT_CHECK_POSTGRES_DB()
