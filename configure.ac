@@ -21,7 +21,7 @@ AC_SEARCH_LIBS([dlopen], [dl], [libdl_LIBS="$LIBS"; LIBS=""])
 AC_SUBST([libdl_LIBS])
 AC_SEARCH_LIBS([pcap_close], [pcap], [libpcap_LIBS="-lpcap"; LIBS=""])
 AC_SUBST([libpcap_LIBS])
-AM_CONDITIONAL([HAVE_PCAP], test -n "$libpcap_LIBS"])
+AM_CONDITIONAL([HAVE_PCAP], [test -n "$libpcap_LIBS"])
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
