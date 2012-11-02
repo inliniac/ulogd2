@@ -20,7 +20,10 @@
 
 #include <libnetfilter_conntrack/libnetfilter_conntrack.h>
 #include <libnetfilter_log/libnetfilter_log.h>
+#include "../config.h"
+#ifdef BUILD_NFACCT
 #include <libnetfilter_acct/libnetfilter_acct.h>
+#endif
 #include <ulogd/ulogd.h>
 #include <sys/param.h>
 #include <time.h>
@@ -118,6 +121,7 @@ xml_output_packet(struct ulogd_key *inp, char *buf, ssize_t size)
 static int
 xml_output_sum(struct ulogd_key *inp, char *buf, ssize_t size)
 {
+#ifdef BUILD_NFACCT
 	struct nfacct *nfacct = ikey_get_ptr(&inp[KEY_SUM]);
 	int tmp;
 
@@ -125,9 +129,12 @@ xml_output_sum(struct ulogd_key *inp, char *buf, ssize_t size)
 						 NFACCT_SNPRINTF_F_TIME);
 	if (tmp < 0 || tmp >= size)
 		return -1;
-
 	return 0;
+#else
+	return -1;
+#endif
 }
+
 
 static int xml_output(struct ulogd_pluginstance *upi)
 {
