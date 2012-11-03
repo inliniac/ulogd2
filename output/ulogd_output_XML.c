@@ -18,8 +18,10 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <libnetfilter_log/libnetfilter_log.h>
 #include "../config.h"
+#ifdef BUILD_NFLOG
+#include <libnetfilter_log/libnetfilter_log.h>
+#endif
 #ifdef BUILD_NFCT
 #include <libnetfilter_conntrack/libnetfilter_conntrack.h>
 #endif
@@ -114,6 +116,7 @@ xml_output_flow(struct ulogd_key *inp, char *buf, ssize_t size)
 static int
 xml_output_packet(struct ulogd_key *inp, char *buf, ssize_t size)
 {
+#ifdef BUILD_NFLOG
 	struct nflog_data *ldata = ikey_get_ptr(&inp[KEY_PCKT]);
 	int tmp;
 
@@ -122,6 +125,9 @@ xml_output_packet(struct ulogd_key *inp, char *buf, ssize_t size)
 		return -1;
 
 	return 0;
+#else
+	return -1;
+#endif
 }
 
 static int

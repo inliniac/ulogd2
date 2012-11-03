@@ -44,7 +44,13 @@ AC_SUBST([regular_CFLAGS])
 dnl Check for the right nfnetlink version
 PKG_CHECK_MODULES([LIBNFNETLINK], [libnfnetlink >= 1.0.1])
 PKG_CHECK_MODULES([LIBMNL], [libmnl >= 1.0.3])
-PKG_CHECK_MODULES([LIBNETFILTER_LOG], [libnetfilter_log >= 1.0.0])
+AC_ARG_ENABLE(nflog,
+       AS_HELP_STRING([--enable-nflog], [Enable nflog module [default=yes]]),,[enable_nflog=yes])
+AS_IF([test "x$enable_nflog" = "xyes"], [
+    PKG_CHECK_MODULES([LIBNETFILTER_LOG], [libnetfilter_log >= 1.0.0])
+    AC_DEFINE([BUILD_NFLOG], [1], [Building nflog module])
+])
+AM_CONDITIONAL([BUILD_NFLOG], [test "x$enable_nflog" = "xyes"])
 AC_ARG_ENABLE(nfct,
        AS_HELP_STRING([--enable-nfct], [Enable nfct module [default=yes]]),,[enable_nfct=yes])
 AS_IF([test "x$enable_nfct" = "xyes"], [
