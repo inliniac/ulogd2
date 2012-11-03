@@ -26,6 +26,7 @@
 #include <string.h>
 #include <time.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <ulogd/ulogd.h>
 #include <ulogd/conffile.h>
 
@@ -148,7 +149,7 @@ static int gprint_interp(struct ulogd_pluginstance *upi)
 			rem -= ret;
 			size += ret;
 
-			ret = snprintf(buf+size, rem, "%lu,",
+			ret = snprintf(buf+size, rem, "%" PRIu64 ",",
 					key->u.value.ui64);
 			if (ret < 0)
 				break;

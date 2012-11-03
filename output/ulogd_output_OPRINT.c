@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <ulogd/ulogd.h>
 #include <ulogd/conffile.h>
 
@@ -82,7 +83,7 @@ static int oprint_interp(struct ulogd_pluginstance *upi)
 				fprintf(opi->of, "%u\n", ret->u.value.ui32);
 				break;
 			case ULOGD_RET_UINT64:
-				fprintf(opi->of, "%lu\n", ret->u.value.ui64);
+				fprintf(opi->of, "%" PRIu64 "\n", ret->u.value.ui64);
 				break;
 			case ULOGD_RET_IPADDR:
 				fprintf(opi->of, "%u.%u.%u.%u\n", 
