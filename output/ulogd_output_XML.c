@@ -18,9 +18,11 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <libnetfilter_conntrack/libnetfilter_conntrack.h>
 #include <libnetfilter_log/libnetfilter_log.h>
 #include "../config.h"
+#ifdef BUILD_NFCT
+#include <libnetfilter_conntrack/libnetfilter_conntrack.h>
+#endif
 #ifdef BUILD_NFACCT
 #include <libnetfilter_acct/libnetfilter_acct.h>
 #endif
@@ -94,6 +96,7 @@ struct xml_priv {
 static int
 xml_output_flow(struct ulogd_key *inp, char *buf, ssize_t size)
 {
+#ifdef BUILD_NFCT
 	struct nf_conntrack *ct = ikey_get_ptr(&inp[KEY_CT]);
 	int tmp;
 
@@ -103,6 +106,9 @@ xml_output_flow(struct ulogd_key *inp, char *buf, ssize_t size)
 		return -1;
 
 	return 0;
+#else
+	return -1;
+#endif
 }
 
 static int
