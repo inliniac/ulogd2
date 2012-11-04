@@ -18,6 +18,8 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <sys/types.h>
+#include <inttypes.h>
 #include "../config.h"
 #ifdef BUILD_NFLOG
 #include <libnetfilter_log/libnetfilter_log.h>
