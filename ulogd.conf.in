@@ -129,6 +129,7 @@ plugin="@pkglibdir@/ulogd_output_GRAPHITE.so"
 # In this case, you can use the following filters on events:
 #accept_src_filter=192.168.1.0/24,1:2::/64 # source ip of connection must belong to these networks
 #accept_dst_filter=192.168.1.0/24 # destination ip of connection must belong to these networks
+#accept_proto_filter=tcp,sctp # layer 4 proto of connections
 
 [ct2]
 #netlink_socket_buffer_size=217088

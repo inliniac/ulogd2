@@ -36,6 +36,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <netinet/in.h>
+#include <netdb.h>
 #include <ulogd/linuxlist.h>
 #include <ulogd/jhash.h>
 #include <ulogd/hash.h>
@@ -73,7 +74,7 @@ struct nfct_pluginstance {
 #define EVENT_MASK	NF_NETLINK_CONNTRACK_NEW | NF_NETLINK_CONNTRACK_DESTROY
 
 static struct config_keyset nfct_kset = {
-	.num_ces = 11,
+	.num_ces = 12,
 	.ces = {
 		{
 			.key	 = "pollinterval",
@@ -139,6 +140,11 @@ static struct config_keyset nfct_kset = {
 			.type	 = CONFIG_TYPE_STRING,
 			.options = CONFIG_OPT_NONE,
 		},
+		{
+			.key	 = "accept_proto_filter",
+			.type	 = CONFIG_TYPE_STRING,
+			.options = CONFIG_OPT_NONE,
+		},
 	},
 };
 #define pollint_ce(x)	(x->ces[0])
@@ -152,6 +158,7 @@ static struct config_keyset nfct_kset = {
 #define reliable_ce(x)	(x->ces[8])
 #define src_filter_ce(x)	((x)->ces[9])
 #define dst_filter_ce(x)	((x)->ces[10])
+#define proto_filter_ce(x)	((x)->ces[11])
 
 enum nfct_keys {
 	NFCT_ORIG_IP_SADDR = 0,
@@ -1143,6 +1150,46 @@ static int build_nfct_filter_dir(struct nfct_filter *filter, char* filter_string
 	return 0;
 }
 
+static int build_nfct_filter_proto(struct nfct_filter *filter, char* filter_string)
+{
+	char *from = filter_string;
+	char *comma;
+	struct protoent * pent = NULL;
+
+	while ((comma = strchr(from, ',')) != NULL) {
+		size_t len = comma - from;
+		*comma = 0;
+		pent = getprotobyname(from);
+		if (pent == NULL) {
+			ulogd_log(ULOGD_FATAL, "Unknown protocol\n");
+			endprotoent();
+			return -1;
+		}
+		ulogd_log(ULOGD_NOTICE, "adding proto to filter: \"%s\" (%d)\n",
+			  pent->p_name, pent->p_proto
+		 );
+		nfct_filter_add_attr_u32(filter, NFCT_FILTER_L4PROTO,
+					 pent->p_proto);
+		from += len + 1;
+	}
+	pent = getprotobyname(from);
+	if (pent == NULL) {
+		ulogd_log(ULOGD_FATAL, "Unknown protocol %s\n", from);
+		endprotoent();
+		return -1;
+	}
+	ulogd_log(ULOGD_NOTICE, "adding proto to filter: \"%s (%d)\"\n",
+			pent->p_name, pent->p_proto
+		 );
+	nfct_filter_add_attr_u32(filter, NFCT_FILTER_L4PROTO,
+			pent->p_proto);
+
+
+	endprotoent();
+	return 0;
+}
+
+
 static int build_nfct_filter(struct ulogd_pluginstance *upi)
 {
 	struct nfct_pluginstance *cpi =
@@ -1173,6 +1220,14 @@ static int build_nfct_filter(struct ulogd_pluginstance *upi)
 		if (build_nfct_filter_dir(filter, filter_string, NFCT_DST_DIR) != 0) {
 			ulogd_log(ULOGD_FATAL,
 					"Unable to create dst filter\n");
+			goto err_filter;
+		}
+	}
+	if (strlen(proto_filter_ce(upi->config_kset).u.string) != 0) {
+		char *filter_string = proto_filter_ce(upi->config_kset).u.string;
+		if (build_nfct_filter_proto(filter, filter_string) != 0) {
+			ulogd_log(ULOGD_FATAL,
+					"Unable to create proto filter\n");
 			goto err_filter;
 		}
 	}
@@ -1208,7 +1263,8 @@ static int constructor_nfct_events(struct ulogd_pluginstance *upi)
 	}
 
 	if ((strlen(src_filter_ce(upi->config_kset).u.string) != 0) ||
-			(strlen(dst_filter_ce(upi->config_kset).u.string) != 0)
+		(strlen(dst_filter_ce(upi->config_kset).u.string) != 0) ||
+		(strlen(proto_filter_ce(upi->config_kset).u.string) != 0)
 	   ) {
 		if (build_nfct_filter(upi) != 0) {
 			ulogd_log(ULOGD_FATAL, "error creating NFCT filter\n");
