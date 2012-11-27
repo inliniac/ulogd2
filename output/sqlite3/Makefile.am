@@ -1,5 +1,5 @@
-AM_CPPFLAGS = -I$(top_srcdir)/include
-AM_CFLAGS = ${regular_CFLAGS} ${libsqlite3_CFLAGS}
+AM_CPPFLAGS = -I$(top_srcdir)/include ${libsqlite3_CFLAGS}
+AM_CFLAGS = ${regular_CFLAGS}
 
 if HAVE_SQLITE3
 
