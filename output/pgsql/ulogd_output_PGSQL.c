@@ -105,9 +105,16 @@ static int pgsql_namespace(struct ulogd_pluginstance *upi)
 	}
 
 	if (PQresultStatus(pi->pgres) == PGRES_TUPLES_OK) {
-		ulogd_log(ULOGD_DEBUG, "using schema %s\n",
-			  schema_ce(upi->config_kset).u.string);
-		pi->db_inst.schema = schema_ce(upi->config_kset).u.string;
+		if (PQntuples(pi->pgres)) {
+			ulogd_log(ULOGD_DEBUG, "using schema %s\n",
+				  schema_ce(upi->config_kset).u.string);
+			pi->db_inst.schema = schema_ce(upi->config_kset).u.string;
+		} else {
+			ulogd_log(ULOGD_ERROR, "schema %s not found: %s\n",
+				 schema_ce(upi->config_kset).u.string, PQerrorMessage(pi->dbh));
+			PQclear(pi->pgres);
+			return -1;
+		}
 	} else {
 		pi->db_inst.schema = NULL;
 	}
@@ -223,6 +230,8 @@ static int open_db_pgsql(struct ulogd_pluginstance *upi)
 	char *user = user_ce(upi->config_kset).u.string;
 	char *pass = pass_ce(upi->config_kset).u.string;
 	char *db = db_ce(upi->config_kset).u.string;
+	char *schema = NULL;
+	char pgbuf[128];
 
 	/* 80 is more than what we need for the fixed parts below */
 	len = 80 + strlen(user) + strlen(db);
@@ -270,9 +279,27 @@ static int open_db_pgsql(struct ulogd_pluginstance *upi)
 	}
 
 	if (pgsql_namespace(upi)) {
-		ulogd_log(ULOGD_ERROR, "unable to test for pgsql schemas\n");
+		ulogd_log(ULOGD_ERROR, "problem testing for pgsql schemas\n");
 		close_db_pgsql(upi);
 		return -1;
+	}
+
+	pi=(struct pgsql_instance *)upi->private;
+	schema = pi->db_inst.schema;
+
+	if (!(schema == NULL) && (strcmp(schema,"public"))) {
+		snprintf(pgbuf, 128, "SET search_path='%.63s', \"$user\", 'public'", schema);
+		pi->pgres = PQexec(pi->dbh, pgbuf);
+		if ((PQresultStatus(pi->pgres) == PGRES_COMMAND_OK)) {
+			PQclear(pi->pgres);
+		} else {
+			ulogd_log(ULOGD_ERROR, "could not set search path to (%s): %s\n",
+				 schema, PQerrorMessage(pi->dbh));
+			PQclear(pi->pgres);
+			close_db_pgsql(upi);
+			return -1;
+		}
+
 	}
 
 	return 0;
