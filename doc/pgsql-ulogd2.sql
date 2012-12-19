@@ -60,6 +60,12 @@ CREATE TABLE ulog2 (
   ip_csum integer default NULL,
   ip_id integer default NULL,
   ip_fragoff smallint default NULL,
+  ip6_payloadlen bigint default NULL,
+  ip6_priority smallint default NULL,
+  ip6_hoplimit smallint default NULL,
+  ip6_flowlabel bigint default NULL,
+  ip6_fragoff integer default NULL,
+  ip6_fragid bigint default NULL,
   label smallint default NULL,
   mac_id bigint default NULL,
   timestamp timestamp NOT NULL default now()
@@ -197,6 +203,12 @@ CREATE OR REPLACE VIEW ulog AS
         ip_csum,
         ip_id,
         ip_fragoff,
+        ip6_payloadlen,
+        ip6_priority,
+        ip6_hoplimit,
+        ip6_flowlabel,
+        ip6_fragoff,
+        ip6_fragid,
         tcp_sport,
         tcp_dport,
         tcp_seq,
@@ -403,13 +415,21 @@ CREATE OR REPLACE FUNCTION INSERT_IP_PACKET_FULL(
                 IN ip_csum integer,
                 IN ip_id integer,
                 IN ip_fragoff integer,
+                IN ip6_payloadlen integer,
+                IN ip6_priority integer,
+                IN ip6_hoplimit integer,
+                IN ip6_flowlabel bigint,
+                IN ip6_fragoff integer,
+                IN ip6_fragid bigint,
                 IN label integer
         )
 RETURNS bigint AS $$
         INSERT INTO ulog2 (oob_time_sec,oob_time_usec,oob_hook,oob_prefix,oob_mark,
                         oob_in,oob_out,oob_family,ip_saddr_str,ip_daddr_str,ip_protocol,
-                        ip_tos,ip_ttl,ip_totlen,ip_ihl,ip_csum,ip_id,ip_fragoff,label)
-                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19);
+                        ip_tos,ip_ttl,ip_totlen,ip_ihl,ip_csum,ip_id,ip_fragoff,
+                        ip6_payloadlen,ip6_priority,ip6_hoplimit,ip6_flowlabel,
+                        ip6_fragoff,ip6_fragid,label)
+                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25);
         SELECT currval('ulog2__id_seq');
 $$ LANGUAGE SQL SECURITY INVOKER;
 
@@ -542,6 +562,12 @@ CREATE OR REPLACE FUNCTION INSERT_PACKET_FULL(
                 IN ip_csum integer,
                 IN ip_id integer,
                 IN ip_fragoff integer,
+                IN ip6_payloadlen integer,
+                IN ip6_priority integer,
+                IN ip6_hoplimit integer,
+                IN ip6_flowlabel bigint,
+                IN ip6_fragoff integer,
+                IN ip6_fragid bigint,
                 IN tcp_sport integer,
                 IN tcp_dport integer,
                 IN tcp_seq bigint,
@@ -583,23 +609,23 @@ DECLARE
         t_id bigint;
         t_mac_id bigint;
 BEGIN
-        t_id := INSERT_IP_PACKET_FULL($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$50);
+        t_id := INSERT_IP_PACKET_FULL($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$56);
         IF (ip_protocol = 6) THEN
-                PERFORM INSERT_TCP_FULL(t_id,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30);
+                PERFORM INSERT_TCP_FULL(t_id,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36);
         ELSIF (ip_protocol = 17) THEN
-                PERFORM INSERT_UDP(t_id,$31,$32,$33);
+                PERFORM INSERT_UDP(t_id,$37,$38,$39);
         ELSIF (ip_protocol = 132) THEN
-                PERFORM INSERT_SCTP(t_id,$51,$52,$53);
+                PERFORM INSERT_SCTP(t_id,$57,$58,$59);
         ELSIF (ip_protocol = 1) THEN
-                PERFORM INSERT_ICMP(t_id,$34,$35,$36,$37,$38,$39);
+                PERFORM INSERT_ICMP(t_id,$40,$41,$42,$43,$44,$45);
         ELSIF (ip_protocol = 58) THEN
-                PERFORM INSERT_ICMPV6(t_id,$40,$41,$42,$43,$44);
+                PERFORM INSERT_ICMPV6(t_id,$46,$47,$48,$49,$50);
         END IF;
         IF (raw_type = 1) THEN
-                t_mac_id = INSERT_OR_SELECT_MAC($47::macaddr,$48::macaddr,$49);
+                t_mac_id = INSERT_OR_SELECT_MAC($53::macaddr,$54::macaddr,$55);
                 UPDATE ulog2 SET mac_id = t_mac_id WHERE _id = t_id;
         ELSE
-                PERFORM INSERT_HARDWARE_HEADER(t_id,$45,$46);
+                PERFORM INSERT_HARDWARE_HEADER(t_id,$51,$52);
         END IF;
         RETURN t_id;
 END

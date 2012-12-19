@@ -62,7 +62,7 @@ struct ulogd_key printpkt_keys[] = {
 	[KEY_IP_ID]		= { .name = "ip.id", },
 	[KEY_IP_FRAGOFF]	= { .name = "ip.fragoff", },
 	[KEY_IP_PROTOCOL]	= { .name = "ip.protocol", },
-	[KEY_IP6_PAYLOAD_LEN]	= { .name = "ip6.payload_len" },
+	[KEY_IP6_PAYLOAD_LEN]	= { .name = "ip6.payloadlen" },
 	[KEY_IP6_PRIORITY]	= { .name = "ip6.priority" },
 	[KEY_IP6_HOPLIMIT]	= { .name = "ip6.hoplimit" },
 	[KEY_IP6_FLOWLABEL]	= { .name = "ip6.flowlabel" },

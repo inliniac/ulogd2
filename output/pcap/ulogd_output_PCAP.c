@@ -139,7 +139,7 @@ static struct ulogd_key pcap_keys[INTR_IDS] = {
 	  .name = "oob.family" },
 	{ .type = ULOGD_RET_UINT16,
 	  .flags = ULOGD_RETF_NONE,
-	  .name = "ip6.payload_len" },
+	  .name = "ip6.payloadlen" },
 };
 
 #define GET_FLAGS(res, x)	(res[x].u.source->flags)

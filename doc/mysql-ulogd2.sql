@@ -60,6 +60,12 @@ CREATE TABLE `ulog2` (
   `ip_csum` smallint(5) unsigned default NULL,
   `ip_id` smallint(5) unsigned default NULL,
   `ip_fragoff` smallint(5) unsigned default NULL,
+  `ip6_payloadlen` smallint(5) unsigned default NULL,
+  `ip6_priority` tinyint(3) unsigned default NULL,
+  `ip6_hoplimit` tinyint(3) unsigned default NULL,
+  `ip6_flowlabel` int(10) default NULL,
+  `ip6_fragoff` smallint(5) default NULL,
+  `ip6_fragid` int(10) unsigned default NULL,
   `label` tinyint(3) unsigned default NULL,
   `mac_id` bigint unsigned default NULL,
   `timestamp` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
@@ -214,6 +220,12 @@ CREATE SQL SECURITY INVOKER VIEW `ulog` AS
         ip_csum,
         ip_id,
         ip_fragoff,
+        ip6_payloadlen,
+        ip6_priority,
+        ip6_hoplimit,
+        ip6_flowlabel,
+        ip6_fragoff,
+        ip6_fragid,
         tcp_sport,
         tcp_dport,
         tcp_seq,
@@ -502,7 +514,7 @@ NOT DETERMINISTIC
 READS SQL DATA
 BEGIN
 	INSERT INTO ulog2 (oob_time_sec, oob_time_usec, oob_hook, oob_prefix, oob_mark, oob_in, oob_out, oob_family,
-			   ip_saddr, ip_daddr, ip_protocol) VALUES 
+			   ip_saddr, ip_daddr, ip_protocol) VALUES
 		(_oob_time_sec, _oob_time_usec, _oob_hook, _oob_prefix, _oob_mark, _oob_in, _oob_out, _oob_family,
 		 _ip_saddr, _ip_daddr, _ip_protocol);
 	RETURN LAST_INSERT_ID();
@@ -524,13 +536,19 @@ CREATE FUNCTION INSERT_IP_PACKET_FULL(
 		_ip_saddr binary(16),
 		_ip_daddr binary(16),
 		_ip_protocol tinyint(3) unsigned,
-	  	_ip_tos tinyint(3) unsigned,
-	  	_ip_ttl tinyint(3) unsigned,
-	  	_ip_totlen smallint(5) unsigned,
-	  	_ip_ihl tinyint(3) unsigned,
-	  	_ip_csum smallint(5) unsigned,
-	  	_ip_id smallint(5) unsigned,
-	  	_ip_fragoff smallint(5) unsigned,
+		_ip_tos tinyint(3) unsigned,
+		_ip_ttl tinyint(3) unsigned,
+		_ip_totlen smallint(5) unsigned,
+		_ip_ihl tinyint(3) unsigned,
+		_ip_csum smallint(5) unsigned,
+		_ip_id smallint(5) unsigned,
+		_ip_fragoff smallint(5) unsigned,
+		_ip6_payloadlen smallint unsigned,
+		_ip6_priority tinyint unsigned,
+		_ip6_hoplimit tinyint unsigned,
+		_ip6_flowlabel integer,
+		_ip6_fragoff smallint,
+		_ip6_fragid integer unsigned,
 		_label tinyint(4) unsigned
 		) RETURNS int(10) unsigned
 SQL SECURITY INVOKER
@@ -539,10 +557,12 @@ READS SQL DATA
 BEGIN
 	INSERT INTO ulog2 (oob_time_sec, oob_time_usec, oob_hook, oob_prefix, oob_mark, oob_in, oob_out, oob_family,
 			   ip_saddr, ip_daddr, ip_protocol, ip_tos, ip_ttl, ip_totlen, ip_ihl,
-		 	   ip_csum, ip_id, ip_fragoff, label ) VALUES 
+			   ip_csum, ip_id, ip_fragoff, ip6_payloadlen, ip6_priority, ip6_hoplimit, ip6_flowlabel,
+			   ip6_fragoff, ip6_fragid, label ) VALUES
 		(_oob_time_sec, _oob_time_usec, _oob_hook, _oob_prefix, _oob_mark, _oob_in, _oob_out, _oob_family,
 		 _ip_saddr, _ip_daddr, _ip_protocol, _ip_tos, _ip_ttl, _ip_totlen, _ip_ihl,
-		 _ip_csum, _ip_id, _ip_fragoff, _label);
+		 _ip_csum, _ip_id, _ip_fragoff, _ip6_payloadlen, _ip6_priority, _ip6_hoplimit, _ip6_flowlabel,
+		 _ip6_fragoff, _ip6_fragid, _label);
 	RETURN LAST_INSERT_ID();
 END
 $$
@@ -701,13 +721,19 @@ CREATE FUNCTION INSERT_PACKET_FULL(
 		_ip_saddr binary(16),
 		_ip_daddr binary(16),
 		_ip_protocol tinyint(3) unsigned,
-	  	_ip_tos tinyint(3) unsigned,
-	  	_ip_ttl tinyint(3) unsigned,
-	  	_ip_totlen smallint(5) unsigned,
-	  	_ip_ihl tinyint(3) unsigned,
-	  	_ip_csum smallint(5) unsigned,
-	  	_ip_id smallint(5) unsigned,
-	  	_ip_fragoff smallint(5) unsigned,
+		_ip_tos tinyint(3) unsigned,
+		_ip_ttl tinyint(3) unsigned,
+		_ip_totlen smallint(5) unsigned,
+		_ip_ihl tinyint(3) unsigned,
+		_ip_csum smallint(5) unsigned,
+		_ip_id smallint(5) unsigned,
+		_ip_fragoff smallint(5) unsigned,
+		_ip6_payloadlen smallint unsigned,
+		_ip6_priority tinyint unsigned,
+		_ip6_hoplimit tinyint unsigned,
+		_ip6_flowlabel integer,
+		_ip6_fragoff smallint,
+		_ip6_fragid integer unsigned,
 		tcp_sport smallint(5) unsigned,
 		tcp_dport smallint(5) unsigned,
 		tcp_seq int(10) unsigned,
@@ -750,7 +776,8 @@ BEGIN
 					   _oob_mark, _oob_in, _oob_out, _oob_family, 
 					   _ip_saddr, _ip_daddr, _ip_protocol, _ip_tos,
 					   _ip_ttl, _ip_totlen, _ip_ihl, _ip_csum, _ip_id,
-					   _ip_fragoff, _label);
+					   _ip_fragoff, _ip6_payloadlen, _ip6_priority, _ip6_hoplimit,
+					   _ip6_flowlabel, _ip6_fragoff, _ip6_fragid, _label);
 	IF _ip_protocol = 6 THEN
 		CALL PACKET_ADD_TCP_FULL(@lastid, tcp_sport, tcp_dport, tcp_seq, tcp_ackseq,
 					 tcp_window, tcp_urg, tcp_urgp, tcp_ack, tcp_psh,
