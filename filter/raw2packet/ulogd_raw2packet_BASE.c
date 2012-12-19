@@ -784,9 +784,9 @@ static int _interp_ipv6hdr(struct ulogd_pluginstance *pi, u_int32_t len)
 	okey_set_u128(&ret[KEY_IP_DADDR], &ipv6h->ip6_dst);
 	okey_set_u16(&ret[KEY_IP6_PAYLOAD_LEN], ntohs(ipv6h->ip6_plen));
 	okey_set_u8(&ret[KEY_IP6_PRIORITY],
-		    ntohl(ipv6h->ip6_flow & 0x0ff00000) >> 20);
+		    (ntohl(ipv6h->ip6_flow) & 0x0ff00000) >> 20);
 	okey_set_u32(&ret[KEY_IP6_FLOWLABEL],
-		     ntohl(ipv6h->ip6_flow & 0x000fffff));
+		     ntohl(ipv6h->ip6_flow) & 0x000fffff);
 	okey_set_u8(&ret[KEY_IP6_HOPLIMIT], ipv6h->ip6_hlim);
 
 	curhdr = ipv6h->ip6_nxt;
