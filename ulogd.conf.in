@@ -49,6 +49,7 @@ plugin="@pkglibdir@/ulogd_output_GPRINT.so"
 #plugin="@pkglibdir@/ulogd_output_DBI.so"
 plugin="@pkglibdir@/ulogd_raw2packet_BASE.so"
 plugin="@pkglibdir@/ulogd_inpflow_NFACCT.so"
+plugin="@pkglibdir@/ulogd_output_GRAPHITE.so"
 
 # this is a stack for logging packet send by system via LOGEMU
 #stack=log1:NFLOG,base1:BASE,ifi1:IFINDEX,ip2str1:IP2STR,print1:PRINTPKT,emu1:LOGEMU
@@ -79,6 +80,9 @@ plugin="@pkglibdir@/ulogd_inpflow_NFACCT.so"
 
 # this is a stack for accounting-based logging via XML
 #stack=acct1:NFACCT,xml1:XML
+
+# this is a stack for accounting-based logging to a Graphite server
+#stack=acct1:NFACCT,graphite1:GRAPHITE
 
 # this is a stack for NFLOG packet-based logging to PCAP
 #stack=log2:NFLOG,base1:BASE,pcap1:PCAP
@@ -280,3 +284,9 @@ pollinterval = 2
 # Set timestamp (default is 0, which means not set). This timestamp can be
 # interpreted by the output plugin.
 #timestamp = 1
+
+[graphite1]
+host="127.0.0.1"
+port="2003"
+# Prefix of data name sent to graphite server
+prefix="netfilter.nfacct"
