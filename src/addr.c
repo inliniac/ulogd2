@@ -69,7 +69,7 @@ int ulogd_parse_addr(char *string, size_t len, struct ulogd_addr *addr)
 	char filter_addr[128];
 	char *slash;
 	char *ddash;
-	if ((ddash = strchr(string, ':')) && (ddash - string < len)) {
+	if ((ddash = strchr(string, ':')) && (ddash < string + len)) {
 		struct in6_addr raddr;
 		int i;
 		slash = strchr(string, '/');
@@ -94,7 +94,7 @@ int ulogd_parse_addr(char *string, size_t len, struct ulogd_addr *addr)
 
 		return AF_INET6;
 	}
-	if ((ddash = strchr(string, '.')) && (ddash - string < len)) {
+	if ((ddash = strchr(string, '.')) && (ddash < string + len)) {
 		slash = strchr(string, '/');
 		if (slash == NULL) {
 			ulogd_log(ULOGD_FATAL,
