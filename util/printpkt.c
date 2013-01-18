@@ -299,7 +299,7 @@ static int printpkt_ipv6(struct ulogd_key *res, char *buf)
 				   (char *) ikey_get_ptr(&res[KEY_IP_DADDR]));
 
 	if (pp_is_valid(res, KEY_IP6_PAYLOAD_LEN))
-		buf_cur += sprintf(buf_cur, "LEN=%Zu ",
+		buf_cur += sprintf(buf_cur, "LEN=%zu ",
 				   ikey_get_u16(&res[KEY_IP6_PAYLOAD_LEN]) +
 				   sizeof(struct ip6_hdr));
 
