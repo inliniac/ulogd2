@@ -1,4 +1,4 @@
-/* ulogd_output_IPFIX.c, Version $Revision: 1628 $
+/* ulogd_output_IPFIX.c
  *
  * ulogd output plugin for IPFIX
  *
@@ -19,8 +19,6 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * $Id: ulogd_output_LOGEMU.c 1628 2005-11-04 15:23:12Z laforge $
  *
  * TODO:
  * - where to get a useable <sctp.h> for linux ?

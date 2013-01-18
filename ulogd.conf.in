@@ -1,5 +1,4 @@
 # Example configuration for ulogd
-# $Id$
 # Adapted to Debian by Achilleas Kotsis <achille@debian.gr>
 
 [global]

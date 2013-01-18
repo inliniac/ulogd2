@@ -1,3 +1,10 @@
+/* DB handling functions
+ *
+ * (C) 2000-2005 by Harald Welte <laforge@gnumonks.org>
+ *
+ * This code is distributed under the terms of GNU GPL version 2 */
+
+
 #ifndef _ULOGD_DB_H
 #define _ULOGD_DB_H
 

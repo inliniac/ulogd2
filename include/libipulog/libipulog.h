@@ -1,8 +1,6 @@
 #ifndef _LIBIPULOG_H
 #define _LIBIPULOG_H
 
-/* $Id$ */
-
 #include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>

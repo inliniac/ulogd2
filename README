@@ -1,7 +1,5 @@
 Userspace logging daemon for netfilter/iptables
 
-$Id$
-
 Project Homepage: http://www.gnumonks.org/projects/ulogd
 Mailinglist: http://lists.gnumonks.org/mailman/listinfo/ulogd/
 

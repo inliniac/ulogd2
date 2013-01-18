@@ -1,3 +1,10 @@
+/* IP address handling functions
+ *
+ * (C) 2012 by Pablo Neira Ayuso <pablo@netfilter.org>
+ * (C) 2012 by Eric Leblond <eric@regit.org>
+ *
+ * This code is distributed under the terms of GNU GPL version 2 */
+
 #ifndef _ADDR_H
 #define _ADDR_H
 

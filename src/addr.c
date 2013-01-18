@@ -1,7 +1,4 @@
-/* ulogd
- *
- * userspace logging daemon for the iptables ULOG target
- * of the linux 2.4 netfilter subsystem.
+/* IP address handling functions
  *
  * (C) 2012 by Pablo Neira Ayuso <pablo@netfilter.org>
  * (C) 2012 by Eric Leblond <eric@regit.org>

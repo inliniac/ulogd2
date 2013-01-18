@@ -2,8 +2,6 @@
  *
  * (C) 2000 by Harald Welte <laforge@gnumonks.org>
  *
- * $Id$
- * 
  * This code is distributed under the terms of GNU GPL */
 
 #ifndef _CONFFILE_H

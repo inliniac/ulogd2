@@ -17,8 +17,6 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: printflow.c,v 1.1 2006/05/16 01:57:31 philipc Exp $
- *
  */
 
 #include <string.h>

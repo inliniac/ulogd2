@@ -1,6 +1,4 @@
-/* ulogd, Version $LastChangedRevision: 476 $
- *
- * $Id: ulogd.c 476 2004-07-23 03:19:35Z laforge $
+/* timer implementation
  *
  * userspace logging daemon for the netfilter subsystem
  *

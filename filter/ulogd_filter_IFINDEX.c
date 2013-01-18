@@ -1,4 +1,4 @@
-/* ulogd_filter_IFINDEX.c, Version $Revision: 1500 $
+/* ulogd_filter_IFINDEX.c
  *
  * ulogd interpreter plugin for ifindex to ifname conversion
  *
@@ -17,8 +17,6 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * $Id: ulogd_filter_IFINDEX.c 1500 2005-10-03 16:54:02Z laforge $
  *
  */
 

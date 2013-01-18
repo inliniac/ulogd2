@@ -1,9 +1,8 @@
 /* config file parser functions
  *
  * (C) 2000-2005 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2013 by Eric Leblond <eric@regit.org>
  *
- * $Id$
- * 
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 
  *  as published by the Free Software Foundation

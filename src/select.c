@@ -1,9 +1,4 @@
-/* ulogd, Version $LastChangedRevision: 476 $
- *
- * $Id: ulogd.c 476 2004-07-23 03:19:35Z laforge $
- *
- * userspace logging daemon for the iptables ULOG target
- * of the linux 2.4 netfilter subsystem.
+/* select related functions
  *
  * (C) 2000-2005 by Harald Welte <laforge@gnumonks.org>
  *

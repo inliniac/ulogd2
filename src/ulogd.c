@@ -1,10 +1,9 @@
-/* ulogd, Version $LastChangedRevision$
- *
- * $Id$
+/* ulogd
  *
  * unified network logging daemon for Linux.
  *
  * (C) 2000-2005 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2013 by Eric Leblond <eric@regit.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 

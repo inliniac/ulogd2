@@ -1,4 +1,4 @@
-/* db.c, Version $Revision: 6304 $
+/* db.c
  *
  * ulogd helper functions for Database / SQL output plugins
  *
@@ -22,7 +22,6 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  * 
- * $Id: ulogd_output_MYSQL.c 6304 2005-12-08 09:43:19Z /C=DE/ST=Berlin/L=Berlin/O=Netfilter Project/OU=Development/CN=laforge/emailAddress=laforge@netfilter.org $
  */
 
 #include <unistd.h>

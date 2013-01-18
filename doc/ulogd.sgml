@@ -1,7 +1,5 @@
 <!doctype linuxdoc system>
 
-<!-- $Id$ -->
-
 <article>
 
 <title>ULOGD 2.x - the Netfilter Userspace Logging Daemon</title>

@@ -1,6 +1,6 @@
 #ifndef _ULOGD_H
 #define _ULOGD_H
-/* ulogd, Version $Revision$
+/* ulogd
  *
  * userspace logging daemon for netfilter ULOG target
  * of the linux 2.4/2.6 netfilter subsystem.
@@ -9,7 +9,6 @@
  *
  * this code is released under the terms of GNU GPL
  *
- * $Id$
  */
 
 #include <ulogd/linuxlist.h>

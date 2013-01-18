@@ -1,5 +1,5 @@
-/* 
- * libipulog.c, $Revision$
+/*
+ * libipulog.c
  *
  * netfilter ULOG userspace library.
  *
@@ -21,7 +21,6 @@
  * This library is still under development, so be aware of sudden interface
  * changes
  *
- * $Id$
  */
 
 #include <stdlib.h>
