@@ -895,10 +895,10 @@ static int _interp_arp(struct ulogd_pluginstance *pi, u_int32_t len)
 	okey_set_u16(&ret[KEY_ARP_PTYPE], ntohs(arph->arp_pro));
 	okey_set_u16(&ret[KEY_ARP_OPCODE], ntohs(arph->arp_op));
 
-	okey_set_ptr(&ret[KEY_ARP_SHA], &arph->arp_sha);
-	okey_set_ptr(&ret[KEY_ARP_SPA], &arph->arp_spa),
-	okey_set_ptr(&ret[KEY_ARP_THA], &arph->arp_tha);
-	okey_set_ptr(&ret[KEY_ARP_TPA], &arph->arp_tpa);
+	okey_set_ptr(&ret[KEY_ARP_SHA], (void *)&arph->arp_sha);
+	okey_set_ptr(&ret[KEY_ARP_SPA], (void *)&arph->arp_spa),
+	okey_set_ptr(&ret[KEY_ARP_THA], (void *)&arph->arp_tha);
+	okey_set_ptr(&ret[KEY_ARP_TPA], (void *)&arph->arp_tpa);
 
 	return ULOGD_IRET_OK;
 }
