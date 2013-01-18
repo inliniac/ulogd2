@@ -1112,6 +1112,7 @@ static void print_usage(void)
 	printf("\t-V --version\tPrint version information\n");
 	printf("\t-d --daemon\tDaemonize (fork into background)\n");
 	printf("\t-v --verbose\tOutput info on standard output\n");
+	printf("\t-l --loglevel\tSet log level\n");
 	printf("\t-c --configfile\tUse alternative Configfile\n");
 	printf("\t-u --uid\tChange UID/GID\n");
 	printf("\t-i --info\tDisplay infos about plugin\n");
@@ -1125,6 +1126,7 @@ static struct option opts[] = {
 	{ "uid", 1, NULL, 'u' },
 	{ "info", 1, NULL, 'i' },
 	{ "verbose", 0, NULL, 'v' },
+	{ "loglevel", 1, NULL, 'l' },
 	{NULL, 0, NULL, 0}
 };
 
@@ -1137,10 +1139,11 @@ int main(int argc, char* argv[])
 	struct passwd *pw;
 	uid_t uid = 0;
 	gid_t gid = 0;
+	int loglevel = 0;
 
 	ulogd_logfile = strdup(ULOGD_LOGFILE_DEFAULT);
 
-	while ((argch = getopt_long(argc, argv, "c:dvh::Vu:i:", opts, NULL)) != -1) {
+	while ((argch = getopt_long(argc, argv, "c:dvl:h::Vu:i:", opts, NULL)) != -1) {
 		switch (argch) {
 		default:
 		case '?':
@@ -1189,8 +1192,16 @@ int main(int argc, char* argv[])
 		case 'v':
 			verbose = 1;
 			break;
+		case 'l':
+			loglevel = atoi(optarg);
+			break;
 		}
 	}
+
+	/* command line has precedence on config file */
+	if (loglevel)
+		loglevel_ce.u.value = loglevel;
+		loglevel_ce.flag |= CONFIG_FLAG_VAL_PROTECTED;
 
 	if (daemonize && verbose) {
 		verbose = 0;
@@ -1204,7 +1215,7 @@ int main(int argc, char* argv[])
 			  ulogd_configfile);
 		warn_and_exit(daemonize);
 	}
-	
+
 	/* parse config file */
 	if (parse_conffile("global", &ulogd_kset)) {
 		ulogd_log(ULOGD_FATAL, "parse_conffile\n");
