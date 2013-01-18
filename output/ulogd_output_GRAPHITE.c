@@ -42,19 +42,19 @@ enum {
 
 
 static struct ulogd_key graphite_inp[] = {
-	[KEY_SUM_NAME] {
+	[KEY_SUM_NAME] = {
 		.type	= ULOGD_RET_STRING,
 		.name	= "sum.name",
 	},
-	[KEY_SUM_PKTS] {
+	[KEY_SUM_PKTS] = {
 		.type	= ULOGD_RET_UINT64,
 		.name	= "sum.pkts",
 	},
-	[KEY_SUM_BYTES] {
+	[KEY_SUM_BYTES] = {
 		.type	= ULOGD_RET_UINT64,
 		.name	= "sum.bytes",
 	},
-	[KEY_OOB_TIME_SEC] {
+	[KEY_OOB_TIME_SEC] = {
 		.type = ULOGD_RET_UINT32,
 		.name = "oob.time.sec",
 	},
