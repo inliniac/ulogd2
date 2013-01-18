@@ -41,11 +41,15 @@ enum {
 #define CONFIG_OPT_MANDATORY	0x0001
 #define CONFIG_OPT_MULTI	0x0002
 
+/* valid flag part */
+#define CONFIG_FLAG_VAL_PROTECTED	(1<<0)
+
 struct config_entry {
 	char key[CONFIG_KEY_LEN];	/* name of config directive */
 	u_int8_t type;			/* type; see above */
 	u_int8_t options;		/* options; see above  */
 	u_int8_t hit;			/* found? */
+	u_int8_t flag;			/* tune setup of option */
 	union {
 		char string[CONFIG_VAL_STRING_LEN];
 		int value;
