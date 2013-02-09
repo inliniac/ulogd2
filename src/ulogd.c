@@ -1102,7 +1102,6 @@ static void signal_handler(int signal)
 
 static void print_usage(void)
 {
-	/* FIXME */
 	printf("ulogd Version %s\n", VERSION);
 	printf(COPYRIGHT);
 	printf("This is free software with ABSOLUTELY NO WARRANTY.\n\n");

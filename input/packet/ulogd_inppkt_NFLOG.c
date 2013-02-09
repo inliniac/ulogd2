@@ -339,7 +339,6 @@ interp_packet(struct ulogd_pluginstance *upi, u_int8_t pf_family,
 		    label_ce(upi->config_kset).u.value);
 
 	if (ph) {
-		/* FIXME */
 		okey_set_u8(&ret[NFLOG_KEY_OOB_HOOK], ph->hook);
 		okey_set_u16(&ret[NFLOG_KEY_OOB_PROTOCOL],
 			     ntohs(ph->hw_protocol));
@@ -376,7 +375,6 @@ interp_packet(struct ulogd_pluginstance *upi, u_int8_t pf_family,
 	if (! (nflog_get_timestamp(ldata, &ts) == 0 && ts.tv_sec))
 		gettimeofday(&ts, NULL);
 
-	/* FIXME: convert endianness */
 	okey_set_u32(&ret[NFLOG_KEY_OOB_TIME_SEC], ts.tv_sec & 0xffffffff);
 	okey_set_u32(&ret[NFLOG_KEY_OOB_TIME_USEC], ts.tv_usec & 0xffffffff);
 
