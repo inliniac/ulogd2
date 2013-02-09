@@ -1216,7 +1216,7 @@ int main(int argc, char* argv[])
 
 	/* parse config file */
 	if (parse_conffile("global", &ulogd_kset)) {
-		ulogd_log(ULOGD_FATAL, "parse_conffile\n");
+		ulogd_log(ULOGD_FATAL, "unable to parse config file\n");
 		warn_and_exit(daemonize);
 	}
 

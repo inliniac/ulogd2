@@ -16,9 +16,11 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+
 #include <ulogd/ulogd.h>
 #include <ulogd/common.h>
 #include <ulogd/conffile.h>
+#include <unistd.h>
 
 
 /* points to config entry with error */
@@ -89,9 +91,16 @@ static char *get_word(char *line, char *not, char *buf)
 /* register config file with us */
 int config_register_file(const char *file)
 {
-	/* FIXME: stat of file */
 	if (fname)
 		return 1;
+
+	if (access(file, R_OK) != 0) {
+		ulogd_log(ULOGD_ERROR,
+			 "unable to read configfile \"%s\": %s\n",
+			 file,
+			 strerror(errno));
+		return 1;
+	}
 
 	pr_debug("%s: registered config file '%s'\n", __func__, file);
 
