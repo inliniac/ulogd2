@@ -123,6 +123,7 @@ int config_parse_file(const char *section, struct config_keyset *kset)
 	unsigned int i;
 	char linebuf[LINE_LEN+1];
 	char *line = linebuf;
+	int linenum = 0;
 
 	pr_debug("%s: section='%s' file='%s'\n", __func__, section, fname);
 
@@ -135,8 +136,15 @@ int config_parse_file(const char *section, struct config_keyset *kset)
 		char wordbuf[LINE_LEN];
 		char *wordend;
 
+		linenum++;
 		if (*line == '#')
 			continue;
+
+		/* if line was fetch completely, string ends with '\n' */
+		if (! strchr(line, '\n')) {
+			ulogd_log(ULOGD_ERROR, "line %d too long.\n", linenum);
+			return -ERRTOOLONG;
+		}
 
 		if (!(wordend = get_word(line, " \t\n[]", (char *) wordbuf)))
 			continue;
@@ -159,9 +167,16 @@ int config_parse_file(const char *section, struct config_keyset *kset)
 		char wordbuf[LINE_LEN];
 		char *wordend;
 		
+		linenum++;
 		pr_debug("line read: %s\n", line);
 		if (*line == '#')
 			continue;
+
+		/* if line was fetch completely, string ends with '\n' */
+		if (! strchr(line, '\n')) {
+			ulogd_log(ULOGD_ERROR, "line %d too long.\n", linenum);
+			return -ERRTOOLONG;
+		}
 
 		if (!(wordend = get_word(line, " =\t\n", (char *) &wordbuf)))
 			continue;
@@ -197,7 +212,10 @@ int config_parse_file(const char *section, struct config_keyset *kset)
 					if (strlen(args) < 
 					    CONFIG_VAL_STRING_LEN ) {
 						strcpy(ce->u.string, args);
-						/* FIXME: what if not ? */
+					} else {
+						config_errce = ce;
+						err = -ERRTOOLONG;
+						goto cpf_error;
 					}
 					break;
 				case CONFIG_TYPE_INT:

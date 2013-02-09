@@ -989,6 +989,15 @@ static int parse_conffile(const char *section, struct config_keyset *ce)
 			ulogd_log(ULOGD_ERROR,
 				"section \"%s\" not found\n", section);
 			break;
+		case -ERRTOOLONG:
+			if (config_errce->key)
+				ulogd_log(ULOGD_ERROR,
+					  "string value too long for key \"%s\"\n",
+					  config_errce->key);
+			else
+				ulogd_log(ULOGD_ERROR,
+					  "string value is too long\n");
+			break;
 	}
 	return 1;
 }

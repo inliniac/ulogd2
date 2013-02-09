@@ -18,6 +18,7 @@ enum {
 	ERRMAND,	/* mandatory option not found */
 	ERRUNKN,	/* unknown config key */
 	ERRSECTION,	/* section not found */
+	ERRTOOLONG,	/* string too long */
 };
 
 /* maximum line length of config file entries */
