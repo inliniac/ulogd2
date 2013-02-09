@@ -20,13 +20,13 @@ enum {
 	ERRSECTION,	/* section not found */
 };
 
-/* maximum line lenght of config file entries */
+/* maximum line length of config file entries */
 #define LINE_LEN 		255
 
-/* maximum lenght of config key name */
+/* maximum length of config key name */
 #define CONFIG_KEY_LEN		30
 
-/* maximum lenght of string config value */
+/* maximum length of string config value */
 #define CONFIG_VAL_STRING_LEN	225
 
 /* valid config types */
