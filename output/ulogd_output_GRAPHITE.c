@@ -164,11 +164,11 @@ static int _output_graphite(struct ulogd_pluginstance *upi)
 		 prefix_ce(upi->config_kset).u.string,
 		 (char *)ikey_get_ptr(&inp[KEY_SUM_NAME]),
 		 ikey_get_u64(&inp[KEY_SUM_PKTS]),
-		 now,
+		 (uint64_t) now,
 		 prefix_ce(upi->config_kset).u.string,
 		 (char *)ikey_get_ptr(&inp[KEY_SUM_NAME]),
 		 ikey_get_u64(&inp[KEY_SUM_BYTES]),
-		 now
+		 (uint64_t) now
 		 );
 	if (msg_size == -1) {
 		ulogd_log(ULOGD_ERROR, "Could not create message\n");
