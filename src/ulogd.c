@@ -372,7 +372,7 @@ void ulogd_register_plugin(struct ulogd_plugin *me)
 				  me->name);
 			exit(EXIT_FAILURE);
 		}
-		ulogd_log(ULOGD_NOTICE, "registering plugin `%s'\n", me->name);
+		ulogd_log(ULOGD_DEBUG, "registering plugin `%s'\n", me->name);
 		llist_add(&me->list, &ulogd_plugins);
 	} else {
 		get_plugin_infos(me);
