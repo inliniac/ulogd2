@@ -830,7 +830,7 @@ static int create_stack(const char *option)
 	}
 	INIT_LLIST_HEAD(&stack->list);
 
-	ulogd_log(ULOGD_DEBUG, "building new pluginstance stack (%s):\n",
+	ulogd_log(ULOGD_NOTICE, "building new pluginstance stack: '%s'\n",
 		  option);
 
 	/* PASS 1: find and instanciate plugins of stack, link them together */
