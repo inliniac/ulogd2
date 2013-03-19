@@ -29,7 +29,7 @@ struct db_stmt {
 
 struct db_instance {
 	char *stmt; /* buffer for our insert statement */
-	char *stmt_val; /* pointer to the beginning of the "VALUES" part */
+	int stmt_offset; /* offset to the beginning of the "VALUES" part */
 	char *schema;
 	time_t reconnect;
 	int (*interp)(struct ulogd_pluginstance *upi);

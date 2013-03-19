@@ -66,6 +66,7 @@ static int sql_createstmt(struct ulogd_pluginstance *upi)
 	unsigned int i;
 	char *table = table_ce(upi->config_kset).u.string;
 	char *procedure = procedure_ce(upi->config_kset).u.string;
+	char *stmt_val = NULL;
 
 	if (mi->stmt)
 		free(mi->stmt);
@@ -106,7 +107,7 @@ static int sql_createstmt(struct ulogd_pluginstance *upi)
 		else
 			sprintf(mi->stmt, "%s (", procedure);
 
-		mi->stmt_val = mi->stmt + strlen(mi->stmt);
+		stmt_val = mi->stmt + strlen(mi->stmt);
 
 		for (i = 0; i < upi->input.num_keys; i++) {
 			if (upi->input.keys[i].flags & ULOGD_KEYF_INACTIVE)
@@ -115,19 +116,20 @@ static int sql_createstmt(struct ulogd_pluginstance *upi)
 			strncpy(buf, upi->input.keys[i].name, ULOGD_MAX_KEYLEN);	
 			while ((underscore = strchr(buf, '.')))
 				*underscore = '_';
-			sprintf(mi->stmt_val, "%s,", buf);
-			mi->stmt_val = mi->stmt + strlen(mi->stmt);
+			sprintf(stmt_val, "%s,", buf);
+			stmt_val = mi->stmt + strlen(mi->stmt);
 		}
-		*(mi->stmt_val - 1) = ')';
+		*(stmt_val - 1) = ')';
 
-		sprintf(mi->stmt_val, " values (");
+		sprintf(stmt_val, " values (");
 	} else if (strncasecmp(procedure,"CALL", strlen("CALL")) == 0) {
 		sprintf(mi->stmt, "CALL %s(", procedure);
 	} else {
 		sprintf(mi->stmt, "SELECT %s(", procedure);
 
 	}
-	mi->stmt_val = mi->stmt + strlen(mi->stmt);
+
+	mi->stmt_offset = strlen(mi->stmt);
 
 	ulogd_log(ULOGD_DEBUG, "stmt='%s'\n", mi->stmt);
 
@@ -266,7 +268,7 @@ static void __format_query_db(struct ulogd_pluginstance *upi)
 
 	unsigned int i;
 
-	char * stmt_ins = di->stmt_val;
+	char *stmt_ins = di->stmt + di->stmt_offset;
 
 	for (i = 0; i < upi->input.num_keys; i++) {
 		struct ulogd_key *res = upi->input.keys[i].u.source;
