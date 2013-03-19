@@ -266,7 +266,7 @@ static void __format_query_db(struct ulogd_pluginstance *upi)
 
 	unsigned int i;
 
-	di->stmt_ins = di->stmt_val;
+	char * stmt_ins = di->stmt_val;
 
 	for (i = 0; i < upi->input.num_keys; i++) {
 		struct ulogd_key *res = upi->input.keys[i].u.source;
@@ -280,52 +280,52 @@ static void __format_query_db(struct ulogd_pluginstance *upi)
 			
 		if (!res || !IS_VALID(*res)) {
 			/* no result, we have to fake something */
-			di->stmt_ins += sprintf(di->stmt_ins, "NULL,");
+			stmt_ins += sprintf(stmt_ins, "NULL,");
 			continue;
 		}
 		
 		switch (res->type) {
 		case ULOGD_RET_INT8:
-			sprintf(di->stmt_ins, "%d,", res->u.value.i8);
+			sprintf(stmt_ins, "%d,", res->u.value.i8);
 			break;
 		case ULOGD_RET_INT16:
-			sprintf(di->stmt_ins, "%d,", res->u.value.i16);
+			sprintf(stmt_ins, "%d,", res->u.value.i16);
 			break;
 		case ULOGD_RET_INT32:
-			sprintf(di->stmt_ins, "%d,", res->u.value.i32);
+			sprintf(stmt_ins, "%d,", res->u.value.i32);
 			break;
 		case ULOGD_RET_INT64:
-			sprintf(di->stmt_ins, "%" PRId64 ",", res->u.value.i64);
+			sprintf(stmt_ins, "%" PRId64 ",", res->u.value.i64);
 			break;
 		case ULOGD_RET_UINT8:
-			sprintf(di->stmt_ins, "%u,", res->u.value.ui8);
+			sprintf(stmt_ins, "%u,", res->u.value.ui8);
 			break;
 		case ULOGD_RET_UINT16:
-			sprintf(di->stmt_ins, "%u,", res->u.value.ui16);
+			sprintf(stmt_ins, "%u,", res->u.value.ui16);
 			break;
 		case ULOGD_RET_IPADDR:
 			/* fallthrough when logging IP as u_int32_t */
 		case ULOGD_RET_UINT32:
-			sprintf(di->stmt_ins, "%u,", res->u.value.ui32);
+			sprintf(stmt_ins, "%u,", res->u.value.ui32);
 			break;
 		case ULOGD_RET_UINT64:
-			sprintf(di->stmt_ins, "%" PRIu64 ",", res->u.value.ui64);
+			sprintf(stmt_ins, "%" PRIu64 ",", res->u.value.ui64);
 			break;
 		case ULOGD_RET_BOOL:
-			sprintf(di->stmt_ins, "'%d',", res->u.value.b);
+			sprintf(stmt_ins, "'%d',", res->u.value.b);
 			break;
 		case ULOGD_RET_STRING:
-			*(di->stmt_ins++) = '\'';
+			*(stmt_ins++) = '\'';
 			if (res->u.value.ptr) {
-				di->stmt_ins +=
-				di->driver->escape_string(upi, di->stmt_ins,
+				stmt_ins +=
+				di->driver->escape_string(upi, stmt_ins,
 							  res->u.value.ptr,
 							strlen(res->u.value.ptr));
 			}
-			sprintf(di->stmt_ins, "',");
+			sprintf(stmt_ins, "',");
 			break;
 		case ULOGD_RET_RAWSTR:
-			sprintf(di->stmt_ins, "%s,", (char *) res->u.value.ptr);
+			sprintf(stmt_ins, "%s,", (char *) res->u.value.ptr);
 			break;
 		case ULOGD_RET_RAW:
 			ulogd_log(ULOGD_NOTICE,
@@ -336,9 +336,9 @@ static void __format_query_db(struct ulogd_pluginstance *upi)
 				res->type, upi->input.keys[i].name);
 			break;
 		}
-		di->stmt_ins = di->stmt + strlen(di->stmt);
+		stmt_ins = di->stmt + strlen(di->stmt);
 	}
-	*(di->stmt_ins - 1) = ')';
+	*(stmt_ins - 1) = ')';
 }
 
 static int __add_to_backlog(struct ulogd_pluginstance *upi, const char *stmt, unsigned int len)

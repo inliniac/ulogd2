@@ -1,6 +1,7 @@
 /* DB handling functions
  *
  * (C) 2000-2005 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2013 by Eric Leblond <eric@regit.org>
  *
  * This code is distributed under the terms of GNU GPL version 2 */
 
@@ -29,7 +30,6 @@ struct db_stmt {
 struct db_instance {
 	char *stmt; /* buffer for our insert statement */
 	char *stmt_val; /* pointer to the beginning of the "VALUES" part */
-	char *stmt_ins; /* pointer to current inser position in statement */
 	char *schema;
 	time_t reconnect;
 	int (*interp)(struct ulogd_pluginstance *upi);
