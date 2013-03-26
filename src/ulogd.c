@@ -1277,7 +1277,6 @@ int main(int argc, char* argv[])
 			fclose(stdout);
 		fclose(stderr);
 		fclose(stdin);
-		fclose(logfile);
 		setsid();
 	}
 
