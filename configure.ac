@@ -43,7 +43,6 @@ AC_CHECK_LIB(pthread, pthread_create)
 
 dnl Check for the right nfnetlink version
 PKG_CHECK_MODULES([LIBNFNETLINK], [libnfnetlink >= 1.0.1])
-PKG_CHECK_MODULES([LIBMNL], [libmnl >= 1.0.3])
 AC_ARG_ENABLE(nflog,
        AS_HELP_STRING([--enable-nflog], [Enable nflog module [default=yes]]),,[enable_nflog=yes])
 AS_IF([test "x$enable_nflog" = "xyes"], [
@@ -61,6 +60,7 @@ AM_CONDITIONAL([BUILD_NFCT], [test "x$enable_nfct" = "xyes"])
 AC_ARG_ENABLE(nfacct,
        AS_HELP_STRING([--enable-nfacct], [Enable nfacct module [default=yes]]),,[enable_nfacct=yes])
 AS_IF([test "x$enable_nfacct" = "xyes"], [
+    PKG_CHECK_MODULES([LIBMNL], [libmnl >= 1.0.3])
     PKG_CHECK_MODULES([LIBNETFILTER_ACCT], [libnetfilter_acct >= 1.0.1])
     AC_DEFINE([BUILD_NFACCT], [1], [Building nfacct module])
 ])
