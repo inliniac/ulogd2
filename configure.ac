@@ -128,6 +128,13 @@ else
 	enable_jansson="no"
 fi
 
+AC_ARG_ENABLE(vuurmuur,
+       AS_HELP_STRING([--enable-vuurmuur], [Enable vuurmuur output module [default=no]]),[enable_vuurmuur="$enableval"],[enable_vuurmuur=no])
+AS_IF([test "x$enable_vuurmuur" = "xyes"], [
+    AC_DEFINE([BUILD_VUURMUUR], [1], [Building vuurmuur module])
+])
+AM_CONDITIONAL([BUILD_VUURMUUR], [test "x$enable_vuurmuur" = "xyes"])
+
 dnl AC_SUBST(DATABASE_DIR)
 dnl AC_SUBST(DATABASE_LIB)
 dnl AC_SUBST(DATABASE_LIB_DIR)
@@ -164,5 +171,6 @@ Ulogd configuration:
     SQLITE3 plugin:			${enable_sqlite3}
     DBI plugin:				${enable_dbi}
     JSON plugin:			${enable_jansson}
+    Vuurmuur plugin:			${enable_vuurmuur}
 "
 echo "You can now run 'make' and 'make install'"
