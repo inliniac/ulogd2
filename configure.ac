@@ -67,6 +67,13 @@ AS_IF([test "x$enable_nfacct" = "xyes"], [
 ])
 AM_CONDITIONAL([BUILD_NFACCT], [test "x$enable_nfacct" = "xyes"])
 
+AC_ARG_ENABLE(vuurmuur,
+       AS_HELP_STRING([--enable-vuurmuur], [Enable vuurmuur output module [default=no]]),,[enable_vuurmuur=yes])
+AS_IF([test "x$enable_vuurmuur" = "xyes"], [
+    AC_DEFINE([BUILD_VUURMUUR], [1], [Building vuurmuur module])
+])
+AM_CONDITIONAL([BUILD_VUURMUUR], [test "x$enable_vuurmuur" = "xyes"])
+
 CT_CHECK_POSTGRES_DB()
 AM_CONDITIONAL(HAVE_PGSQL, test "x$PQLIBPATH" != "x")
 if test "x$PQLIBPATH" != "x"; then
