@@ -233,6 +233,10 @@ pass="changeme"
 procedure="INSERT_PACKET_FULL"
 #backlog_memcap=1000000
 #backlog_oneshot_requests=10
+# If superior to 1 a thread dedicated to SQL request execution
+# is created. The value stores the number of SQL request to keep
+# in the ring buffer
+#ring_buffer_size=1000
 
 [pgsql2]
 db="nulog"

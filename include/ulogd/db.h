@@ -21,6 +21,24 @@ struct db_driver {
 			const char *stmt, unsigned int len);
 };
 
+enum {
+	RING_NO_QUERY,
+	RING_QUERY_READY,
+};
+
+struct db_stmt_ring {
+	/* Ring buffer: 1 status byte + string */
+	char *ring; /* pointer to the ring */
+	uint32_t size; /* size of ring buffer in element */
+	int length; /* length of one ring buffer element */
+	uint32_t wr_item; /* write item in ring buffer */
+	uint32_t rd_item; /* read item in ring buffer */
+	char *wr_place;
+	pthread_cond_t cond;
+	pthread_mutex_t mutex;
+	int full;
+};
+
 struct db_stmt {
 	char *stmt;
 	int len;
@@ -34,6 +52,10 @@ struct db_instance {
 	time_t reconnect;
 	int (*interp)(struct ulogd_pluginstance *upi);
 	struct db_driver *driver;
+	/* DB ring buffer */
+	struct db_stmt_ring ring;
+	pthread_t db_thread_id;
+	/* Backlog system */
 	unsigned int backlog_memcap;
 	unsigned int backlog_memusage;
 	unsigned int backlog_oneshot;
@@ -43,6 +65,7 @@ struct db_instance {
 #define TIME_ERR		((time_t)-1)	/* Be paranoid */
 #define RECONNECT_DEFAULT	2
 #define MAX_ONESHOT_REQUEST	10
+#define RING_BUFFER_DEFAULT_SIZE	10
 
 #define DB_CES							\
 		{						\
@@ -73,15 +96,21 @@ struct db_instance {
 			.key = "backlog_oneshot_requests",	\
 			.type = CONFIG_TYPE_INT,		\
 			.u.value = MAX_ONESHOT_REQUEST,		\
+		},						\
+		{						\
+			.key = "ring_buffer_size",		\
+			.type = CONFIG_TYPE_INT,		\
+			.u.value = RING_BUFFER_DEFAULT_SIZE,	\
 		}
 
-#define DB_CE_NUM		6
+#define DB_CE_NUM		7
 #define table_ce(x)		(x->ces[0])
 #define reconnect_ce(x)		(x->ces[1])
 #define timeout_ce(x)		(x->ces[2])
 #define procedure_ce(x)		(x->ces[3])
 #define backlog_memcap_ce(x)	(x->ces[4])
 #define backlog_oneshot_ce(x)	(x->ces[5])
+#define ringsize_ce(x)		(x->ces[6])
 
 void ulogd_db_signal(struct ulogd_pluginstance *upi, int signal);
 int ulogd_db_start(struct ulogd_pluginstance *upi);
