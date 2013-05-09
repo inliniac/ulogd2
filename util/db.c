@@ -606,11 +606,16 @@ static void *__inject_thread(void *gdi)
 
 void ulogd_db_signal(struct ulogd_pluginstance *upi, int signal)
 {
+	struct db_instance *di = (struct db_instance *) &upi->private;
 	switch (signal) {
 	case SIGHUP:
-		/* reopen database connection */
-		ulogd_db_instance_stop(upi);
-		ulogd_db_start(upi);
+		if (!di->ring.size) {
+			/* reopen database connection */
+			ulogd_db_instance_stop(upi);
+			ulogd_db_start(upi);
+		} else
+			ulogd_log(ULOGD_ERROR,
+				  "No SIGHUP handling if ring buffer is used\n");
 		break;
 	default:
 		break;
