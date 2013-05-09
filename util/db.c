@@ -176,9 +176,14 @@ int ulogd_db_configure(struct ulogd_pluginstance *upi,
 
 	INIT_LLIST_HEAD(&di->backlog);
 	di->backlog_memusage = 0;
-	
+
+	di->ring.size = ringsize_ce(upi->config_kset).u.value;
 	di->backlog_memcap = backlog_memcap_ce(upi->config_kset).u.value;
-	if (di->backlog_memcap > 0) {
+
+	if (di->ring.size && di->backlog_memcap) {
+		ulogd_log(ULOGD_ERROR, "Ring buffer has precedence over backlog\n");
+		di->backlog_memcap = 0;
+	} else if (di->backlog_memcap > 0) {
 		di->backlog_oneshot = backlog_oneshot_ce(upi->config_kset).u.value;
 		if (di->backlog_oneshot <= 2) {
 			ulogd_log(ULOGD_ERROR,
@@ -188,9 +193,6 @@ int ulogd_db_configure(struct ulogd_pluginstance *upi,
 		}
 		di->backlog_full = 0;
 	}
-
-	/* check ring option */
-	di->ring.size = ringsize_ce(upi->config_kset).u.value;
 
 	return ret;
 }
