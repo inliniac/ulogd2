@@ -1235,6 +1235,13 @@ int main(int argc, char* argv[])
 		warn_and_exit(daemonize);
 	}
 
+	errno = 0;
+	if (nice(-1) == -1) {
+		if (errno != 0)
+			ulogd_log(ULOGD_ERROR, "Could not nice process: %s\n",
+				  strerror(errno));
+	}
+
 	if (change_uid) {
 		ulogd_log(ULOGD_NOTICE, "Changing UID / GID\n");
 		if (setgid(gid)) {
@@ -1259,13 +1266,6 @@ int main(int argc, char* argv[])
 				  uid);
 			warn_and_exit(daemonize);
 		}
-	}
-
-	errno = 0;
-	if (nice(-1) == -1) {
-		if (errno != 0)
-			ulogd_log(ULOGD_ERROR, "Could not nice process: %s\n",
-				  strerror(errno));
 	}
 
 
