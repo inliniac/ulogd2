@@ -231,6 +231,12 @@ table="ulog"
 #schema="public"
 pass="changeme"
 procedure="INSERT_PACKET_FULL"
+# connstring can be used to define PostgreSQL connection string which
+# contains all parameters of the connection. If set, this value has
+# precedence on other variables used to build the connection string.
+# See http://www.postgresql.org/docs/9.2/static/libpq-connect.html#LIBPQ-CONNSTRING
+# for a complete description of options.
+#connstring="host=localhost port=4321 dbname=nulog user=nupik password=changeme"
 #backlog_memcap=1000000
 #backlog_oneshot_requests=10
 # If superior to 1 a thread dedicated to SQL request execution
