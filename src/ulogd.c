@@ -1399,6 +1399,19 @@ int main(int argc, char* argv[])
 			  " with daemon mode).\n");
 	}
 
+	if (daemonize){
+		if (daemon(0, 0) < 0) {
+			ulogd_log(ULOGD_FATAL, "can't daemonize: %s (%d)",
+				  errno, strerror(errno));
+			warn_and_exit(daemonize);
+		}
+	}
+
+	if (ulogd_pidfile) {
+		if (write_pidfile(daemonize) < 0)
+			warn_and_exit(0);
+	}
+
 	if (config_register_file(ulogd_configfile)) {
 		ulogd_log(ULOGD_FATAL, "error registering configfile \"%s\"\n",
 			  ulogd_configfile);
@@ -1448,23 +1461,6 @@ int main(int argc, char* argv[])
 				  uid);
 			warn_and_exit(daemonize);
 		}
-	}
-
-
-	if (daemonize){
-		if (fork()) {
-			exit(0);
-		}
-		if (logfile != stdout)
-			fclose(stdout);
-		fclose(stderr);
-		fclose(stdin);
-		setsid();
-	}
-
-	if (ulogd_pidfile) {
-		if (write_pidfile(daemonize) < 0)
-			warn_and_exit(0);
 	}
 
 	signal(SIGTERM, &sigterm_handler);
