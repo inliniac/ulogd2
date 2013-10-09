@@ -240,7 +240,7 @@ static struct ulogd_key nfct_okeys[] = {
 		},
 	},
 	{
-		.type	= ULOGD_RET_UINT32,
+		.type	= ULOGD_RET_UINT64,
 		.flags	= ULOGD_RETF_NONE,
 		.name	= "orig.raw.pktlen",
 		.ipfix	= {
@@ -250,7 +250,7 @@ static struct ulogd_key nfct_okeys[] = {
 		},
 	},
 	{
-		.type	= ULOGD_RET_UINT32,
+		.type	= ULOGD_RET_UINT64,
 		.flags	= ULOGD_RETF_NONE,
 		.name	= "orig.raw.pktcount",
 		.ipfix	= {
@@ -305,7 +305,7 @@ static struct ulogd_key nfct_okeys[] = {
 		},
 	},
 	{
-		.type	= ULOGD_RET_UINT32,
+		.type	= ULOGD_RET_UINT64,
 		.flags	= ULOGD_RETF_NONE,
 		.name	= "reply.raw.pktlen",
 		.ipfix	= {
@@ -315,7 +315,7 @@ static struct ulogd_key nfct_okeys[] = {
 		},
 	},
 	{
-		.type	= ULOGD_RET_UINT32,
+		.type	= ULOGD_RET_UINT64,
 		.flags	= ULOGD_RETF_NONE,
 		.name	= "reply.raw.pktcount",
 		.ipfix	= {
@@ -561,14 +561,14 @@ static int propagate_ct(struct ulogd_pluginstance *main_upi,
 			     htons(nfct_get_attr_u16(ct, ATTR_REPL_PORT_DST)));
 	}
 
-	okey_set_u32(&ret[NFCT_ORIG_RAW_PKTLEN],
-		     nfct_get_attr_u32(ct, ATTR_ORIG_COUNTER_BYTES));
-	okey_set_u32(&ret[NFCT_ORIG_RAW_PKTCOUNT],
-		     nfct_get_attr_u32(ct, ATTR_ORIG_COUNTER_PACKETS));
-	okey_set_u32(&ret[NFCT_REPLY_RAW_PKTLEN],
-		     nfct_get_attr_u32(ct, ATTR_REPL_COUNTER_BYTES));
-	okey_set_u32(&ret[NFCT_REPLY_RAW_PKTCOUNT],
-		     nfct_get_attr_u32(ct, ATTR_REPL_COUNTER_PACKETS));
+	okey_set_u64(&ret[NFCT_ORIG_RAW_PKTLEN],
+		     nfct_get_attr_u64(ct, ATTR_ORIG_COUNTER_BYTES));
+	okey_set_u64(&ret[NFCT_ORIG_RAW_PKTCOUNT],
+		     nfct_get_attr_u64(ct, ATTR_ORIG_COUNTER_PACKETS));
+	okey_set_u64(&ret[NFCT_REPLY_RAW_PKTLEN],
+		     nfct_get_attr_u64(ct, ATTR_REPL_COUNTER_BYTES));
+	okey_set_u64(&ret[NFCT_REPLY_RAW_PKTCOUNT],
+		     nfct_get_attr_u64(ct, ATTR_REPL_COUNTER_PACKETS));
 
 	okey_set_u32(&ret[NFCT_CT_MARK], nfct_get_attr_u32(ct, ATTR_MARK));
 	okey_set_u32(&ret[NFCT_CT_ID], nfct_get_attr_u32(ct, ATTR_ID));
