@@ -39,7 +39,8 @@ AC_CHECK_FUNCS(socket strerror)
 regular_CFLAGS="-Wall -Wextra -Wno-unused-parameter"
 AC_SUBST([regular_CFLAGS])
 
-AC_CHECK_LIB(pthread, pthread_create)
+AC_SEARCH_LIBS([pthread_create], [pthread], [libpthread_LIBS="$LIBS"; LIBS=""])
+AC_SUBST([libpthread_LIBS])
 
 dnl Check for the right nfnetlink version
 PKG_CHECK_MODULES([LIBNFNETLINK], [libnfnetlink >= 1.0.1])
