@@ -619,6 +619,23 @@ void ulogd_db_signal(struct ulogd_pluginstance *upi, int signal)
 			ulogd_log(ULOGD_ERROR,
 				  "No SIGHUP handling if ring buffer is used\n");
 		break;
+	case SIGTERM:
+	case SIGINT:
+		if (di->ring.size) {
+			int s = pthread_cancel(di->db_thread_id);
+			if (s != 0) {
+				ulogd_log(ULOGD_ERROR,
+					  "Can't cancel injection thread\n");
+				break;
+			}
+			s = pthread_join(di->db_thread_id, NULL);
+			if (s != 0) {
+				ulogd_log(ULOGD_ERROR,
+					  "Error waiting for injection thread"
+					  "cancelation\n");
+			}
+		}
+		break;
 	default:
 		break;
 	}
