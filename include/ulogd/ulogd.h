@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <signal.h>	/* need this because of extension-sighandler */
 #include <sys/types.h>
+#include <inttypes.h>
 #include <string.h>
 #include <config.h>
 
