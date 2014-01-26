@@ -590,7 +590,8 @@ static void *__inject_thread(void *gdi)
 						  "permanently disabling plugin\n");
 					di->interp = &disabled_interp_db;
 					return NULL;
-				}
+				} else /* try to re run query */
+					continue;
 			}
 			*wr_place = RING_NO_QUERY;
 			di->ring.rd_item++;
