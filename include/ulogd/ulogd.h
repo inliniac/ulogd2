@@ -98,6 +98,9 @@ struct ulogd_key {
 		u_int16_t	field_id;
 	} ipfix;
 
+	/* Store field name for Common Information Model */
+	char *cim_name;
+
 	union {
 		/* and finally the returned value */
 		union {
