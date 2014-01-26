@@ -117,6 +117,17 @@ else
 	enable_pcap="no"
 fi
 
+AC_ARG_WITH([jansson], AS_HELP_STRING([--without-jansson], [Build without JSON output plugin [default=test]]))
+AS_IF([test "x$with_jansson" != "xno"], [
+    PKG_CHECK_MODULES([libjansson], [jansson], [], [:])
+])
+AM_CONDITIONAL([HAVE_JANSSON], [test -n "$libjansson_LIBS"])
+if test "x$libjansson_LIBS" != "x"; then
+	enable_jansson="yes"
+else
+	enable_jansson="no"
+fi
+
 dnl AC_SUBST(DATABASE_DIR)
 dnl AC_SUBST(DATABASE_LIB)
 dnl AC_SUBST(DATABASE_LIB_DIR)
@@ -152,5 +163,6 @@ Ulogd configuration:
     MySQL plugin:			${enable_mysql}
     SQLITE3 plugin:			${enable_sqlite3}
     DBI plugin:				${enable_dbi}
+    JSON plugin:			${enable_jansson}
 "
 echo "You can now run 'make' and 'make install'"
