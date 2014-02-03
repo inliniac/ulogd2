@@ -442,7 +442,7 @@ void __ulogd_log(int level, char *file, int line, const char *format, ...)
 		timestr = ctime(&tm);
 		timestr[strlen(timestr)-1] = '\0';
 		fprintf(outfd, "%s <%1.1d> %s:%d ", timestr, level, file, line);
-		if (verbose)
+		if (verbose && outfd != stderr)
 			fprintf(stderr, "%s <%1.1d> %s:%d ", timestr, level, file, line);
 
 
@@ -452,7 +452,7 @@ void __ulogd_log(int level, char *file, int line, const char *format, ...)
 		/* flush glibc's buffer */
 		fflush(outfd);
 
-		if (verbose) {
+		if (verbose && outfd != stderr) {
 			va_start(ap, format);
 			vfprintf(stderr, format, ap);
 			va_end(ap);
