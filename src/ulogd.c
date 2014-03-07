@@ -1383,9 +1383,10 @@ int main(int argc, char* argv[])
 	}
 
 	/* command line has precedence on config file */
-	if (loglevel)
+	if (loglevel) {
 		loglevel_ce.u.value = loglevel;
 		loglevel_ce.flag |= CONFIG_FLAG_VAL_PROTECTED;
+	}
 
 	if (ulogd_pidfile) {
 		if (create_pidfile() < 0)
