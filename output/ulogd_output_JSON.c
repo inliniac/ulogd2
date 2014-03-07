@@ -38,6 +38,8 @@
 
 struct json_priv {
 	FILE *of;
+	int sec_idx;
+	int usec_idx;
 };
 
 enum json_conf {
@@ -85,6 +87,8 @@ static struct config_keyset json_kset = {
 	},
 };
 
+#define MAX_LOCAL_TIME_STRING 32
+
 static int json_interp(struct ulogd_pluginstance *upi)
 {
 	struct json_priv *opi = (struct json_priv *) &upi->private;
@@ -99,11 +103,32 @@ static int json_interp(struct ulogd_pluginstance *upi)
 
 	if (upi->config_kset->ces[JSON_CONF_TIMESTAMP].u.value != 0) {
 		time_t now;
-		char *timestr = NULL;
-		now = time(NULL);
+		char timestr[MAX_LOCAL_TIME_STRING];
+		struct tm *t;
+		struct tm result;
+		struct ulogd_key *inp = upi->input.keys;
 
-		timestr = ctime(&now);
-		timestr[strlen(timestr) - 1] = '\0';
+
+		if (pp_is_valid(inp, opi->sec_idx))
+			now = (time_t) ikey_get_u64(&inp[opi->sec_idx]);
+		else
+			now = time(NULL);
+		t = localtime_r(&now, &result);
+
+		if (pp_is_valid(inp, opi->usec_idx)) {
+			snprintf(timestr, MAX_LOCAL_TIME_STRING,
+					"%04d-%02d-%02dT%02d:%02d:%02d.%06u",
+					t->tm_year + 1900, t->tm_mon + 1,
+					t->tm_mday, t->tm_hour,
+					t->tm_min, t->tm_sec,
+					ikey_get_u32(&inp[opi->usec_idx]));
+		} else {
+			snprintf(timestr, MAX_LOCAL_TIME_STRING,
+					"%04d-%02d-%02dT%02d:%02d:%02d",
+					t->tm_year + 1900, t->tm_mon + 1,
+					t->tm_mday, t->tm_hour,
+					t->tm_min, t->tm_sec);
+		}
 
 		json_object_set_new(msg, "timestamp", json_string(timestr));
 	}
@@ -209,6 +234,7 @@ static int json_configure(struct ulogd_pluginstance *upi,
 static int json_init(struct ulogd_pluginstance *upi)
 {
 	struct json_priv *op = (struct json_priv *) &upi->private;
+	unsigned int i;
 
 	op->of = fopen(upi->config_kset->ces[0].u.string, "a");
 	if (!op->of) {
@@ -216,6 +242,18 @@ static int json_init(struct ulogd_pluginstance *upi)
 			strerror(errno));
 		return -1;
 	}
+
+	/* search for time */
+	op->sec_idx = -1;
+	op->usec_idx = -1;
+	for (i = 0; i < upi->input.num_keys; i++) {
+		struct ulogd_key *key = upi->input.keys[i].u.source;
+		if (!strcmp(key->name, "oob.time.sec"))
+			op->sec_idx = i;
+		else if (!strcmp(key->name, "oob.time.usec"))
+			op->usec_idx = i;
+	}
+
 	return 0;
 }
 
